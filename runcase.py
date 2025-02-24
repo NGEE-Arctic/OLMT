@@ -1083,7 +1083,8 @@ if (options.maxpatch_pft != 17):
   xval = subprocess.check_output('./xmlquery --value '+mylsm+'_BLDNML_OPTS', cwd=casedir, shell=True)
   xval = xval.decode()
   xval = '-maxpft '+str(options.maxpatch_pft)+' '+xval
-  os.system("./xmlchange "+mylsm+"_BLDNML_OPTS = '" + xval + "'")
+  print("./xmlchange "+mylsm+"_BLDNML_OPTS='" + xval + "'")
+  subprocess.check_call("./xmlchange "+mylsm+"_BLDNML_OPTS='" + xval + "'",cwd=casedir, shell=True)
 
 # for spinup and transient runs, PIO_TYPENAME is pnetcdf, which now not works well
 if('mac' in options.machine or 'cades' in options.machine): 
