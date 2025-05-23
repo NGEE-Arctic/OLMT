@@ -350,7 +350,7 @@ parser.add_option("--no_snicar_ad", dest="no_snicar_ad", default=False, \
                   help = "Turn off SNICAR-AD snow microphysics model", action = "store_true")
 parser.add_option("--use_extra_snow_layers", dest = "use_extra_snow_layers", default=False, \
                   help = "Turn on extra snow layers", action="store_true")
-parser.add_option("--use_firn_percolation_and_compaction ", dest = "use_firn_percolation_and_comapction", default=False, \
+parser.add_option("--use_firn_percolation_and_compaction ", dest = "use_firn_percolation_and_compaction", default=False, \
                   help = "Turn on firn percolation and compaction", action="store_true")
 # polygonal tundra:
 parser.add_option("--use_polygonal_tundra", dest="use_polygonal_tundra", default=False, \

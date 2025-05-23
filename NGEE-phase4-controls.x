@@ -54,6 +54,26 @@ elif [ $case == "Toolik" ]; then
          --model_root ${MOD_CTRL} \
          --metdir ${INPUTDATA}/atm/datm7/ngee-arctic-development/era5_noleap/tfs
 
+elif [ $case == "Imnaviat" ]; then
+
+#  python3 ./site_fullrun.py --machine ${MACHINE} ${COMMON_ARGS} \
+#         --caseidprefix cntl --ccsm_input ${INPUTDATA} --site AK-Tlk --srcmods_loc ${SRCMODS} \
+#         --domainfile ${INPUTDATA}/share/domains/domain.clm/domain.lnd.1x1pt_ToolikLake-GRID.nc \
+#         --surffile ${INPUTDATA}/lnd/clm2/surfdata_map/surfdata_1x1pt_ToolikLake-GRID_simyr1850_c360x720_c250306.nc \
+#         --landusefile ${INPUTDATA}/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_ToolikLake-GRID_simyr1850-2015_c250306.nc \
+#         --model_root ${MOD_CTRL} \
+#         --metdir ${INPUTDATA}/atm/datm7/ngee-arctic-development/era5_noleap/tfs
+
+elif [ $case == "UpperKuparuk" ]; then
+
+#  python3 ./site_fullrun.py --machine ${MACHINE} ${COMMON_ARGS} \
+#         --caseidprefix cntl --ccsm_input ${INPUTDATA} --site AK-Tlk --srcmods_loc ${SRCMODS} \
+#         --domainfile ${INPUTDATA}/share/domains/domain.clm/domain.lnd.1x1pt_ToolikLake-GRID.nc \
+#         --surffile ${INPUTDATA}/lnd/clm2/surfdata_map/surfdata_1x1pt_ToolikLake-GRID_simyr1850_c360x720_c250306.nc \
+#         --landusefile ${INPUTDATA}/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_ToolikLake-GRID_simyr1850-2015_c250306.nc \
+#         --model_root ${MOD_CTRL} \
+#         --metdir ${INPUTDATA}/atm/datm7/ngee-arctic-development/era5_noleap/tfs
+
 elif [ $case == "SamoylovIsland" ]; then
 
   python3 ./site_fullrun.py --machine ${MACHINE} ${COMMON_ARGS} \
@@ -73,6 +93,16 @@ elif [ $case == "TrailValleyCreek" ]; then
          --landusefile ${INPUTDATA}/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_TrailValleyCreek-GRID_simyr1850-2015_c250306.nc \
          --model_root ${MOD_CTRL} \
          --metdir ${INPUTDATA}/atm/datm7/ngee-arctic-development/era5_noleap/tvc
+
+elif [ $case == "Bayelva" ]; then
+
+  python3 ./site_fullrun.py --machine ${MACHINE} ${COMMON_ARGS} \
+         --caseidprefix cntl --ccsm_input ${INPUTDATA} --site NO-SJB --srcmods_loc ${SRCMODS} \
+         --domainfile ${INPUTDATA}/share/domains/domain.clm/domain.lnd.1x1pt_SJ-BlvBayelva-GRID.nc \
+         --surffile ${INPUTDATA}/lnd/clm2/surfdata_map/surfdata_1x1pt_SJ-BlvBayelva-GRID_simyr1850_c360x720_c250306.nc \
+         --landusefile ${INPUTDATA}/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_SJ-BlvBayelva-GRID_simyr1850-2015_c250306.nc \
+         --model_root ${MOD_CTRL} \
+         --metdir ${INPUTDATA}/atm/datm7/ngee-arctic-development/era5_noleap/sjb
 
 fi
  
