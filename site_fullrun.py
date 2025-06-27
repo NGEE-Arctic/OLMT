@@ -264,6 +264,9 @@ parser.add_option("--use_arctic_init", dest="use_arctic_init", default=False, \
 #IM2 hillslope hydrology
 parser.add_option("--use_IM2_hillslope_hydrology", dest="use_IM2_hillslope_hydrology", default=False, \
                   help="Use IM2 hillslope hydrology parameterization", action="store_true")
+# adjust topounit/pft output:
+parser.add_output("--arctic_topounit_output", dest="arctic_topounit_output",default=False, \
+                  help="Activate topounit-level and pft-level outputs by turning on hist_dov2xy")
 
 #datasets for user-defined PFTs (by F-M Yuan, NGEE-Arctic)
 parser.add_option("--maxpatch_pft", dest="maxpatch_pft", default=17, \
@@ -725,6 +728,9 @@ for row in AFdatareader:
         # Arctic hillslope hydrology
         if (options.use_IM2_hillslope_hydrology):
             basecmd = basecmd + ' --use_IM2_hillslope_hydrology'
+        # topounit-level output
+        if (options.arctic_topounit_output):
+            basecmd = basecmd + ' --arctic_topounit_output'
 
 #---------------- build commands for runcase.py -----------------------------
 

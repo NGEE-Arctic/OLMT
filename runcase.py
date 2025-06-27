@@ -360,6 +360,9 @@ parser.add_option("--use_arctic_init", dest = "use_arctic_init", default = False
 # Arctic hillslope hydrology
 parser.add_option("--use_IM2_hillslope_hydrology", dest="use_IM2_hillslope_hydrology", default=False, \
                   help="Use NGEE Arctic Hillslope Hydrology across topounits", action="store_true")
+# adjust topounit/pft output:
+parser.add_output("--arctic_topounit_output", dest="arctic_topounit_output",default=False, \
+                  help="Activate topounit-level and pft-level outputs by turning on hist_dov2xy")
 
 #CI testing:
 parser.add_option("--test", dest = "test_mode", default=False,
@@ -1263,6 +1266,8 @@ for i in range(1,int(options.ninst)+1):
                     'CPOOL_TO_DEADCROOTC_STORAGE', 'CPOOL_TO_LIVECROOTC_STORAGE', \
                     'FROOTC_STORAGE', 'LEAFC_STORAGE', 'LEAFC_XFER', 'FROOTC_XFER', 'LIVESTEMC_XFER', \
                     'DEADSTEMC_XFER', 'LIVECROOTC_XFER', 'DEADCROOTC_XFER', 'CPOOL_TO_LIVESTEMC'])
+    elif (options.arctic_topounit_output):
+        var_list_pft.extend(['TSOI','H2OSOI','ALT','SOILLIQ','SOILICE','TG'])
     if options.var_list_pft != '':
         var_list_pft = options.var_list_pft.split(',')
     var_list_spinup = ['PPOOL', 'EFLX_LH_TOT', 'RETRANSN', 'PCO2', 'PBOT', 'NDEP_TO_SMINN', 'OCDEP', \
