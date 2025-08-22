@@ -785,7 +785,7 @@ else:
 
 myncap = 'ncap'
 if ( 'chrysalis' in options.machine or 'compy' in options.machine or 'ubuntu' in options.machine \
-        or 'mymac' in options.machine or 'anvil' in options.machine):
+        or 'mymac' in options.machine or 'anvil' in options.machine or 'cades-baseline' in options.machine):
     myncap='ncap2'
 
     flnr = nffun.getvar(tmpdir+'/clm_params.nc','flnr')
@@ -809,7 +809,7 @@ if ( 'chrysalis' in options.machine or 'compy' in options.machine or 'ubuntu' in
       else:
         print('qflx_h2osfc_surfrate = 1.0e-7')
         os.system(myncap+' -O -s "qflx_h2osfc_surfrate = br_mr*0+1.0e-7" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-      os.system(myncap+' -O -s "moss_swc_adjust=scalar(0)" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+      os.system(myncap+' -O -s "moss_swc_adjust=0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
       os.system(myncap+' -O -s "rsub_top_globalmax = br_mr*0+1.2e-5" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
       os.system(myncap+' -O -s "h2osoi_offset = br_mr*0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
     #   flnr = nffun.getvar(tmpdir+'/clm_params.nc','flnr')
@@ -1920,7 +1920,7 @@ if ((options.ensemble_file != '' or int(options.mc_ensemble) != -1) and (options
               output_run.write('#SBATCH --qos=short\n')
             if ('cades-baseline' in options.machine):
               output_run.write('#SBATCH -A CLI185\n')
-              output_run.write('#SBATCH -p batch\n')
+              output_run.write('#SBATCH -p batch_ccsi\n')
               output_run.write('#SBATCH --ntasks-per-node 128\n')
             elif ('cades' in options.machine):
                output_run.write('#SBATCH -A ccsi\n')
