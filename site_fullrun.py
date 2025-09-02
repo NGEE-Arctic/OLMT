@@ -375,6 +375,8 @@ elif ('compy' in options.machine):
     ccsm_input = '/compyfs/inputdata/'
 elif ('ees' in options.machine):
     ccsm_input = '/project/neon_e3sm/inputdata'
+elif ('docker' in options.machine):
+    ccsm_input = '/home/e3smuser/inputdata'
 
 #if (options.compiler != ''):
 #    if (options.machine == 'titan'):
