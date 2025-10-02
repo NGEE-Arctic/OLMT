@@ -361,12 +361,12 @@ parser.add_option("--use_arctic_init", dest = "use_arctic_init", default = False
 parser.add_option("--use_IM2_hillslope_hydrology", dest="use_IM2_hillslope_hydrology", default=False, \
                   help="Use NGEE Arctic Hillslope Hydrology across topounits", action="store_true")
 # adjust topounit/pft output:
-parser.add_option("--arctic_topounit_output", dest="arctic_topounit_output",default=False, \
+parser.add_option("--arctic_topounit_output", dest="arctic_topounit_output",default=False, action="store_true", \
                   help="Activate topounit-level and pft-level outputs by turning on hist_dov2xy")
 
-#CI testing:
-parser.add_option("--test", dest = "test_mode", default=False,
-                  help = "Run in test mode? (5 day simulation)", action = "store_true")
+# InteRFACE Lake Testing:
+parser.add_option("--use_lake_wat_storage", dest = "use_lake_wat_storage", default=False,
+                  help = "Turn on use_lake_wat_storage namelist flag", action = "store_true")
 
 (options, args) = parser.parse_args()
 #-------------------------------------------------------------------------------
@@ -499,8 +499,6 @@ if (options.daymet4):
             print('Error:  must provide user-defined " --pftdynfile " for " --daymet4"')
             sys.exit(1)
 #----------------------------------------------------------------------------------
-
-
 
 compset = options.compset
 isglobal = False
@@ -1163,12 +1161,8 @@ if (int(options.ninst) > 1):
     os.system('./xmlchange NINST_LND='+options.ninst)
     os.system('./xmlchange NTASKS_LND='+options.ninst)
 
-if (options.test_mode):
-    os.system('./xmlchange STOP_OPTION=ndays')
-    os.system('./xmlchange STOP_N=5')
-else:
-    os.system('./xmlchange STOP_OPTION='+options.run_units)
-    os.system('./xmlchange STOP_N='+str(options.run_n))
+os.system('./xmlchange STOP_OPTION='+options.run_units)
+os.system('./xmlchange STOP_N='+str(options.run_n))
 
 if (options.rest_n > 0):
   print('Setting REST_N to '+str(options.rest_n))
@@ -1266,8 +1260,8 @@ for i in range(1,int(options.ninst)+1):
                     'CPOOL_TO_DEADCROOTC_STORAGE', 'CPOOL_TO_LIVECROOTC_STORAGE', \
                     'FROOTC_STORAGE', 'LEAFC_STORAGE', 'LEAFC_XFER', 'FROOTC_XFER', 'LIVESTEMC_XFER', \
                     'DEADSTEMC_XFER', 'LIVECROOTC_XFER', 'DEADCROOTC_XFER', 'CPOOL_TO_LIVESTEMC'])
-    elif (options.arctic_topounit_output):
-        var_list_pft.extend(['TSOI','H2OSOI','ALT','SOILLIQ','SOILICE','TG'])
+    if (options.arctic_topounit_output):
+      var_list_pft.extend(['TSOI','H2OSOI','ALT','SOILLIQ','SOILICE','TG'])
     if options.var_list_pft != '':
         var_list_pft = options.var_list_pft.split(',')
     var_list_spinup = ['PPOOL', 'EFLX_LH_TOT', 'RETRANSN', 'PCO2', 'PBOT', 'NDEP_TO_SMINN', 'OCDEP', \
@@ -1476,6 +1470,9 @@ for i in range(1,int(options.ninst)+1):
     # NGEE Arctic IM2
     if (options.use_IM2_hillslope_hydrology):
         output.write(" use_IM2_hillslope_hydrology = .true.\n")
+    # InteRFACE
+    if (options.use_lake_wat_storage):
+        output.write(" use_lake_wat_storage = .true.\n")
 
     #pft dynamics file for transient run
     if ('20TR' in compset or options.istrans):
