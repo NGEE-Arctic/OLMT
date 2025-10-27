@@ -510,7 +510,7 @@ for row in AFdatareader:
           elif (options.princeton):
             endyear_trans=2012
           elif (options.era5 or options.era5_land):
-            endyear_trans=2022
+            endyear_trans=2024
           else:
             endyear_trans=2010
         else:
