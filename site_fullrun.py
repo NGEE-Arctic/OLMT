@@ -267,6 +267,9 @@ parser.add_option("--use_IM2_hillslope_hydrology", dest="use_IM2_hillslope_hydro
 # adjust topounit/pft output:
 parser.add_option("--arctic_topounit_output", dest="arctic_topounit_output",default=False, action="store_true", \
                   help="Activate topounit-level and pft-level outputs by turning on hist_dov2xy")
+# phenological changes:
+parser.add_option("--use_onset_gdd_extension", dest="use_onset_gdd_extension", default=False, \
+                  help="Extend leaf onset based on accumulated growing degree days past summer solstice in Arctic", action="store_true")
 
 #datasets for user-defined PFTs (by F-M Yuan, NGEE-Arctic)
 parser.add_option("--maxpatch_pft", dest="maxpatch_pft", default=17, \
@@ -733,6 +736,9 @@ for row in AFdatareader:
         # topounit-level output
         if (options.arctic_topounit_output):
             basecmd = basecmd + ' --arctic_topounit_output'
+        # gdd extension
+        if (options.use_onset_gdd_extension):
+            basecmd = basecmd + ' --use_onset_gdd_extension'
 
 #---------------- build commands for runcase.py -----------------------------
 

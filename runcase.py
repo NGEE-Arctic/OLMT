@@ -363,6 +363,9 @@ parser.add_option("--use_IM2_hillslope_hydrology", dest="use_IM2_hillslope_hydro
 # adjust topounit/pft output:
 parser.add_option("--arctic_topounit_output", dest="arctic_topounit_output",default=False, action="store_true", \
                   help="Activate topounit-level and pft-level outputs by turning on hist_dov2xy")
+# phenological changes:
+parser.add_option("--use_onset_gdd_extension", dest="use_onset_gdd_extension", default=False, \
+                  help="Extend leaf onset based on accumulated growing degree days past summer solstice in Arctic", action="store_true")
 
 # InteRFACE Lake Testing:
 parser.add_option("--use_lake_wat_storage", dest = "use_lake_wat_storage", default=False,
@@ -1478,6 +1481,8 @@ for i in range(1,int(options.ninst)+1):
     # NGEE Arctic IM2
     if (options.use_IM2_hillslope_hydrology):
         output.write(" use_IM2_hillslope_hydrology = .true.\n")
+    if (options.onset_gdd_expansion):
+        output.write(" onset_gdd_expansion = .true.\n")
     # InteRFACE
     if (options.use_lake_wat_storage):
         output.write(" use_lake_wat_storage = .true.\n")
