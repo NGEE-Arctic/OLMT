@@ -1084,6 +1084,9 @@ if (options.ad_spinup):
     elif (options.mymodel == 'CLM5'):
         os.system('./xmlchange CLM_ACCELERATED_SPINUP=on')
         os.system('./xmlchange CLM_FORCE_COLDSTART=on')
+if (options.topounits_atmdownscale and options.mymodel == 'ELM'):
+    os.system("./xmlchange --append "+mylsm+"_BLDNML_OPTS='-topounit'")
+
 #if (options.use_hydrstress):
 #    os.system("./xmlchange --append "+mylsm+"_BLDNML_OPTS='-hydrstress'")
 
@@ -1447,8 +1450,13 @@ for i in range(1,int(options.ninst)+1):
 
     if (options.var_soilthickness):
         output.write(" use_var_soil_thick = .TRUE.\n")
-    if (options.topounits_atmdownscale):
-        output.write(" use_atm_downscaling_to_topunit = .true.\n")
+    #if (options.topounits_atmdownscale):
+    #    the following not works. Instead by appending "-topounit" into ELM_BLDNML_OPTS
+    #    output.write(" use_atm_downscaling_to_topunit = .true.\n")
+    if (options.topounits_atmdownscale or options.use_IM2_hillslope_hydrology):
+        # topounits included surface data, by default, separated 17 PFTs into 15 natpfts and 2 cfts.
+        # so have to switch on following namelist 
+        output.write(" create_crop_landunit = .true.\n")
     if (options.topounits_raddownscale):
         output.write(" use_top_solar_rad = .true.\n")
     if (options.no_budgets):
