@@ -26,7 +26,7 @@
 
 #-----------------------------------------------------------
 
-case=3
+case=5
 
 if [ $case == 1 ]; then
   python3 ./site_fullrun.py --compiler gnu --mpilib openmpi --machine docker \
@@ -63,7 +63,7 @@ elif [ $case == 3 ]; then
 elif [ $case == 4 ]; then
   python3 ./site_fullrun.py --compiler gnu --mpilib openmpi --machine docker \
          --site AK-ICP --sitegroup NGEEArctic --caseidprefix ICP-FCP-test --cpl_bypass --gswp3 --daymet4 \
-         --domainfile /home/e3smuser/inputdata/share/domains/domain.clm/ngee-arctic-development/IcyCape_domain.nc \
+         --domainfile /home/e3smuser/inputdata/share/domains/domain.clm/ngee-arctic-development/IM1/IcyCape_domain.nc \
          --surffile /home/e3smuser/inputdata/lnd/clm2/surfdata_map/ngee-arctic-development/IM1/IcyCape/IcyCape_surfdata_FCP.nc \
          --landusefile /home/e3smuser/inputdata/lnd/clm2/surfdata_map/ngee-arctic-development/IM1/IcyCape/IcyCape_surfdata.pftdyn.nc \
          --metdir /home/e3smuser/inputdata/atm/datm7/cpl_bypass_IM1_IcyCape \
@@ -74,7 +74,7 @@ elif [ $case == 4 ]; then
 elif [ $case == 5 ]; then
   python3 ./site_fullrun.py --compiler gnu --mpilib openmpi --machine docker \
          --site AK-ICP --sitegroup NGEEArctic --caseidprefix ICP-LCP-test --cpl_bypass --gswp3 --daymet4 \
-         --domainfile /home/e3smuser/inputdata/share/domains/domain.clm/ngee-arctic-development/IcyCape_domain.nc \
+         --domainfile /home/e3smuser/inputdata/share/domains/domain.clm/ngee-arctic-development/IM1/IcyCape_domain.nc \
          --surffile /home/e3smuser/inputdata/lnd/clm2/surfdata_map/ngee-arctic-development/IM1/IcyCape/IcyCape_surfdata_LCP.nc \
          --landusefile /home/e3smuser/inputdata/lnd/clm2/surfdata_map/ngee-arctic-development/IM1/IcyCape/IcyCape_surfdata.pftdyn.nc \
          --metdir /home/e3smuser/inputdata/atm/datm7/cpl_bypass_IM1_IcyCape \
