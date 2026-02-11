@@ -1481,8 +1481,8 @@ for i in range(1,int(options.ninst)+1):
     # NGEE Arctic IM2
     if (options.use_IM2_hillslope_hydrology):
         output.write(" use_IM2_hillslope_hydrology = .true.\n")
-    if (options.onset_gdd_expansion):
-        output.write(" onset_gdd_expansion = .true.\n")
+    if (options.onset_gdd_extension):
+        output.write(" onset_gdd_extension = .true.\n")
     # InteRFACE
     if (options.use_lake_wat_storage):
         output.write(" use_lake_wat_storage = .true.\n")
