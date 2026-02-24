@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 
-import socket, getpass, os, sys, csv, math
+import socket
+import getpass
+import os
+import sys
+import csv
 from optparse import OptionParser
-import subprocess
 import numpy
 import re
 
@@ -879,7 +882,7 @@ csmdir = options.csmdir
 
 # case run and case root directories
 myproject = "e3sm"
-if options.runroot == "" or (os.path.exists(options.runroot) == False):
+if options.runroot == "" or not os.path.exists(options.runroot):
     myuser = getpass.getuser()
     if options.machine == "titan" or options.machine == "eos":
         myinput = open("/ccs/home/" + myuser + "/.cesm_proj", "r")
@@ -912,7 +915,7 @@ else:
 if options.caseroot == options.runroot:
     caseroot = os.path.abspath(options.caseroot) + "/cime_case_dirs"
     os.system("mkdir -p " + caseroot)
-elif options.caseroot == "" or (os.path.exists(options.caseroot) == False):
+elif options.caseroot == "" or not os.path.exists(options.caseroot):
     caseroot = os.path.abspath(csmdir + "/cime/scripts")
 else:
     caseroot = os.path.abspath(options.caseroot)
@@ -965,7 +968,7 @@ if (
 ):  # in case of a single site in name but with multiple unstructured gridcells
     npernode = min(int(npernode), int(options.np))
     nnode = -(int(options.np) // -int(npernode))
-elif not "all" in mysites and (options.ensemble_file == ""):
+elif "all" not in mysites and (options.ensemble_file == ""):
     npernode = len(mysites)
 
 for row in AFdatareader:
@@ -1318,7 +1321,7 @@ for row in AFdatareader:
             )
         if sitenum == 0:
             if options.exeroot != "":
-                if os.path.isfile(options.exeroot + "/" + myexe) == False:
+                if not os.path.isfile(options.exeroot + "/" + myexe):
                     print(
                         "Error:  "
                         + options.exeroot
@@ -1350,7 +1353,7 @@ for row in AFdatareader:
             cmd_adsp = cmd_adsp + " --compset I1850" + mycompset_adsp
             ad_case = site + "_I1850" + mycompset_adsp
 
-        if options.noad == False:
+        if not options.noad:
             ad_case = ad_case + "_ad_spinup"
         if options.makemet:
             cmd_adsp = cmd_adsp + " --makemetdat"
@@ -1401,7 +1404,7 @@ for row in AFdatareader:
             if options.sp:
                 cmd_fnsp = cmd_fnsp + " --run_startyear " + str(options.run_startyear)
             if options.exeroot != "":
-                if os.path.isfile(options.exeroot + "/" + myexe) == False:
+                if not os.path.isfile(options.exeroot + "/" + myexe):
                     print(
                         "Error:  "
                         + options.exeroot
@@ -1670,7 +1673,7 @@ for row in AFdatareader:
                 sys.exit(1)
 
         # Build Cases
-        if options.noad == False:
+        if not options.noad:
             print("\n\nSetting up ad_spinup case\n")
             if sitenum == 0:
                 ad_case_firstsite = ad_case
@@ -1698,7 +1701,7 @@ for row in AFdatareader:
             if sitenum == 0:
                 ad_case_firstsite = ad_case
 
-        if options.nofnsp == False:
+        if not options.nofnsp:
             print("\n\nSetting up final spinup case\n")
             if sitenum == 0:
                 fin_case_firstsite = ad_case_firstsite.replace("_ad_spinup", "")
@@ -1737,7 +1740,7 @@ for row in AFdatareader:
             if nutrients == "CNP" and not options.ad_Pinit:
                 fin_case_firstsite = fin_case_firstsite.replace("1850CN", "1850CNP")
 
-        if options.notrans == False:
+        if not options.notrans:
             print("\n\nSetting up transient case\n")
             if sitenum == 0:
                 if options.crop:
@@ -1805,15 +1808,15 @@ for row in AFdatareader:
         # Create .pbs etc scripts for each case
         # build vector of case aliases
         case_list = []
-        if options.noad == False:
+        if not options.noad:
             case_list.append("ad_spinup")
             if not options.fates:
                 case_list.append("iniadjust")
-        if options.nofnsp == False:
+        if not options.nofnsp:
             case_list.append("fn_spinup")
         if options.diags:
             case_list.append("spinup_diags")
-        if options.notrans == False:
+        if not options.notrans:
             case_list.append("transient")
             if options.eco2_file:
                 case_list.append("trans_aCO2")
@@ -2320,10 +2323,10 @@ for row in AFdatareader:
         # ======================================================#
 
         # if ensemble simulations requested, submit jobs created by runcase.py in correct order
-        if options.no_submit == False and options.ensemble_file != "":
+        if not options.no_submit and options.ensemble_file != "":
             cases = []
             # build list of cases for fullrun
-            if options.noad == False:
+            if not options.noad:
                 if options.ad_Pinit:
                     cases.append(basecase + "_" + modelst + "_ad_spinup")
                 else:
@@ -2331,10 +2334,10 @@ for row in AFdatareader:
                         basecase + "_" + modelst.replace("CNP", "CN") + "_ad_spinup"
                     )
 
-            if options.nofnsp == False:
+            if not options.nofnsp:
                 cases.append(basecase + "_" + modelst)
 
-            if options.notrans == False:
+            if not options.notrans:
                 # if (options.crop or options.fates):
                 if options.crop:
                     cases.append(basecase + "_" + modelst + "_trans")
@@ -2369,7 +2372,7 @@ for row in AFdatareader:
 
 
 # Submit PBS scripts for single/multi-site simulations on 1 node
-if options.no_submit == False and options.ensemble_file == "":
+if not options.no_submit and options.ensemble_file == "":
     for g in range(0, int(groupnum) + 1):
         job_depend_run = ""
         for thiscase in case_list:
