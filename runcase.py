@@ -5,10 +5,50 @@ import os
 import sys
 import csv
 import math
+import json
 import numpy
+import inspect
 import subprocess
 from optparse import OptionParser
 # from Numeric import *
+
+
+def _write_cmd(cmd, tag, lineno):
+    if not os.path.exists(options.options_log_json):
+        log_i = 0
+        log_slug = {"i": log_i, "tag": tag, "cmd": cmd}
+        with open(options.options_log_json, "w", encoding="utf-8") as f:
+            json.dump([log_slug], f, indent=4)
+    else:
+        with open(options.options_log_json, "r") as f:
+            data = json.load(f)
+        log_i = data[len(data) - 1]["i"] + 1
+        log_slug = {"i": log_i, "tag": tag, "lineno": lineno, "cmd": cmd}
+        data.append(log_slug)
+        with open(options.options_log_json, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+
+
+def _parse_cmd(cmd_i):
+    test = cmd_i.split(" --")
+    result = {}
+    for i_parse in range(len(test) - 2):
+        result["none"] = test[i_parse].split(" ")[0]
+        if len(test[i_parse].split(" ")) > 1:
+            result[test[i_parse].split(" ")[0]] = test[i_parse].split(" ")[1]
+    return result
+
+
+def runcmd(cmd, echo=True, tag=os.path.basename(__file__)):
+    lineno = inspect.stack()[1].lineno
+    cmd_log = cmd
+    if ".py" in cmd:
+        cmd_log = _parse_cmd(cmd)
+    _write_cmd(cmd_log, tag, lineno)
+
+    if echo:
+        print(cmd)
+    return os.system(cmd)
 
 
 # runcase.py does the following:
@@ -915,6 +955,13 @@ parser.add_option(
     action="store_true",
 )
 
+parser.add_option(
+    "--options_log_json",
+    dest="options_log_json",
+    default="config.json",
+    help="full path to a json file recording all OLMT options and syscalls",
+)
+
 # InteRFACE Lake Testing:
 parser.add_option(
     "--use_lake_wat_storage",
@@ -1261,11 +1308,11 @@ if os.path.exists(casedir):
     print("Warning:  Case directory exists")
     if options.rmold:
         print("--rmold specified.  Removing old case ")
-        os.system("rm -rf " + casedir)
+        runcmd("rm -rf " + casedir)
     else:
         var = input("proceed (p), remove old (r), or exit (x)? ")
         if var[0] == "r":
-            os.system("rm -rf " + casedir)
+            runcmd("rm -rf " + casedir)
         if var[0] == "x":
             sys.exit(1)
 print("CASE directory is: " + casedir)
@@ -1285,9 +1332,9 @@ print("CASE rundir is: " + rundir)
 if options.rmold:
     if options.no_build == False:
         print("Removing build directory: " + exeroot)
-        os.system("rm -rf " + exeroot)
+        runcmd("rm -rf " + exeroot)
     print("Removing run directory: " + rundir)
-    os.system("rm -rf " + rundir)
+    runcmd("rm -rf " + rundir)
 
 # ------Make domain, surface data and pftdyn files ------------------
 mysimyr = 1850
@@ -1333,10 +1380,12 @@ if options.nopointdata == False:
         if options.point_list != "":
             ptcmd = ptcmd + " --point_list " + options.point_list
             # changing resolution of extracted grid point area
-            if options.point_area_kmxkm != None:  # area in a square measured by kmxkm
+            if (
+                options.point_area_kmxkm is not None
+            ):  # area in a square measured by kmxkm
                 ptcmd = ptcmd + " --point_area_kmxkm " + options.point_area_kmxkm
             elif (
-                options.point_area_degxdeg != None
+                options.point_area_degxdeg is not None
             ):  # area in a square measured by degreexdegree
                 ptcmd = ptcmd + " --point_area_degxdeg " + options.point_area_degxdeg
 
@@ -1353,7 +1402,7 @@ if options.nopointdata == False:
         ptcmd = ptcmd + " --humhol"
 
     if options.machine == "eos" or options.machine == "titan":
-        os.system("rm temp/*.nc")
+        runcmd("rm temp/*.nc")
         print("Note:  NCO operations are slow on eos and titan.")
         print("Submitting PBS script to make surface and domain data on rhea")
         pbs_rhea = open("makepointdata_rhea.pbs", "w")
@@ -1372,7 +1421,7 @@ if options.nopointdata == False:
         pbs_rhea.write(" module load python_scipy\n")
         pbs_rhea.write(ptcmd + "\n")
         pbs_rhea.close()
-        os.system("qsub makepointdata_rhea.pbs")
+        runcmd("qsub makepointdata_rhea.pbs")
         n_nc_files = 3
         if options.nopftdyn:
             n_nc_files = 2
@@ -1384,12 +1433,12 @@ if options.nopointdata == False:
             for file in list_dir:
                 if file.endswith(".nc"):
                     n = n + 1
-            os.system("sleep 10")
+            runcmd("sleep 10")
         # Clean up
-        os.system("rm makepointdata_rhea*")
+        runcmd("rm makepointdata_rhea*")
     else:
         print(ptcmd)
-        result = os.system(ptcmd)
+        result = runcmd(ptcmd)
         if result > 0:
             print("PointCLM:  Error creating point data.  Aborting")
             sys.exit(1)
@@ -1477,14 +1526,12 @@ if options.mycaseid == "":
 else:
     myscriptsdir = options.mycaseid
 
-os.system("mkdir -p " + tmpdir)
+runcmd("mkdir -p " + tmpdir)
 if options.mod_parm_file != "":
     if os.path.exists(options.mod_parm_file):
         print("\n -----INFO: using modified pft parameter file")
         print("nccopy -3 " + options.mod_parm_file + " " + tmpdir + "/clm_params.nc")
-        os.system(
-            "nccopy -3 " + options.mod_parm_file + " " + tmpdir + "/clm_params.nc"
-        )
+        runcmd("nccopy -3 " + options.mod_parm_file + " " + tmpdir + "/clm_params.nc")
     else:
         print(
             "File specified for mod_parm_file doesn't exist, please check file name/path"
@@ -1501,7 +1548,7 @@ else:
         + tmpdir
         + "/clm_params.nc"
     )
-    os.system(
+    runcmd(
         "nccopy -3 "
         + options.ccsm_input
         + "/lnd/clm2/paramdata/"
@@ -1528,7 +1575,7 @@ else:
         #   print('humhol_dist = 1.0m')
         print("setting rsub_top_globalmax = 1.2e-5")
         print("Making br_mr a PFT-specific parameter")
-        os.system(
+        runcmd(
             myncap
             + ' -O -s "humhol_ht = br_mr*0+0.15" '
             + tmpdir
@@ -1537,7 +1584,7 @@ else:
             + "/clm_params.nc"
         )
         if options.marsh:
-            os.system(
+            runcmd(
                 myncap
                 + ' -O -s "hum_frac = br_mr*0+0.50" '
                 + tmpdir
@@ -1547,7 +1594,7 @@ else:
             )
             print("hum_frac  = 0.50")
         else:
-            os.system(
+            runcmd(
                 myncap
                 + ' -O -s "hum_frac = br_mr*0+0.64" '
                 + tmpdir
@@ -1556,7 +1603,7 @@ else:
                 + "/clm_params.nc"
             )
             print("hum_frac  = 0.64")
-        os.system(
+        runcmd(
             myncap
             + ' -O -s "humhol_dist = br_mr*0+1.0" '
             + tmpdir
@@ -1566,7 +1613,7 @@ else:
         )
         if options.marsh:
             print("qflx_h2osfc_surfrate = 0.0")
-            os.system(
+            runcmd(
                 myncap
                 + ' -O -s "qflx_h2osfc_surfrate = br_mr*0+0.0" '
                 + tmpdir
@@ -1576,7 +1623,7 @@ else:
             )
         else:
             print("qflx_h2osfc_surfrate = 1.0e-7")
-            os.system(
+            runcmd(
                 myncap
                 + ' -O -s "qflx_h2osfc_surfrate = br_mr*0+1.0e-7" '
                 + tmpdir
@@ -1584,7 +1631,7 @@ else:
                 + tmpdir
                 + "/clm_params.nc"
             )
-        os.system(
+        runcmd(
             myncap
             + ' -O -s "moss_swc_adjust=scalar(0)" '
             + tmpdir
@@ -1592,7 +1639,7 @@ else:
             + tmpdir
             + "/clm_params.nc"
         )
-        os.system(
+        runcmd(
             myncap
             + ' -O -s "rsub_top_globalmax = br_mr*0+1.2e-5" '
             + tmpdir
@@ -1600,7 +1647,7 @@ else:
             + tmpdir
             + "/clm_params.nc"
         )
-        os.system(
+        runcmd(
             myncap
             + ' -O -s "h2osoi_offset = br_mr*0" '
             + tmpdir
@@ -1609,7 +1656,7 @@ else:
             + "/clm_params.nc"
         )
         flnr = nffun.getvar(tmpdir + "/clm_params.nc", "flnr")
-        os.system(
+        runcmd(
             myncap
             + ' -O -s "br_mr = flnr" '
             + tmpdir
@@ -1635,7 +1682,7 @@ else:
 
         tidecomps = pandas.read_csv(options.tide_components_file)
         for comp in range(len(tidecomps)):
-            os.system(
+            runcmd(
                 myncap
                 + ' -O -s "tide_coeff_amp_%d = humhol_ht*0+%1.4e" '
                 % (comp + 1, tidecomps["Amplitude"].iloc[comp] * 1000)
@@ -1644,7 +1691,7 @@ else:
                 + tmpdir
                 + "/clm_params.nc"
             )
-            os.system(
+            runcmd(
                 myncap
                 + ' -O -s "tide_coeff_period_%d = humhol_ht*0+%1.4e" '
                 % (comp + 1, 360 * 3600 / tidecomps["Speed"].iloc[comp])
@@ -1653,7 +1700,7 @@ else:
                 + tmpdir
                 + "/clm_params.nc"
             )
-            os.system(
+            runcmd(
                 myncap
                 + ' -O -s "tide_coeff_phase_%d = humhol_ht*0+%1.4e" '
                 % (comp + 1, tidecomps["Phase"].iloc[comp] * math.pi / 180)
@@ -1662,7 +1709,7 @@ else:
                 + tmpdir
                 + "/clm_params.nc"
             )
-            os.system(
+            runcmd(
                 myncap
                 + ' -O -s "tide_baseline = humhol_ht*0+800.0" '
                 + tmpdir
@@ -1687,7 +1734,7 @@ else:
     # os.system(myncap+' -O -s "Nfix_NPP_c2 = br_mr*0.003" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
     # os.system(myncap+' -O -s "nfix_timeconst = br_mr*10.0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
 
-os.system("chmod u+w " + tmpdir + "/clm_params.nc")
+runcmd("chmod u+w " + tmpdir + "/clm_params.nc")
 if options.parm_file != "":
     pftfile = tmpdir + "/clm_params.nc"
     if "/" not in options.parm_file:
@@ -1712,7 +1759,7 @@ if options.parm_file != "":
                 print("Parameter %s not found in clm_params.nc. Adding." % values[0])
                 if len(values) == 2:
                     print("No PFT specified. Assuming universal parameter")
-                    os.system(
+                    runcmd(
                         myncap
                         + ' -O -s "%s = q10_mr*0+%1.4e" ' % (values[0], values[1])
                         + tmpdir
@@ -1723,7 +1770,7 @@ if options.parm_file != "":
                 elif len(values) == 3:
                     if float(values[1]) > 0:
                         print("PFT specified. Setting value for all PFTs")
-                        os.system(
+                        runcmd(
                             myncap
                             + ' -O -s "%s = flnr*0+%s" ' % (values[0], values[2])
                             + tmpdir
@@ -1733,7 +1780,7 @@ if options.parm_file != "":
                         )
                     else:
                         print("No PFT specified. Assuming universal parameter")
-                        os.system(
+                        runcmd(
                             myncap
                             + ' -O -s "%s = q10_mr*0+%s" ' % (values[0], values[2])
                             + tmpdir
@@ -1763,9 +1810,9 @@ if options.parm_vals != "":
 # parameter (soil order dependent) modifications if desired    ::X.YANG
 if options.mymodel == "ELM":
     if options.mod_parm_file_P != "":
-        os.system("cp " + options.mod_parm_file_P + " " + tmpdir + "/CNP_parameters.nc")
+        runcmd("cp " + options.mod_parm_file_P + " " + tmpdir + "/CNP_parameters.nc")
     else:
-        os.system(
+        runcmd(
             "cp "
             + options.ccsm_input
             + "/lnd/clm2/paramdata/CNP_parameters_"
@@ -1774,7 +1821,7 @@ if options.mymodel == "ELM":
             + tmpdir
             + "/CNP_parameters.nc"
         )
-    os.system("chmod u+w " + tmpdir + "/CNP_parameters.nc")
+    runcmd("chmod u+w " + tmpdir + "/CNP_parameters.nc")
 
     if options.parm_file_P != "":
         soilorderfile = tmpdir + "/CNP_parameters.nc"
@@ -1835,12 +1882,12 @@ if options.compiler != "":
     cmd = cmd + " --compiler " + options.compiler
 cmd = cmd + " > create_newcase.log"
 print(cmd)
-result = os.system(cmd)
+result = runcmd(cmd)
 
 if os.path.isdir(casedir):
     print(casename + " created.  See create_newcase.log for details")
     # os.system('mv create_newcase.log '+casename)
-    os.system("mv create_newcase.log " + casedir)
+    runcmd("mv create_newcase.log " + casedir)
 else:
     print(
         "Error:  runcase.py Failed to create case.  See create_newcase.log for details"
@@ -1850,17 +1897,17 @@ else:
 os.chdir(casedir)
 
 # env_build
-result = os.system("./xmlchange SAVE_TIMING=FALSE")
-result = os.system("./xmlchange EXEROOT=" + exeroot)
+result = runcmd("./xmlchange SAVE_TIMING=FALSE")
+result = runcmd("./xmlchange EXEROOT=" + exeroot)
 # if ('ED' in compset):
 #    result = os.system('./xmlchange PIO_VERSION=1')
 # else:
-result = os.system("./xmlchange PIO_VERSION=%s" % options.pio_version)
+result = runcmd("./xmlchange PIO_VERSION=%s" % options.pio_version)
 if options.mymodel == "ELM":
-    result = os.system("./xmlchange MOSART_MODE=NULL")
+    result = runcmd("./xmlchange MOSART_MODE=NULL")
 
 if options.debug:
-    result = os.system("./xmlchange DEBUG=TRUE")
+    result = runcmd("./xmlchange DEBUG=TRUE")
 
 # clm 4_5 cn config options
 # clmcn_opts = "'-phys clm4_5 -cppdefs -DMODAL_AER'"
@@ -1868,20 +1915,20 @@ if options.debug:
 #    os.system("./xmlchange CLM_CONFIG_OPTS="+clmcn_opts)
 
 if options.machine == "userdefined":
-    os.system("./xmlchange COMPILER=" + options.compiler)
-    os.system("./xmlchange OS=linux")
-    os.system("./xmlchange EXEROOT=" + runroot + "/" + casename + "/bld")
+    runcmd("./xmlchange COMPILER=" + options.compiler)
+    runcmd("./xmlchange OS=linux")
+    runcmd("./xmlchange EXEROOT=" + runroot + "/" + casename + "/bld")
 
 # -------------- env_run.xml modifications -------------------------
-os.system("./xmlchange RUNDIR=" + rundir)
-os.system("./xmlchange DOUT_S=TRUE")
-os.system("./xmlchange DOUT_S_ROOT=" + runroot + "/archive/" + casename)
-os.system("./xmlchange DIN_LOC_ROOT=" + options.ccsm_input)
-os.system("./xmlchange DIN_LOC_ROOT_CLMFORC=" + options.ccsm_input + "/atm/datm7/")
+runcmd("./xmlchange RUNDIR=" + rundir)
+runcmd("./xmlchange DOUT_S=TRUE")
+runcmd("./xmlchange DOUT_S_ROOT=" + runroot + "/archive/" + casename)
+runcmd("./xmlchange DIN_LOC_ROOT=" + options.ccsm_input)
+runcmd("./xmlchange DIN_LOC_ROOT_CLMFORC=" + options.ccsm_input + "/atm/datm7/")
 
 # define mask and resoultion
 if isglobal == False:
-    os.system(
+    runcmd(
         "./xmlchange "
         + mylsm
         + "_USRDAT_NAME="
@@ -1893,74 +1940,74 @@ if isglobal == False:
     )
 if options.ad_spinup:
     if options.mymodel == "ELM":
-        os.system("./xmlchange --append " + mylsm + "_BLDNML_OPTS='-bgc_spinup on'")
+        runcmd("./xmlchange --append " + mylsm + "_BLDNML_OPTS='-bgc_spinup on'")
     elif options.mymodel == "CLM5":
-        os.system("./xmlchange CLM_ACCELERATED_SPINUP=on")
-        os.system("./xmlchange CLM_FORCE_COLDSTART=on")
+        runcmd("./xmlchange CLM_ACCELERATED_SPINUP=on")
+        runcmd("./xmlchange CLM_FORCE_COLDSTART=on")
 if options.topounits_atmdownscale and options.mymodel == "ELM":
-    os.system("./xmlchange --append " + mylsm + "_BLDNML_OPTS='-topounit'")
+    runcmd("./xmlchange --append " + mylsm + "_BLDNML_OPTS='-topounit'")
 
 # if (options.use_hydrstress):
-#    os.system("./xmlchange --append "+mylsm+"_BLDNML_OPTS='-hydrstress'")
+#    runcmd("./xmlchange --append "+mylsm+"_BLDNML_OPTS='-hydrstress'")
 
 if int(options.run_startyear) > -1:
-    os.system("./xmlchange RUN_STARTDATE=" + str(options.run_startyear) + "-01-01")
+    runcmd("./xmlchange RUN_STARTDATE=" + str(options.run_startyear) + "-01-01")
     print("Setting run start date to " + str(options.run_startyear) + "-01-01")
 if options.domainfile == "":
-    os.system('./xmlchange ATM_DOMAIN_PATH="\${RUNDIR}"')
-    os.system('./xmlchange LND_DOMAIN_PATH="\${RUNDIR}"')
-    os.system("./xmlchange ATM_DOMAIN_FILE=domain.nc")
-    os.system("./xmlchange LND_DOMAIN_FILE=domain.nc")
+    runcmd('./xmlchange ATM_DOMAIN_PATH="\${RUNDIR}"')
+    runcmd('./xmlchange LND_DOMAIN_PATH="\${RUNDIR}"')
+    runcmd("./xmlchange ATM_DOMAIN_FILE=domain.nc")
+    runcmd("./xmlchange LND_DOMAIN_FILE=domain.nc")
 else:
     domainpath = "/".join(options.domainfile.split("/")[:-1])
     domainfile = options.domainfile.split("/")[-1]
-    os.system("./xmlchange ATM_DOMAIN_PATH=" + domainpath)
-    os.system("./xmlchange LND_DOMAIN_PATH=" + domainpath)
-    os.system("./xmlchange ATM_DOMAIN_FILE=" + domainfile)
-    os.system("./xmlchange LND_DOMAIN_FILE=" + domainfile)
+    runcmd("./xmlchange ATM_DOMAIN_PATH=" + domainpath)
+    runcmd("./xmlchange LND_DOMAIN_PATH=" + domainpath)
+    runcmd("./xmlchange ATM_DOMAIN_FILE=" + domainfile)
+    runcmd("./xmlchange LND_DOMAIN_FILE=" + domainfile)
 
 # turn off archiving
-os.system("./xmlchange DOUT_S=FALSE")
+runcmd("./xmlchange DOUT_S=FALSE")
 # datm options
 if not cpl_bypass:
     if use_reanalysis:
         if options.cruncep:
-            os.system("./xmlchange DATM_MODE=CLMCRUNCEP")
+            runcmd("./xmlchange DATM_MODE=CLMCRUNCEP")
         if options.gswp3:
-            os.system("./xmlchange DATM_MODE=CLMGSWP3v1")
+            runcmd("./xmlchange DATM_MODE=CLMGSWP3v1")
     else:
         if isglobal == False:
-            os.system("./xmlchange DATM_MODE=CLM1PT")
-    os.system("./xmlchange DATM_CLMNCEP_YR_START=" + str(startyear))
-    os.system("./xmlchange DATM_CLMNCEP_YR_END=" + str(endyear))
+            runcmd("./xmlchange DATM_MODE=CLM1PT")
+    runcmd("./xmlchange DATM_CLMNCEP_YR_START=" + str(startyear))
+    runcmd("./xmlchange DATM_CLMNCEP_YR_END=" + str(endyear))
     if options.align_year == -999:
-        os.system("./xmlchange DATM_CLMNCEP_YR_ALIGN=1")
+        runcmd("./xmlchange DATM_CLMNCEP_YR_ALIGN=1")
     else:
-        os.system("./xmlchange DATM_CLMNCEP_YR_ALIGN=" + str(options.align_year))
+        runcmd("./xmlchange DATM_CLMNCEP_YR_ALIGN=" + str(options.align_year))
 
 # Change simulation timestep
 if options.tstep != 0.5:
-    os.system("./xmlchange ATM_NCPL=" + str(int(24 / float(options.tstep))))
+    runcmd("./xmlchange ATM_NCPL=" + str(int(24 / float(options.tstep))))
 
 # Branch run options
 if options.branch or options.exit_spinup:
-    os.system("./xmlchange RUN_TYPE=branch")
-    os.system("./xmlchange RUN_REFDATE=" + finidat_yst[1:] + "-01-01")
-    os.system("./xmlchange RUN_REFCASE=" + options.finidat_case)
+    runcmd("./xmlchange RUN_TYPE=branch")
+    runcmd("./xmlchange RUN_REFDATE=" + finidat_yst[1:] + "-01-01")
+    runcmd("./xmlchange RUN_REFCASE=" + options.finidat_case)
 else:
     if (
         ("CN" in compset or "BGC" in compset)
         and options.ad_spinup == False
         and options.coldstart == False
     ):
-        os.system("./xmlchange RUN_REFDATE=" + finidat_yst[1:] + "-01-01")
+        runcmd("./xmlchange RUN_REFDATE=" + finidat_yst[1:] + "-01-01")
 
     # adds capability to run with transient CO2
 if "20TR" in compset or options.istrans:
-    os.system("./xmlchange CCSM_BGC=CO2A")
-    os.system("./xmlchange " + mylsm + "_CO2_TYPE=diagnostic")
+    runcmd("./xmlchange CCSM_BGC=CO2A")
+    runcmd("./xmlchange " + mylsm + "_CO2_TYPE=diagnostic")
     if options.run_startyear == -1:
-        os.system("./xmlchange RUN_STARTDATE=1850-01-01")
+        runcmd("./xmlchange RUN_STARTDATE=1850-01-01")
 
 # No pnetcdf for small cases on compy
 if (
@@ -1968,28 +2015,28 @@ if (
     or "compy" in options.machine
     or "ees" in options.machine
 ) and int(options.np) < 80:
-    os.system("./xmlchange PIO_TYPENAME=netcdf")
+    runcmd("./xmlchange PIO_TYPENAME=netcdf")
 
 comps = ["ATM", "LND", "ICE", "OCN", "CPL", "GLC", "ROF", "WAV", "ESP", "IAC"]
 for c in comps:
     print("Setting NTASKS_" + c + " to " + str(options.np))
-    os.system("./xmlchange NTASKS_" + c + "=" + str(options.np))
-    os.system("./xmlchange NTHRDS_" + c + "=1")
+    runcmd("./xmlchange NTASKS_" + c + "=" + str(options.np))
+    runcmd("./xmlchange NTHRDS_" + c + "=1")
 
 if int(options.np) > 1:
-    os.system("./xmlchange MAX_TASKS_PER_NODE=" + str(ppn))
-    os.system("./xmlchange MAX_MPITASKS_PER_NODE=" + str(ppn))
+    runcmd("./xmlchange MAX_TASKS_PER_NODE=" + str(ppn))
+    runcmd("./xmlchange MAX_MPITASKS_PER_NODE=" + str(ppn))
 
 if int(options.ninst) > 1:
-    os.system("./xmlchange NINST_LND=" + options.ninst)
-    os.system("./xmlchange NTASKS_LND=" + options.ninst)
+    runcmd("./xmlchange NINST_LND=" + options.ninst)
+    runcmd("./xmlchange NTASKS_LND=" + options.ninst)
 
-os.system("./xmlchange STOP_OPTION=" + options.run_units)
-os.system("./xmlchange STOP_N=" + str(options.run_n))
+runcmd("./xmlchange STOP_OPTION=" + options.run_units)
+runcmd("./xmlchange STOP_N=" + str(options.run_n))
 
 if options.rest_n > 0:
     print("Setting REST_N to " + str(options.rest_n))
-    os.system("./xmlchange REST_N=" + str(options.rest_n))
+    runcmd("./xmlchange REST_N=" + str(options.rest_n))
 
 # user-defined PFT numbers (default is 17)
 if options.maxpatch_pft != 17:
@@ -1998,22 +2045,22 @@ if options.maxpatch_pft != 17:
         "./xmlquery --value CLM_BLDNML_OPTS", cwd=casedir, shell=True
     )
     xval = "-maxpft " + str(options.maxpatch_pft) + " " + xval
-    os.system("./xmlchange --id CLM_BLDNML_OPTS --val '" + xval + "'")
+    runcmd("./xmlchange --id CLM_BLDNML_OPTS --val '" + xval + "'")
 
 # for spinup and transient runs, PIO_TYPENAME is pnetcdf, which now not works well
 if "mac" in options.machine or "cades" in options.machine:
-    os.system("./xmlchange --id PIO_TYPENAME --val netcdf ")
+    runcmd("./xmlchange --id PIO_TYPENAME --val netcdf ")
 
 
 # --------------------------CESM setup ----------------------------------------
 
 if options.clean_config:
-    result = os.system("./case.setup -clean")
+    result = runcmd("./case.setup -clean")
     if result > 0:
         print("Error:  PointCLM.py failed to setup case.  Aborting")
         sys.exit(1)
-    os.system("rm -f Macro")
-    os.system("rm -f user-nl-*")
+    runcmd("rm -f Macro")
+    runcmd("rm -f user-nl-*")
 
 # Add options for FFLAGS to Macros file here
 
@@ -2937,10 +2984,10 @@ for i in range(1, int(options.ninst) + 1):
 
 # configure case
 # if (isglobal):
-os.system("./xmlchange --id BATCH_SYSTEM --val none")
+runcmd("./xmlchange --id BATCH_SYSTEM --val none")
 if options.no_config == False:
     print("Running case.setup")
-    result = os.system("./case.setup > case_setup.log")
+    result = runcmd("./case.setup > case_setup.log")
     if result > 0:
         print("Error: runcase.py failed to setup case")
         sys.exit(1)
@@ -2951,18 +2998,18 @@ else:
 # Land CPPDEF modifications
 if options.humhol:
     print("Turning on HUM_HOL modification\n")
-    os.system(
+    runcmd(
         "./xmlchange --id " + mylsm + "_CONFIG_OPTS --append --val '-cppdefs -DHUM_HOL'"
     )
 
 if options.marsh:
     print("Turning on MARSH modification\n")
-    os.system(
+    runcmd(
         "./xmlchange --id " + mylsm + "_CONFIG_OPTS --append --val '-cppdefs -DMARSH'"
     )
 if options.harvmod:
     print("Turning on HARVMOD modification\n")
-    os.system(
+    runcmd(
         "./xmlchange --id " + mylsm + "_CONFIG_OPTS --append --val '-cppdefs -DHARVMOD'"
     )
 
@@ -2982,7 +3029,7 @@ if cpl_bypass:
                 outfile.write(s.replace("mcmodel=medium", "mcmodel=small"))
         infile.close()
         outfile.close()
-        os.system("mv Macros.make.tmp Macros.make")
+        runcmd("mv Macros.make.tmp Macros.make")
 
     if options.mymodel == "ELM" and os.path.isfile("./Macros.cmake"):
         infile = open("./Macros.cmake")
@@ -2998,11 +3045,11 @@ if cpl_bypass:
                 outfile.write(s.replace("mcmodel=medium", "mcmodel=small"))
         infile.close()
         outfile.close()
-        os.system("mv Macros.cmake.tmp Macros.cmake")
+        runcmd("mv Macros.cmake.tmp Macros.cmake")
 
     if os.path.isfile("./cmake_macros/universal.cmake"):
         # infile = open("./cmake_macros/universal.cmake")
-        os.system(
+        runcmd(
             "echo 'string(APPEND CPPDEFS \" -DCPL_BYPASS\")' >> cmake_macros/universal.cmake"
         )
 
@@ -3013,33 +3060,33 @@ if options.srcmods_loc != "":
         print("Invalid srcmods directory.  Exiting")
         sys.exit(1)
     options.srcmods_loc = os.path.abspath(options.srcmods_loc)
-    os.system("cp -r " + options.srcmods_loc + "/* ./" + casename + "/SourceMods")
+    runcmd("cp -r " + options.srcmods_loc + "/* ./" + casename + "/SourceMods")
 if options.caseroot == "./":
     os.chdir(csmdir + "/cime/scripts/" + casename)
 else:
     os.chdir(casedir)
 
-os.system("mkdir Srcfiles")
+runcmd("mkdir Srcfiles")
 # clean build if requested
 if options.clean_build:
-    os.system("./case.build --clean")
+    runcmd("./case.build --clean")
 # compile cesm
 if options.no_build == False:
     print("Running case.build")
     if "edison" in options.machine or "titan" in options.machine:
         # send output to screen since build times are very slow
-        result = os.system("./case.build")
+        result = runcmd("./case.build")
     else:
-        result = os.system("./case.build > case_build.log")
+        result = runcmd("./case.build > case_build.log")
     if result > 0:
         print("Error:  Pointclm.py failed to build case.  Aborting")
         print("See " + os.getcwd() + "/case_build.log for details")
         sys.exit(1)
 else:
-    os.system("./xmlchange BUILD_COMPLETE=TRUE")
-    os.system("mkdir -p " + rundir)
+    runcmd("./xmlchange BUILD_COMPLETE=TRUE")
+    runcmd("mkdir -p " + rundir)
     if "CLM5" in options.mymodel:
-        os.system("./preview_namelists")
+        runcmd("./preview_namelists")
 if options.caseroot == "":
     os.chdir(csmdir + "/cime/scripts/" + casename)
 else:
@@ -3202,21 +3249,17 @@ if not cpl_bypass and not isglobal:
         myinput.close()
         myoutput.close()
     # run preview_namelists to copy user_datm.streams.... to CaseDocs
-    os.system(os.path.abspath(options.csmdir) + "/cime/CIME/Tools/preview_namelists")
+    runcmd(os.path.abspath(options.csmdir) + "/cime/CIME/Tools/preview_namelists")
 
 
 # copy site data to run directory
-os.system("cp " + PTCLMdir + "/temp/*param*.nc " + runroot + "/" + casename + "/run/")
+runcmd("cp " + PTCLMdir + "/temp/*param*.nc " + runroot + "/" + casename + "/run/")
 if options.domainfile == "":
-    os.system(
-        "cp " + PTCLMdir + "/temp/domain.nc " + runroot + "/" + casename + "/run/"
-    )
+    runcmd("cp " + PTCLMdir + "/temp/domain.nc " + runroot + "/" + casename + "/run/")
 if options.surffile == "":
-    os.system(
-        "cp " + PTCLMdir + "/temp/surfdata.nc " + runroot + "/" + casename + "/run/"
-    )
+    runcmd("cp " + PTCLMdir + "/temp/surfdata.nc " + runroot + "/" + casename + "/run/")
 if "20TR" in compset and options.nopftdyn == False and options.pftdynfile == "":
-    os.system(
+    runcmd(
         "cp "
         + PTCLMdir
         + "/temp/surfdata.pftdyn.nc "
@@ -3233,10 +3276,10 @@ if (
     and options.ensemble_file == ""
 ):
     # Ming, 01/22/16, use a csh script instead of the perl script to submit the job.
-    #    os.system("qsub "+casename+".run")
+    #    runcmd("qsub "+casename+".run")
     if "mesabi" in options.machine:
-        os.system("cp /home/reichpb/shared/Scripts/Ming/shell/qsub1.csh ./")
-        os.system("cp /home/reichpb/shared/Scripts/Ming/shell/st_archive.sh ./")
+        runcmd("cp /home/reichpb/shared/Scripts/Ming/shell/qsub1.csh ./")
+        runcmd("cp /home/reichpb/shared/Scripts/Ming/shell/st_archive.sh ./")
         f = open("qsub.csh", "r+")
         filedata = f.read()
         newdata0 = filedata.replace("newdir", casedir)
@@ -3245,9 +3288,9 @@ if (
         f.write(newdata)
         f.truncate()
         f.close()
-        os.system("qsub qsub.csh")
+        runcmd("qsub qsub.csh")
     else:
-        os.system("./case.submit")
+        runcmd("./case.submit")
 
 
 # ------------------------- Code to generate and run parameter ensembles --------------------------------------
@@ -3330,7 +3373,7 @@ if (options.ensemble_file != "" or int(options.mc_ensemble) != -1) and (
     ):
         mysubmit_type = "sbatch"
     if options.ensemble_file != "":
-        os.system("mkdir -p " + PTCLMdir + "/scripts/" + myscriptsdir)
+        runcmd("mkdir -p " + PTCLMdir + "/scripts/" + myscriptsdir)
         output_run = open(
             PTCLMdir
             + "/scripts/"
@@ -3563,7 +3606,7 @@ if (options.ensemble_file != "" or int(options.mc_ensemble) != -1) and (
         output_run.close()
 
         if options.no_submit == False:
-            os.system(
+            runcmd(
                 mysubmit_type
                 + " "
                 + PTCLMdir

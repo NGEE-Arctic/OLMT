@@ -8,6 +8,8 @@ import csv
 from optparse import OptionParser
 import numpy
 import re
+import json
+import inspect
 
 
 ### Run options
@@ -723,6 +725,13 @@ parser.add_option(
     action="store_true",
 )
 
+parser.add_option(
+    "--options_log_json",
+    dest="options_log_json",
+    default="config.json",
+    help="full path to a json file recording all OLMT options and syscalls",
+)
+
 # datasets for user-defined PFTs (by F-M Yuan, NGEE-Arctic)
 parser.add_option(
     "--maxpatch_pft",
@@ -750,13 +759,42 @@ parser.add_option(
 (options, args) = parser.parse_args()
 
 
-def runcmd(cmd, echo=True):
+def _write_cmd(cmd, tag, lineno):
+    if not os.path.exists(options.options_log_json):
+        log_i = 0
+        log_slug = {"i": log_i, "tag": tag, "cmd": cmd}
+        with open(options.options_log_json, "w", encoding="utf-8") as f:
+            json.dump([log_slug], f, indent=4)
+    else:
+        with open(options.options_log_json, "r") as f:
+            data = json.load(f)
+        log_i = data[len(data) - 1]["i"] + 1
+        log_slug = {"i": log_i, "tag": tag, "lineno": lineno, "cmd": cmd}
+        data.append(log_slug)
+        with open(options.options_log_json, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+
+
+def _parse_cmd(cmd_i):
+    test = cmd_i.split(" --")
+    result = {}
+    for i_parse in range(len(test) - 2):
+        result["none"] = test[i_parse].split(" ")[0]
+        if len(test[i_parse].split(" ")) > 1:
+            result[test[i_parse].split(" ")[0]] = test[i_parse].split(" ")[1]
+    return result
+
+
+def runcmd(cmd, echo=True, tag=os.path.basename(__file__)):
+    lineno = inspect.stack()[1].lineno
+    cmd_log = cmd
+    if ".py" in cmd:
+        cmd_log = _parse_cmd(cmd)
+    _write_cmd(cmd_log, tag, lineno)
+
     if echo:
         print(cmd)
-    if not options.dryrun:
-        return os.system(cmd)
-    else:
-        return 0
+    return os.system(cmd)
 
 
 # ----------------------------------------------------------
@@ -914,7 +952,7 @@ else:
 
 if options.caseroot == options.runroot:
     caseroot = os.path.abspath(options.caseroot) + "/cime_case_dirs"
-    os.system("mkdir -p " + caseroot)
+    runcmd("mkdir -p " + caseroot)
 elif options.caseroot == "" or not os.path.exists(options.caseroot):
     caseroot = os.path.abspath(csmdir + "/cime/scripts")
 else:
@@ -1065,6 +1103,8 @@ for row in AFdatareader:
             + os.path.abspath(ccsm_input)
             + " --rmold --no_submit --sitegroup "
             + options.sitegroup
+            + " --options_log_json "
+            + options.options_log_json
         )
         if options.machine != "":
             basecmd = basecmd + " --machine " + options.machine
@@ -1708,7 +1748,7 @@ for row in AFdatareader:
                 if nutrients == "CNP" and not options.ad_Pinit:
                     fin_case_firstsite = fin_case_firstsite.replace("1850CN", "1850CNP")
                 print(cmd_fnsp + "\n")
-                result = os.system(cmd_fnsp)
+                result = runcmd(cmd_fnsp)
             else:
                 ptcmd = (
                     "python case_copy.py --runroot "
@@ -1731,7 +1771,7 @@ for row in AFdatareader:
                         + str(endyear - startyear + 1)
                     )
                 print(ptcmd)
-                result = os.system(ptcmd)
+                result = runcmd(ptcmd)
                 if result > 0:
                     print("Site_fullrun:  Error in runcase.py final spinup")
                     sys.exit(1)
@@ -1785,7 +1825,7 @@ for row in AFdatareader:
             ) and not options.cpl_bypass:
                 print("\n\nSetting up transient case phase 2\n")
                 print(cmd_trns2)
-                result = os.system(cmd_trns2)
+                result = runcmd(cmd_trns2)
                 if result > 0:
                     print("Site_fullrun:  Error in runcase.py for transient 2")
                     sys.exit(1)
@@ -1793,14 +1833,14 @@ for row in AFdatareader:
         # experiment simulations
         if (options.eco2_file != "") and not options.cpl_bypass:
             print("\n\nSetting up experiment transient case 2\n")
-            result = os.system(cmd_trns2)
+            result = runcmd(cmd_trns2)
             print(cmd_trns2)
             if result > 0:
                 print("Site_fullrun:  Error in runcase.py for transient 2")
                 sys.exit(1)
             print("\n\nSetting up experiment transient case 3\n")
             print(cmd_trns3)
-            result = os.system(cmd_trns3)
+            result = runcmd(cmd_trns3)
             if result > 0:
                 print("Site_fullrun:  Error in runcase.py for transient 3")
                 sys.exit(1)
@@ -2304,7 +2344,7 @@ for row in AFdatareader:
                     + " --vars TOTLITC,CWDC,TOTVEGC,TOTSOMC --ystart 1850 --h4\n"
                 )
                 output2.close()
-                os.system(
+                runcmd(
                     "chmod u+x "
                     + "./scripts/"
                     + myscriptsdir
@@ -2396,7 +2436,7 @@ if not options.no_submit and options.ensemble_file == "":
             output.close()
             if not options.no_submit:
                 if mysubmit_type == "":
-                    os.system(
+                    runcmd(
                         "chmod u+x ./scripts/"
                         + myscriptsdir
                         + "/"
@@ -2405,7 +2445,7 @@ if not options.no_submit and options.ensemble_file == "":
                         + str(g)
                         + ".pbs"
                     )
-                    os.system(
+                    runcmd(
                         "./scripts/"
                         + myscriptsdir
                         + "/"
