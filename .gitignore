@@ -10,6 +10,7 @@ run.*
 *.run.o*
 slurm-*.out
 mcsamples*.txt
+__pycache__
 
 # user defined files
 .DS_Store

@@ -10,7 +10,6 @@ import numpy
 import inspect
 import subprocess
 from optparse import OptionParser
-# from Numeric import *
 
 
 def _write_cmd(cmd, tag, lineno):
@@ -49,6 +48,14 @@ def runcmd(cmd, echo=True, tag=os.path.basename(__file__)):
     if echo:
         print(cmd)
     return os.system(cmd)
+
+
+def chdir(path, echo=True, tag=os.path.basename(__file__)):
+    lineno = inspect.stack()[1].lineno
+    _write_cmd("cd " + path, tag, lineno)
+    if echo:
+        print(path)
+    return os.chdir(path)
 
 
 # runcase.py does the following:
@@ -1286,7 +1293,7 @@ if options.ad_spinup:
     casename = casename + "_ad_spinup"
 if options.exit_spinup:
     casename = casename + "_exit_spinup"
-if options.istrans and not "20TR" in compset:
+if options.istrans and "20TR" not in compset:
     casename = casename + "_trans"
 if options.transtag != "":
     casename = casename + "_" + options.transtag
@@ -1468,7 +1475,7 @@ if options.metdir != "none":
 
 # get site year information
 sitedatadir = os.path.abspath(PTCLMfiledir)
-os.chdir(sitedatadir)
+chdir(sitedatadir)
 if isglobal == False:
     AFdatareader = csv.reader(open(options.sitegroup + "_sitedata.txt", "r"))
     for row in AFdatareader:
@@ -1516,7 +1523,7 @@ else:
 ptstr = ""
 if isglobal == False:
     ptstr = str(numxpts) + "x" + str(numypts) + "pt"
-os.chdir(csmdir + "/cime/scripts")
+chdir(csmdir + "/cime/scripts")
 
 # parameter (pft-phys) modifications if desired
 tmpdir = PTCLMdir + "/temp"
@@ -1894,9 +1901,9 @@ else:
     )
     sys.exit(1)
 
-os.chdir(casedir)
+chdir(casedir)
 
-# env_build
+# -------------- env_build.xml modifications -------------------------
 result = runcmd("./xmlchange SAVE_TIMING=FALSE")
 result = runcmd("./xmlchange EXEROOT=" + exeroot)
 # if ('ED' in compset):
@@ -3054,7 +3061,7 @@ if cpl_bypass:
         )
 
 # copy sourcemods
-os.chdir("..")
+chdir("..")
 if options.srcmods_loc != "":
     if os.path.exists(options.srcmods_loc) == False:
         print("Invalid srcmods directory.  Exiting")
@@ -3062,9 +3069,9 @@ if options.srcmods_loc != "":
     options.srcmods_loc = os.path.abspath(options.srcmods_loc)
     runcmd("cp -r " + options.srcmods_loc + "/* ./" + casename + "/SourceMods")
 if options.caseroot == "./":
-    os.chdir(csmdir + "/cime/scripts/" + casename)
+    chdir(csmdir + "/cime/scripts/" + casename)
 else:
-    os.chdir(casedir)
+    chdir(casedir)
 
 runcmd("mkdir Srcfiles")
 # clean build if requested
@@ -3088,9 +3095,9 @@ else:
     if "CLM5" in options.mymodel:
         runcmd("./preview_namelists")
 if options.caseroot == "":
-    os.chdir(csmdir + "/cime/scripts/" + casename)
+    chdir(csmdir + "/cime/scripts/" + casename)
 else:
-    os.chdir(casedir)
+    chdir(casedir)
 
 # stream file modifications for site runs
 # Datm mods/ transient CO2 patch for transient run (datm buildnml mods)
@@ -3295,7 +3302,7 @@ if (
 
 # ------------------------- Code to generate and run parameter ensembles --------------------------------------
 
-os.chdir(PTCLMdir)
+chdir(PTCLMdir)
 
 if (options.ensemble_file != "" or int(options.mc_ensemble) != -1) and (
     options.constraints == "" or (options.constraints != "" and not "1850" in casename)
