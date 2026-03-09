@@ -778,10 +778,14 @@ def _write_cmd(cmd, tag, lineno):
 def _parse_cmd(cmd_i):
     test = cmd_i.split(" --")
     result = {}
+    result["cmd"] = test[0].split(" ")[0]
     for i_parse in range(len(test) - 2):
-        result["none"] = test[i_parse].split(" ")[0]
         if len(test[i_parse].split(" ")) > 1:
             result[test[i_parse].split(" ")[0]] = test[i_parse].split(" ")[1]
+        elif i_parse > 0:
+            result["none_" + str(i_parse)] = test[i_parse].split(" ")[0]
+        else:
+            continue
     return result
 
 

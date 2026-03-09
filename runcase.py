@@ -31,17 +31,21 @@ def _write_cmd(cmd, tag, lineno):
 def _parse_cmd(cmd_i):
     test = cmd_i.split(" --")
     result = {}
+    result["cmd"] = test[0].split(" ")[0]
     for i_parse in range(len(test) - 2):
-        result["none"] = test[i_parse].split(" ")[0]
         if len(test[i_parse].split(" ")) > 1:
             result[test[i_parse].split(" ")[0]] = test[i_parse].split(" ")[1]
+        elif i_parse > 0:
+            result["none_" + str(i_parse)] = test[i_parse].split(" ")[0]
+        else:
+            continue
     return result
 
 
 def runcmd(cmd, echo=True, tag=os.path.basename(__file__)):
     lineno = inspect.stack()[1].lineno
     cmd_log = cmd
-    if ".py" in cmd:
+    if any([x in cmd.split(" ")[0] for x in [".py", "newcase"]]):
         cmd_log = _parse_cmd(cmd)
     _write_cmd(cmd_log, tag, lineno)
 
