@@ -1,0 +1,11 @@
+pip
+setuptools
+wheel
+numpy
+Cython
+netcdf4
+scipy
+mpi4py
+cftime
+configparser
+h5py
