@@ -493,6 +493,13 @@ parser.add_option(
     help="To turn on CN with CLM4me",
 )
 parser.add_option(
+    "--no_methane",
+    dest="no_methane",
+    default=False,
+    action="store_true",
+    help="To turn off CH4 for BGC runs",
+)
+parser.add_option(
     "--fates", dest="fates", default=False, action="store_true", help="Use fates model"
 )
 parser.add_option(
@@ -1173,7 +1180,9 @@ for row in AFdatareader:
         if options.cn_only:
             basecmd = basecmd + " --cn_only"
         if options.CH4:
-            basecmd = basecmd + " --CH4"
+            basecmd = basecmd + " --CH4"        
+        if options.no_methane:
+            basecmd = basecmd + " --no_methane"
         if options.cruncep:
             basecmd = basecmd + " --cruncep"
         if options.cruncepv8:

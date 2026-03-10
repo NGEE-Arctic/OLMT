@@ -625,6 +625,13 @@ parser.add_option(
     action="store_true",
 )
 parser.add_option(
+    "--no_methane",
+    dest="no_methane",
+    default=False,
+    help="To turn off CH4 in BGC runs",
+    action="store_true",
+)
+parser.add_option(
     "--1850_ndep",
     dest="ndep1850",
     default=False,
@@ -1957,6 +1964,17 @@ if options.ad_spinup:
         runcmd("./xmlchange CLM_FORCE_COLDSTART=on")
 if options.topounits_atmdownscale and options.mymodel == "ELM":
     runcmd("./xmlchange --append " + mylsm + "_BLDNML_OPTS='-topounit'")
+if options.no_methane:
+    print("Turning OFF methane cycle")
+    xval = subprocess.check_output(
+        ["./xmlquery", "--value", f"{mylsm}_BLDNML_OPTS"],
+        text=True).strip()
+    xval = xval.strip('"').replace("-methane","")
+    subprocess.run(
+        ["./xmlchange", "--id", f"{mylsm}_BLDNML_OPTS", "--val", xval], 
+        check=True)
+
+
 
 # if (options.use_hydrstress):
 #    runcmd("./xmlchange --append "+mylsm+"_BLDNML_OPTS='-hydrstress'")
@@ -2502,7 +2520,7 @@ for i in range(1, int(options.ninst) + 1):
                     " hist_fincl3 = 'TBOT','QBOT','RAIN','SNOW','QBOT','PBOT','WIND','FPSN','QVEGT',"
                     + "'QVEGE','QSOIL','QRUNOFF','QDRAI','QOVER','H2OSFC','ZWT','SNOWDP','H2OSOI','TSOI','TWS',"
                     + "'FSDS','FLDS','ALT','ALTMAX_EVER','SNOW_DEPTH','SOILICE','SOILLIQ','ZWT','ZWT_PERCH',"
-                    + "'QDRAI_PERCH','QH2OSFC','FH2OSFC','FINUNDATED','SUBSIDENCE','MICROREL','DEPRESS_DEPTH','EXCESS_ICE','EXCLUDED_VOL'\n"
+                    + "'QDRAI_PERCH','QH2OSFC','FH2OSFC','SUBSIDENCE','MICROREL','DEPRESS_DEPTH','EXCESS_ICE','EXCLUDED_VOL'\n"
                 )
             else:
                 output.write(
@@ -2768,6 +2786,8 @@ for i in range(1, int(options.ninst) + 1):
         # APW: given RK suggests nitrif/denitrif is not correct w/o ch4 shuld this be for all nutrient enabled runs?
         elif options.fates_nutrient != "":
             output.write(" use_lch4 = .true.\n")
+        if options.no_methane:
+            output.write(" use_lch4 = .false.\n")        
         if options.nofire:
             output.write(" use_nofire = .true.\n")
         if options.C13:
