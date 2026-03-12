@@ -735,7 +735,7 @@ parser.add_option(
 parser.add_option(
     "--options_log_json",
     dest="options_log_json",
-    default="config.json",
+    default="None",
     help="full path to a json file recording all OLMT options and syscalls",
 )
 
@@ -767,6 +767,9 @@ parser.add_option(
 
 
 def _write_cmd(cmd, tag, lineno):
+    if options.options_log_json == 'None':
+        return
+
     if not os.path.exists(options.options_log_json):
         log_i = 0
         log_slug = {"i": log_i, "tag": tag, "cmd": cmd}
@@ -799,8 +802,8 @@ def _parse_cmd(cmd_i):
 def runcmd(cmd, echo=True, tag=os.path.basename(__file__)):
     lineno = inspect.stack()[1].lineno
     cmd_log = cmd
-    if ".py" in cmd:
-        cmd_log = _parse_cmd(cmd)
+    if ".py" in cmd_log:
+        cmd_log = _parse_cmd(cmd_log)
     _write_cmd(cmd_log, tag, lineno)
 
     if echo:
