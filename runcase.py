@@ -2068,13 +2068,20 @@ if options.rest_n > 0:
     runcmd("./xmlchange REST_N=" + str(options.rest_n))
 
 # user-defined PFT numbers (default is 17)
-if options.maxpatch_pft != 17:
+if int(options.maxpatch_pft) != 17:
     print("resetting maxpatch_pft to " + str(options.maxpatch_pft))
     xval = subprocess.check_output(
-        "./xmlquery --value CLM_BLDNML_OPTS", cwd=casedir, shell=True
-    )
-    xval = "-maxpft " + str(options.maxpatch_pft) + " " + xval
-    runcmd("./xmlchange --id CLM_BLDNML_OPTS --val '" + xval + "'")
+        ["./xmlquery","--value", f"{mylsm}_BLDNML_OPTS"], 
+        cwd=casedir,
+        text=True
+    ).strip()
+    xval = f"-maxpft {options.maxpatch_pft} {xval}"
+    subprocess.run(
+        ["./xmlchange", "--id", f"{mylsm}_BLDNML_OPTS", "--val", xval],
+        cwd=casedir,
+        capture_output=True,
+        text=True, 
+        check=True)
 
 # for spinup and transient runs, PIO_TYPENAME is pnetcdf, which now not works well
 if "mac" in options.machine or "cades" in options.machine:
