@@ -802,7 +802,7 @@ def _parse_cmd(cmd_i):
 def runcmd(cmd, echo=True, tag=os.path.basename(__file__)):
     lineno = inspect.stack()[1].lineno
     cmd_log = cmd
-    if ".py" in cmd:
+    if ".py" in cmd_log:
         cmd_log = _parse_cmd(cmd_log)
     _write_cmd(cmd_log, tag, lineno)
 
