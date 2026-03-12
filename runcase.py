@@ -13,6 +13,9 @@ from optparse import OptionParser
 
 
 def _write_cmd(cmd, tag, lineno):
+    if options.options_log_json == 'None':
+        return
+
     if not os.path.exists(options.options_log_json):
         log_i = 0
         log_slug = {"i": log_i, "tag": tag, "cmd": cmd}
@@ -976,7 +979,7 @@ parser.add_option(
 parser.add_option(
     "--options_log_json",
     dest="options_log_json",
-    default="config.json",
+    default="None",
     help="full path to a json file recording all OLMT options and syscalls",
 )
 
