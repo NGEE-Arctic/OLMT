@@ -2,8 +2,6 @@
 scripts/
 temp/
 plots/
-UQ_output/
-srcmods*
 run_logs_archive/
 
 # files created by OLMT executions
@@ -12,5 +10,7 @@ run.*
 *.run.o*
 slurm-*.out
 mcsamples*.txt
+__pycache__
 
 # user defined files
+.DS_Store
