@@ -91,6 +91,8 @@ parser.add_option("--marsh", dest="marsh", default=False, \
                   help = 'Use marsh hydrology/elevation', action="store_true")
 parser.add_option("--tide_components_file", dest="tide_components_file", default='', \
                     help = 'NOAA tide components file')
+parser.add_option("--tide_forcing_file", dest="tide_forcing_file", default='', \
+                    help = 'Tide height and salinity forcing time series file')
 parser.add_option("--mask", dest="mymask", default='', \
                   help = 'Mask file to use (regional only)')
 
@@ -133,8 +135,12 @@ parser.add_option("--cruncepv8", dest="cruncepv8", default=False, \
                   help = "use cru-ncep data", action="store_true")
 parser.add_option("--crujra", dest="crujra", default=False, \
                   help = "use crujra data", action="store_true")
+parser.add_option("--trendy25", dest="trendy25", default=False, \
+                  help = "use trendy2025 data", action="store_true")
 parser.add_option("--cplhist", dest="cplhist", default=False, \
                   help= "use CPLHIST forcing", action="store_true")
+parser.add_option("--era5", dest="era5", default=False, \
+                  help= "use ERA5 forcing", action="store_true")
 parser.add_option("--gswp3", dest="gswp3", default=False, \
                   help= "use GSWP3 forcing", action="store_true")
 parser.add_option("--gswp3_w5e5", dest="gswp3_w5e5", default=False, action="store_true", \
@@ -162,7 +168,7 @@ parser.add_option("--startdate_add_co2", dest="sd_addco2", default="99991231", \
 
 
 parser.add_option("--daymet4", dest="daymet4", default=False, \
-                  action="store_true", help = "Daymet v4 downscaled GSWP3-v2 forcing with user-provided domain and surface data)")
+                  action="store_true", help = "Daymet v4 downscaled GSWP3-v2 or ERA5 forcing with user-provided domain and surface data)")
 parser.add_option("--ad_spinup", action="store_true", \
                   dest="ad_spinup", default=False, \
                   help = 'Run accelerated decomposition spinup')
@@ -312,7 +318,8 @@ parser.add_option("--use_hydrstress", dest="use_hydrstress", default=False, \
                   help = 'Turn on hydraulic stress', action='store_true')
 parser.add_option("--spruce_treatments", dest="spruce_treatments", default=False, \
                   help = 'Run SPRUCE treatment simulations (ensemble mode)', action='store_true')
-
+parser.add_option("--alquimia", dest="alquimia",default="",
+                help="Compile model with alquimia BGC interface and use specified input file")
 #Changed by Ming for mesabi
 parser.add_option("--archiveroot", dest="archiveroot", default='', \
                   help = "archive root directory only for mesabi")
@@ -438,7 +445,7 @@ else:
 # check for a specific forcing data, GSWP3-Daymet4, to offline ELM
 # This is high-resolution dataset, usually together with user-defined domain and surface data
 if (options.daymet4):
-    if (not options.gswp3): options.gswp3 = True
+    if (not options.gswp3 and not options.era5): options.gswp3 = True
     if (options.metdir=='none'):
         print('Error:  must provide user-defined " --metdir " for " --daymet4"')
         sys.exit(1)
@@ -571,8 +578,8 @@ if (options.mycaseid != ""):
 if (options.metdir!='none'):# obviously user-provided met forcing is not reanalysis type
     use_reanalysis = False
 #CRU-NCEP 2 transient phases
-elif ('CRU' in compset or options.cruncep or options.gswp3 or options.gswp3_w5e5 or \
-            options.crujra or options.cruncepv8 or options.princeton or options.cplhist):
+elif ('CRU' in compset or options.cruncep or options.era5 or options.gswp3 or options.gswp3_w5e5 or \
+            options.crujra or options.trendy25 or options.cruncepv8 or options.princeton or options.cplhist):
     use_reanalysis = True
 else:
     use_reanalysis = False
@@ -734,7 +741,7 @@ if (isglobal == False):
             alignyear = int(row[8])
             if (options.diags):
                 timezone = int(row[9])
-            if (options.humhol or options.marsh):
+            if (options.humhol):
                 numxpts=2
             else:
                 numxpts=1
@@ -779,10 +786,11 @@ else:
     print('nccopy -3 '+options.ccsm_input+'/lnd/clm2/paramdata/'+parm_file+' '+tmpdir+'/clm_params.nc')
     os.system('nccopy -3 '+options.ccsm_input+'/lnd/clm2/paramdata/'+parm_file+' ' \
               +tmpdir+'/clm_params.nc')
-    myncap = 'ncap'
-    if ('cades' in options.machine or 'chrysalis' in options.machine or 'compy' in options.machine or 'ubuntu' in options.machine \
-          or 'mymac' in options.machine or 'anvil' in options.machine):
-      myncap='ncap2'
+
+myncap = 'ncap'
+if ( 'chrysalis' in options.machine or 'compy' in options.machine or 'ubuntu' in options.machine \
+        or 'mymac' in options.machine or 'anvil' in options.machine or 'cades-baseline' in options.machine):
+    myncap='ncap2'
 
     flnr = nffun.getvar(tmpdir+'/clm_params.nc','flnr')
     if (options.humhol or options.marsh):
@@ -790,7 +798,7 @@ else:
     #   print('humhol_ht = 0.15m')
     #   print('humhol_dist = 1.0m')
       print('setting rsub_top_globalmax = 1.2e-5')
-      print('Making br_mr a PFT-specific parameter')
+    #   print('Making br_mr a PFT-specific parameter')
       os.system(myncap+' -O -s "humhol_ht = br_mr*0+0.15" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
       if options.marsh:
         os.system(myncap+' -O -s "hum_frac = br_mr*0+0.50" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
@@ -805,15 +813,12 @@ else:
       else:
         print('qflx_h2osfc_surfrate = 1.0e-7')
         os.system(myncap+' -O -s "qflx_h2osfc_surfrate = br_mr*0+1.0e-7" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-      os.system(myncap+' -O -s "moss_swc_adjust=scalar(0)" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+      os.system(myncap+' -O -s "moss_swc_adjust=0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
       os.system(myncap+' -O -s "rsub_top_globalmax = br_mr*0+1.2e-5" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
       os.system(myncap+' -O -s "h2osoi_offset = br_mr*0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-      flnr = nffun.getvar(tmpdir+'/clm_params.nc','flnr')
-      os.system(myncap+' -O -s "br_mr = flnr" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-      ierr = nffun.putvar(tmpdir+'/clm_params.nc','br_mr', flnr*0.0+2.52e-6)
-    #os.system(myncap+' -O -s "vcmaxse = flnr" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-    #ierr = nffun.putvar(tmpdir+'/clm_params.nc','vcmaxse', flnr*0.0+670)
-
+    #   flnr = nffun.getvar(tmpdir+'/clm_params.nc','flnr')
+    #   os.system(myncap+' -O -s "br_mr = flnr" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+    #   ierr = nffun.putvar(tmpdir+'/clm_params.nc','br_mr', flnr*0.0+2.52e-6)
     if (options.marsh and options.tide_components_file != ''):
         print('Adding tidal cycle components from file %s'%options.tide_components_file)
         print('Assuming file is in NOAA tide component format, degrees and meters units (e.g.: https://tidesandcurrents.noaa.gov/harcon.html?id=8441241&unit=0)')
@@ -824,8 +829,8 @@ else:
             os.system(myncap+' -O -s "tide_coeff_amp_%d = humhol_ht*0+%1.4e" '%(comp+1,tidecomps['Amplitude'].iloc[comp]*1000)+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
             os.system(myncap+' -O -s "tide_coeff_period_%d = humhol_ht*0+%1.4e" '%(comp+1,360*3600/tidecomps['Speed'].iloc[comp])+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
             os.system(myncap+' -O -s "tide_coeff_phase_%d = humhol_ht*0+%1.4e" '%(comp+1,tidecomps['Phase'].iloc[comp]*math.pi/180)+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-            os.system(myncap+' -O -s "tide_baseline = humhol_ht*0+800.0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-    elif options.marsh:
+        os.system(myncap+' -O -s "tide_baseline = humhol_ht*0+800.0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+    elif options.marsh and options.tide_forcing_file == '':
         print('Tidal cycle coefficients not specified. Model will use GCREW defaults. Can also edit in parm file.')
     #os.system(myncap+' -O -s "crit_gdd1 = flnr" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
     #os.system(myncap+' -O -s "crit_gdd2 = flnr" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
@@ -1079,9 +1084,11 @@ if (options.rest_n > 0):
 # user-defined PFT numbers (default is 17)
 if (options.maxpatch_pft != 17):
   print('resetting maxpatch_pft to '+str(options.maxpatch_pft))
-  xval = subprocess.check_output('./xmlquery --value CLM_BLDNML_OPTS', cwd=casedir, shell=True)
+  xval = subprocess.check_output('./xmlquery --value '+mylsm+'_BLDNML_OPTS', cwd=casedir, shell=True)
+  xval = xval.decode()
   xval = '-maxpft '+str(options.maxpatch_pft)+' '+xval
-  os.system("./xmlchange CLM_BLDNML_OPTS = '" + xval + "'")
+  print("./xmlchange "+mylsm+"_BLDNML_OPTS='" + xval + "'")
+  subprocess.check_call("./xmlchange "+mylsm+"_BLDNML_OPTS='" + xval + "'",cwd=casedir, shell=True)
 
 # for spinup and transient runs, PIO_TYPENAME is pnetcdf, which now not works well
 if('mac' in options.machine or 'cades' in options.machine): 
@@ -1343,6 +1350,10 @@ for i in range(1,int(options.ninst)+1):
     if (options.no_budgets):
         output.write(" do_budgets = .false.\n")
 
+    if (options.alquimia != ""):
+        output.write(" use_alquimia = .TRUE.\n")
+        output.write(" alquimia_inputfile = '%s'\n"%options.alquimia)
+
     #pft dynamics file for transient run
     if ('20TR' in compset or options.istrans):
         if (options.nopftdyn):
@@ -1458,6 +1469,10 @@ for i in range(1,int(options.ninst)+1):
                     output.write(" metdata_type = 'crujra'\n")
                     output.write(" metdata_bypass = '"+options.ccsm_input+"/atm/datm7/" \
                          +"atm_forcing.datm7.CRUJRA.0.5d.v1.c190604/cpl_bypass_full'\n")
+            elif (options.trendy25):
+                    output.write(" metdata_type = 'crujra_trendy2025'\n")
+                    output.write(" metdata_bypass = '"+options.ccsm_input+"/atm/datm7/" \
+                         +"atm_forcing.CRUJRA_trendy_2025/cpl_bypass_full'\n")
             elif (options.gswp3):
                 if (options.livneh):
                     output.write(" metdata_type = 'gswp3_livneh'\n")
@@ -1497,6 +1512,12 @@ for i in range(1,int(options.ninst)+1):
         elif options.metdir != 'none':
             if (options.daymet4 and options.gswp3):
                 output.write(" metdata_type = 'gswp3_daymet4'\n")
+            elif (options.daymet4 and options.era5):
+                output.write(" metdata_type = 'era5_daymet4'\n")
+            elif (options.daymet and options.gswp3):
+                output.write(" metdata_type = 'gswp3v1_daymet'\n")
+            elif options.gswp3:
+                output.write(" metdata_type = 'gswp3'\n")
             #else:
             #    output.write(" metdata_type = 'gswp3v1_daymet'\n") # This needs to be updated for other types
             output.write(" metdata_bypass = '%s'\n"%options.metdir)
@@ -1539,6 +1560,9 @@ for i in range(1,int(options.ninst)+1):
     if (options.addco2 != 0):
       output.write(" add_co2 = "+str(options.addco2)+"\n")
       output.write(" startdate_add_co2 = '"+str(options.sd_addco2)+"'\n")
+
+    if (cpl_bypass and options.marsh and options.tide_forcing_file != ''):
+        output.write(" tide_file = '%s'"%options.tide_forcing_file)
     output.close()
 
 
@@ -1556,16 +1580,46 @@ else:
     sys.exit(1)
 
 #Land CPPDEF modifications
+# At least for E3SM v2, cppdefs appear to only work as a list after one "-cppdefs". With repeated "-cppdefs" it only applies the last one!
+import subprocess
+status,opts=subprocess.getstatusoutput("./xmlquery -value %s_CONFIG_OPTS"%mylsm)
+if status != 0:
+    raise RuntimeError('Command failed: "./xmlquery -value %s_CONFIG_OPTS"%mylsm')
+
+if 'cppdefs' in opts:
+    cppdefs=opts[opts.find('cppdefs')+7:].strip().strip("'").split()
+else:
+    cppdefs=[]
+
 if (options.humhol):
     print("Turning on HUM_HOL modification\n")
-    os.system("./xmlchange --append "+mylsm+"_CONFIG_OPTS='-cppdefs -DHUM_HOL'")
+    # os.system("./xmlchange -id "+mylsm+"_CONFIG_OPTS --append --val '-cppdefs -DHUM_HOL'")
+    cppdefs.append('-DHUM_HOL')
 
 if (options.marsh):
     print("Turning on MARSH modification\n")
-    os.system("./xmlchange --append "+mylsm+"_CONFIG_OPTS='-cppdefs -DMARSH'")
+    # os.system("./xmlchange -id "+mylsm+"_CONFIG_OPTS --append --val '-cppdefs -DMARSH'")
+    cppdefs.append('-DMARSH')
+if (options.alquimia != ""):
+    print("Turning on alquimia interface for compilation and running")
+    # os.system("./xmlchange -id "+mylsm+"_CONFIG_OPTS --append --val '-cppdefs -DUSE_ALQUIMIA_LIB'")
+    cppdefs.append('-DUSE_ALQUIMIA_LIB')
+    result = os.system("./xmlchange "+mylsm+"_USE_ALQUIMIA=TRUE")
+    if result != 0:
+        raise RuntimeError('Command failed: "./xmlchange '+mylsm+'_USE_ALQUIMIA=TRUE"')
 if (options.harvmod):
     print('Turning on HARVMOD modification\n')
-    os.system("./xmlchange --append "+mylsm+"_CONFIG_OPTS='-cppdefs -DHARVMOD'")
+    # os.system("./xmlchange -id "+mylsm+"_CONFIG_OPTS --append --val '-cppdefs -DHARVMOD'")
+    cppdefs.append('-DHARVMOD')
+
+if len(cppdefs)>0:
+    cppdefs_str='-cppdefs "'
+    for cppdef in cppdefs:
+        if cppdef.startswith('-D'):
+            cppdefs_str = cppdefs_str + ' ' + cppdef
+    cppdefs_str = cppdefs_str + '"'
+    print("./xmlchange --append "+mylsm+"_CONFIG_OPTS='%s'"%(cppdefs_str))
+    os.system("./xmlchange --append "+mylsm+"_CONFIG_OPTS='%s'"%(cppdefs_str))
 
 #Global CPPDEF modifications
 if (cpl_bypass):
@@ -1604,6 +1658,9 @@ if (cpl_bypass):
   if (os.path.isfile("./cmake_macros/universal.cmake")):
     #infile = open("./cmake_macros/universal.cmake")
     os.system("echo 'string(APPEND CPPDEFS \" -DCPL_BYPASS\")' >> cmake_macros/universal.cmake")
+
+  if (options.alquimia != ""):
+      os.system('''echo 'set(ELM_USE_ALQUIMIA "TRUE")' >> cmake_macros/universal.cmake''')
 
 #copy sourcemods
 os.chdir('..')
@@ -1873,7 +1930,7 @@ if ((options.ensemble_file != '' or int(options.mc_ensemble) != -1) and (options
               output_run.write('#SBATCH --qos=short\n')
             if ('cades-baseline' in options.machine):
               output_run.write('#SBATCH -A CLI185\n')
-              output_run.write('#SBATCH -p batch\n')
+              output_run.write('#SBATCH -p batch_ccsi\n')
               output_run.write('#SBATCH --ntasks-per-node 128\n')
             elif ('cades' in options.machine):
                output_run.write('#SBATCH -A ccsi\n')

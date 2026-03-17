@@ -109,6 +109,12 @@ parser.add_option("--cruncep", dest="cruncep", default=False, action="store_true
                   help = 'Use CRU-NCEP meteorology')
 parser.add_option("--cruncepv8", dest="cruncepv8", default=False, action="store_true", \
                   help = 'Use CRU-NCEP meteorology')
+parser.add_option("--era5", dest="era5", default=False, action="store_true", \
+                  help = 'Use ERA5 meteorology')
+parser.add_option("--crujra", dest="crujra", default=False, \
+                  help = "use crujra data", action="store_true")
+parser.add_option("--trendy25", dest="trendy25", default=False, \
+                  help = "use trendy2025 data", action="store_true")
 parser.add_option("--gswp3", dest="gswp3", default=False, action="store_true", \
                   help = 'Use GSWP3 meteorology')
 parser.add_option("--gswp3_w5e5", dest="gswp3_w5e5", default=False, action="store_true", \
@@ -167,6 +173,8 @@ parser.add_option("--marsh", dest="marsh", default=False, \
                   help = 'Use marsh hydrology/elevation', action="store_true")
 parser.add_option("--tide_components_file", dest="tide_components_file", default='', \
                     help = 'NOAA tide components file')
+parser.add_option("--tide_forcing_file", dest="tide_forcing_file", default='', \
+                    help = 'Tide height and salinity forcing time series file')
 parser.add_option("--nofire", dest="nofire", default=False, action="store_true", \
                   help='Turn off fire algorithms')
 parser.add_option("--C13", dest="C13", default=False, action="store_true", \
@@ -202,13 +210,15 @@ parser.add_option("--srcmods_loc", dest="srcmods_loc", default='', \
 parser.add_option("--daymet", dest="daymet", default=False, \
                   action="store_true", help = 'Use Daymet corrected meteorology')
 parser.add_option("--daymet4", dest="daymet4", default=False, \
-                  action="store_true", help = "Daymet v4 downscaled GSWP3-v2 forcing with user-provided domain and surface data)")
+                  action="store_true", help = "Daymet v4 downscaled GSWP3-v2 or ERA5 forcing with user-provided domain and surface data)")
 parser.add_option("--dailyvars", dest="dailyvars", default=False, \
                  action="store_true", help="Write daily ouptut variables")
 parser.add_option("--var_soilthickness",dest="var_soilthickness", default=False, \
                   help = 'Use variable soil depth from surface data file',action='store_true')
 parser.add_option("--no_budgets", dest="no_budgets", default=False, \
                   help = 'Turn off CNP budget calculations', action='store_true')
+parser.add_option("--alquimia", dest="alquimia",default='',  help="Compile model with alquimia BGC interface using specified input file")
+parser.add_option("--alquimia_ad",dest='alquimia_ad',default='',help='Alquimia input file for ad spinup')
 parser.add_option("--use_hydrstress", dest="use_hydrstress", default=False, \
                   help = 'Turn on hydraulic stress', action='store_true')
 parser.add_option("--spruce_treatments", dest="spruce_treatments", default=False, \
@@ -442,17 +452,23 @@ for row in AFdatareader:
             firstsite=site
         site_lat  = row[4]
         site_lon  = row[3]
-        if (options.cruncepv8 or options.cruncep or options.gswp3 or options.gswp3_w5e5 or options.princeton):
+        if (options.cruncepv8 or options.cruncep or options.era5 or options.gswp3 or options.gswp3_w5e5 or options.princeton or options.crujra or options.trendy25):
           startyear = 1901
           endyear = 1920
           if (options.cruncepv8):
             endyear_trans=2016
+          elif (options.era5):
+            endyear_trans=2023
           elif (options.gswp3):
             endyear_trans=2014
           elif (options.gswp3_w5e5):
             endyear_trans=2019
           elif (options.princeton):
             endyear_trans=2012
+          elif (options.crujra):
+            endyear_trans=2024
+          elif options.trendy25:
+            endyear_trans=2021
           else:
             endyear_trans=2010
         else:
@@ -478,8 +494,8 @@ for row in AFdatareader:
             translen = endyear-1850+1            # length of transient run
             if (options.eco2_file != ''):
                 translen = translen - ncycle     # if experiment sim, stop first transient at exp start yr - 1
-            if (options.cpl_bypass and (options.cruncep or options.gswp3 or \
-                options.princeton or options.cruncepv8 or options.gswp3_w5e5)):
+            if (options.cpl_bypass and (options.cruncep or options.era5 or options.gswp3 or options.crujra or options.trendy25 \
+                or options.princeton or options.cruncepv8 or options.gswp3_w5e5)):
                 print(endyear_trans, site_endyear)
                 translen = min(site_endyear,endyear_trans)-1850+1
 
@@ -549,6 +565,8 @@ for row in AFdatareader:
             basecmd = basecmd+' --marsh'
         if (options.tide_components_file != ''):
             basecmd = basecmd + ' --tide_components_file %s'%options.tide_components_file
+        if (options.tide_forcing_file != ''):
+            basecmd = basecmd + ' --tide_forcing_file %s'%options.tide_forcing_file
         if (float(options.lai) >= 0):
             basecmd = basecmd+' --lai '+str(options.lai)
         if (options.nopftdyn):
@@ -569,6 +587,12 @@ for row in AFdatareader:
             basecmd = basecmd+' --cruncep'
         if (options.cruncepv8):
             basecmd = basecmd+' --cruncepv8'
+        if (options.era5):
+            basecmd = basecmd+' --era5'
+        if (options.crujra):
+            basecmd = basecmd+' --crujra'
+        if (options.trendy25):
+            basecmd = basecmd+' --trendy25'
         if (options.gswp3):
             basecmd = basecmd+' --gswp3'
         if (options.gswp3_w5e5):
@@ -579,7 +603,7 @@ for row in AFdatareader:
             basecmd = basecmd+' --daymet'
         if (options.daymet4): # gswp3 v2 spatially-downscaled by daymet v4, usually together with user-defined domain and surface data
             basecmd = basecmd+' --daymet4'
-            if (not options.gswp3): basecmd = basecmd+' --gswp3'
+            if (not options.gswp3 and not options.era5): basecmd = basecmd+' --gswp3'
         if (options.fates_paramfile != ''):
             basecmd = basecmd+ ' --fates_paramfile '+options.fates_paramfile
         if (options.fates_nutrient != ''):
@@ -646,6 +670,9 @@ for row in AFdatareader:
           basecmd = basecmd+' --domainfile '+options.domainfile 
 
 #---------------- build commands for runcase.py -----------------------------
+        if (options.alquimia != ''):
+            basecmd = basecmd + ' --alquimia '+options.alquimia
+
 
         # define compsets
         # C, CN, CNP
@@ -749,7 +776,8 @@ for row in AFdatareader:
             ad_case = mycaseid+'_'+ad_case
         if (sitenum == 0 and options.exeroot == ''):
             ad_exeroot = os.path.abspath(runroot+'/'+ad_case+'/bld')
-
+        if (options.alquimia_ad != ''):
+            cmd_adsp = cmd_adsp.replace(options.alquimia,options.alquimia_ad)
 
         # final spinup
         if mycaseid !='':
@@ -1002,7 +1030,7 @@ for row in AFdatareader:
                         ' --site_new '+site+' --finidat_year '+str(int(ny_fin)+1)+ \
                         ' --nyears '+str(translen)
                  result = runcmd(ptcmd)
-            if ((options.cruncep or options.cruncepv8 or options.gswp3 or options.princeton) and not options.cpl_bypass):
+            if ((options.cruncep or options.cruncepv8 or options.era5 or options.gswp3 or options.princeton) and not options.cpl_bypass):
                  print('\nSetting up transient case phase 2\n')
                  result = runcmd(cmd_trns2)
 
@@ -1010,7 +1038,7 @@ for row in AFdatareader:
                 print('Site_fullrun:  Error in runcase.py for transient')
                 sys.exit(1)
 
-            if ((options.cruncep or options.cruncepv8 or options.gswp3 or options.princeton) and not options.cpl_bypass):
+            if ((options.cruncep or options.cruncepv8 or options.era5 or options.gswp3 or options.princeton) and not options.cpl_bypass):
                 print('\n\nSetting up transient case phase 2\n')
                 print(cmd_trns2)
                 result = os.system(cmd_trns2)
@@ -1114,7 +1142,7 @@ for row in AFdatareader:
                                     output.write('#SBATCH --partition=regular\n')
                             if ('cades-baseline' in options.machine):
                                 output.write('#SBATCH -A CLI185\n')
-                                output.write('#SBATCH -p batch\n')
+                                output.write('#SBATCH -p batch_ccsi\n')
                                 output.write('#SBATCH --ntasks-per-node 128\n')
                             elif ('cades' in options.machine):
                                 output.write('#SBATCH -A ccsi\n')
