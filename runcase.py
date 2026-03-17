@@ -1868,7 +1868,6 @@ if "20TR" in compset or options.istrans:
 if (
     "docker" in options.machine
     or "compy" in options.machine
-    or "ees" in options.machine
 ) and int(options.np) < 80:
     runcmd("./xmlchange PIO_TYPENAME=netcdf")
 
