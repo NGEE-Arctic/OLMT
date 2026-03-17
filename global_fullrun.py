@@ -180,6 +180,18 @@ parser.add_option("--walltime", dest="walltime", default=24, \
                   help = "desired walltime for each job (hours)")
 parser.add_option("--no_submit",dest="no_submit",default=False,action="store_true",
                     help='Do not submit jobs')
+#Add topounits (R Fiorella, NGEE-Arctic):
+parser.add_option("--topounits", dest="topounits", default=False,
+                  help="Turn on topounits > 1", action='store_true')
+parser.add_option("--topounits_atmdownscale", dest = "topounits_atmdownscale", default=False,
+                  help="Use atmospheric downscaling in topounits", action='store_true')
+# snow options:
+parser.add_option("--dust_snow_mixing", dest="dust_snow_mixing", default=False, \
+                  help = "Use Hao et al. dust/snow mixing albedo parameterization", action="store_true")
+parser.add_option("--no_snicar_ad", dest="no_snicar_ad", default=False, \
+                  help = "Turn off SNICAR-AD snow microphysics model", action = "store_true")
+parser.add_option("--use_extra_snow_layers", dest = "use_extra_snow_layers", default=False, \
+                  help = "Turn on extra snow layers", action="store_true")
 
 (options, args) = parser.parse_args()
 
@@ -291,6 +303,8 @@ if (options.compiler == ''):
         options.compiler = 'gnu'
     if (options.machine == 'compy'): 
         options.compiler = 'intel'
+    if (options.machine == 'ees'):
+        options.compiler = 'gnu'
 
 #default MPIlibs
 if (options.mpilib == ''):    
@@ -302,6 +316,8 @@ if (options.mpilib == ''):
         options.mpilib = 'mvapich'
     elif ('compy' in options.machine):
         options.mpilib = 'impi'
+    elif ('ees' in options.machine):
+        options.mpilib = 'openmpi'
 
 #create ensemble file if requested (so that all cases use the same)
 if (int(options.mc_ensemble) != -1):
@@ -435,6 +451,7 @@ fsplen = int(ny_fin)
 #    fsplen = site_endyear-startyear+1
  
 #get align_year
+print(endyear)
 year_align = (endyear-1850+1) % ncycle
 
 #get regional information
@@ -549,6 +566,16 @@ if (options.domainfile != ''):
     basecmd = basecmd+' --domainfile '+options.domainfile
 if (options.pftdynfile != ''):
     basecmd = basecmd + ' --landusefile '+options.pftdynfile
+if (options.topounits):
+    basecmd = basecmd+' --topounits'
+if (options.topounits_atmdownscale):
+    basecmd = basecmd+' --topounits_atmdownscale'
+if (options.dust_snow_mixing):
+    basecmd = basecmd+' --dust_snow_mixing'
+if (options.no_snicar_ad):
+    basecmd = basecmd+' --no_snicar_ad'
+if (options.use_extra_snow_layers):
+    basecmd = basecmd+' --use_extra_snow_layers'
 basecmd = basecmd + ' --np '+str(options.np)
 basecmd = basecmd + ' --tstep '+str(options.tstep)
 basecmd = basecmd + ' --co2_file '+options.co2_file
@@ -562,21 +589,29 @@ basecmd = basecmd+' --walltime '+str(options.walltime)
 basecmd = basecmd+' --lat_bounds '+str(lat_bounds[0])+','+str(lat_bounds[1])
 basecmd = basecmd+' --lon_bounds '+str(lon_bounds[0])+','+str(lon_bounds[1])
 
+print(basecmd)
+
 #----------------------- build commands for runCLM.py -----------------------------
 
+# define compsets
 #ECA or CTC
 if (options.cn_only):
     nutrients = 'CN'
 else:
     nutrients = 'CNP'
+
+# CENTURY or CTC
 if (options.centbgc):
     decomp_model = 'CNT'
 else:
     decomp_model = 'CTC'
+
+# ECA or RD
 if (options.eca):
     mymodel = nutrients+'ECA'+decomp_model
 else:
     mymodel = nutrients+'RD'+decomp_model
+#note - RD / ECA in FATES handled with namelist options, not compsets
 if (options.cpl_bypass):
     compset_type = 'ICB'
 else:
@@ -584,6 +619,7 @@ else:
 mymodel_fnsp = compset_type+'1850'+mymodel+'BC'
 mymodel_adsp = mymodel_fnsp.replace('CNP','CN')
 mymodel_trns = mymodel_fnsp.replace('1850','20TR')
+
 if (options.sp):
     mymodel_fnsp = compset_type+'ELMBC'
     options.noad = True
@@ -680,8 +716,11 @@ if (options.dailyvars):
 if (options.dailyrunoff):
     cmd_trns = cmd_trns+' --dailyrunoff'
 
+print(cmd_trns)
+
 #transient phase 2 (CRU-NCEP only, without coupler bypass)
-if ((options.cruncep or options.gswp3 or options.cruncepv8) and not options.cpl_bypass):
+if ((options.cruncep or options.cruncepv8) \
+        and not options.cpl_bypass and not options.notrans):
     basecase=basecase.replace('1850','20TR')+'_phase1'
     thistranslen = site_endyear - 1921 + 1
     cmd_trns2 = basecmd+' --trans2 --finidat_case '+basecase+ \
@@ -709,7 +748,7 @@ if (options.notrans == False):
     print('\nSetting up transient case\n')
     ierror = os.system(cmd_trns)
     if ierror != 0: sys.exit(-1)
-if ((options.cruncep or options.gswp3 or options.cruncepv8) and not options.cpl_bypass):
+if ((options.cruncep or options.cruncepv8) and not options.cpl_bypass and not options.notrans):
     print('\nSetting up transient case phase 2\n')
     ierror = os.system(cmd_trns2)
     if ierror != 0: sys.exit(-1)
@@ -756,7 +795,7 @@ if (options.mc_ensemble <= 0):
 
 
     mysubmit_type = 'sbatch'
-    if ('docker' in options.machine):
+    if ('docker' in options.machine or 'ees' in options.machine):
         mysubmit_type=''
     #if ('cades' in options.machine or 'anvil' in options.machine or 'compy' in options.machine or 'cori' in options.machine):
     #    mysubmit_type = 'sbatch'
@@ -849,12 +888,12 @@ if (options.mc_ensemble <= 0):
 
         
         output.write("cd "+caseroot+'/'+c+"/\n")
-        output.write("./xmlchange -id STOP_N -val "+str(this_run_n)+'\n')
+        output.write("./xmlchange --id STOP_N --val "+str(this_run_n)+'\n')
         if (options.cplhist):
-          output.write("./xmlchange -id REST_N -val 25\n")
+          output.write("./xmlchange --id REST_N --val 25\n")
         else:
-          output.write("./xmlchange -id REST_N -val 20\n")   #Restart every 20 years in global mode
-        output.write("./xmlchange -id RUN_STARTDATE -val "+(str(10000+model_startdate))[1:]+ \
+          output.write("./xmlchange --id REST_N --val 20\n")   #Restart every 20 years in global mode
+        output.write("./xmlchange --id RUN_STARTDATE --val "+(str(10000+model_startdate))[1:]+ \
                          '-01-01\n')                           
         if (n > 0):
             #change finidat 
