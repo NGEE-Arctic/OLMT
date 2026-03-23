@@ -210,49 +210,137 @@ parser.add_option(
 
 
 # model input options
-parser.add_option("--site", dest="site", default='', \
-                  help = '6-character FLUXNET code to run (required)')
-parser.add_option("--sitegroup", dest="sitegroup",default="AmeriFlux", \
-                  help = "site group to use (default AmeriFlux)")
-parser.add_option("--ccsm_input", dest="ccsm_input", default='', \
-                  help = "input data directory for CESM (required)")
-# metdata 
-parser.add_option("--nopointdata", dest="nopointdata", default=False, action="store_true", \
-                  help="Do NOT make point data (use data already created)")
-parser.add_option("--metdir", dest="metdir", default="none", \
-                  help = 'subdirectory for met data forcing')
-parser.add_option("--metdata_dir", dest="metdata_dir", default='none', \
-                  help = 'Directory containing cpl_bypass met data (site only)')
-parser.add_option("--makemetdata", action="store_true", dest="makemet", default=False, \
-                  help="generate site meteorology")
-parser.add_option("--cruncep", dest="cruncep", default=False, action="store_true", \
-                  help = 'Use CRU-NCEP meteorology')
-parser.add_option("--cruncepv8", dest="cruncepv8", default=False, action="store_true", \
-                  help = 'Use CRU-NCEP meteorology')
-parser.add_option("--era5", dest="era5", default=False, action="store_true", \
-                  help = 'Use ERA5 meteorology')
-parser.add_option("--crujra", dest="crujra", default=False, \
-                  help = "use crujra data", action="store_true")
-parser.add_option("--trendy25", dest="trendy25", default=False, \
-                  help = "use trendy2025 data", action="store_true")
-parser.add_option("--gswp3", dest="gswp3", default=False, action="store_true", \
-                  help = 'Use GSWP3 meteorology')
-parser.add_option("--gswp3_w5e5", dest="gswp3_w5e5", default=False, action="store_true", \
-                  help = 'Use GSWP3 meteorology')
-parser.add_option("--princeton", dest="princeton", default=False, action="store_true", \
-                  help = 'Use Princeton meteorology')
-parser.add_option("--co2_file", dest="co2_file", default="fco2_datm_rcp4.5_1765-2500_c130312.nc", \
-                  help = 'co2 data filename')
-parser.add_option("--eco2_file", dest="eco2_file", default="", \
-                  help = 'elevated co2 data filename, will spawn three transient simulations, using this file for an elevated co2 sim')
-parser.add_option("--add_co2", dest="addco2", default=0.0, \
-                  help = 'CO2 (ppmv) to add to atmospheric forcing')
-parser.add_option("--startdate_add_co2", dest="sd_addco2", default="99991231", \
-                  help = 'Date (YYYYMMDD) to begin addding CO2')
-parser.add_option("--add_temperature", dest="addt", default=0.0, \
-                  help = 'Temperature to add to atmospheric forcing')
-parser.add_option("--startdate_add_temperature", dest="sd_addt", default="99991231", \
-                  help = 'Date (YYYYMMDD) to begin addding temperature')
+parser.add_option(
+    "--site", dest="site", default="", help="6-character FLUXNET code to run (required)"
+)
+parser.add_option(
+    "--sitegroup",
+    dest="sitegroup",
+    default="AmeriFlux",
+    help="site group to use (default AmeriFlux)",
+)
+parser.add_option(
+    "--ccsm_input",
+    dest="ccsm_input",
+    default="",
+    help="input data directory for CESM (required)",
+)
+# metdata
+parser.add_option(
+    "--nopointdata",
+    dest="nopointdata",
+    default=False,
+    action="store_true",
+    help="Do NOT make point data (use data already created)",
+)
+parser.add_option(
+    "--metdir", dest="metdir", default="none", help="subdirectory for met data forcing"
+)
+parser.add_option(
+    "--metdata_dir",
+    dest="metdata_dir",
+    default="none",
+    help="Directory containing cpl_bypass met data (site only)",
+)
+parser.add_option(
+    "--makemetdata",
+    action="store_true",
+    dest="makemet",
+    default=False,
+    help="generate site meteorology",
+)
+parser.add_option(
+    "--cruncep",
+    dest="cruncep",
+    default=False,
+    action="store_true",
+    help="Use CRU-NCEP meteorology",
+)
+parser.add_option(
+    "--cruncepv8",
+    dest="cruncepv8",
+    default=False,
+    action="store_true",
+    help="Use CRU-NCEP meteorology",
+)
+parser.add_option(
+    "--era5",
+    dest="era5",
+    default=False,
+    action="store_true",
+    help="Use ERA5 meteorology",
+)
+parser.add_option(
+    "--crujra",
+    dest="crujra",
+    default=False,
+    help="use crujra data",
+    action="store_true",
+)
+parser.add_option(
+    "--trendy25",
+    dest="trendy25",
+    default=False,
+    help="use trendy2025 data",
+    action="store_true",
+)
+parser.add_option(
+    "--gswp3",
+    dest="gswp3",
+    default=False,
+    action="store_true",
+    help="Use GSWP3 meteorology",
+)
+parser.add_option(
+    "--gswp3_w5e5",
+    dest="gswp3_w5e5",
+    default=False,
+    action="store_true",
+    help="Use GSWP3 meteorology",
+)
+parser.add_option(
+    "--princeton",
+    dest="princeton",
+    default=False,
+    action="store_true",
+    help="Use Princeton meteorology",
+)
+parser.add_option(
+    "--co2_file",
+    dest="co2_file",
+    default="fco2_datm_rcp4.5_1765-2500_c130312.nc",
+    help="co2 data filename",
+)
+parser.add_option(
+    "--eco2_file",
+    dest="eco2_file",
+    default="",
+    help="elevated co2 data filename, will spawn three transient simulations, using this file for an elevated co2 sim",
+)
+parser.add_option(
+    "--add_co2",
+    dest="addco2",
+    default=0.0,
+    help="CO2 (ppmv) to add to atmospheric forcing",
+)
+parser.add_option(
+    "--startdate_add_co2",
+    dest="sd_addco2",
+    default="99991231",
+    help="Date (YYYYMMDD) to begin addding CO2",
+)
+parser.add_option(
+    "--add_temperature",
+    dest="addt",
+    default=0.0,
+    help="Temperature to add to atmospheric forcing",
+)
+parser.add_option(
+    "--startdate_add_temperature",
+    dest="sd_addt",
+    default="99991231",
+    help="Date (YYYYMMDD) to begin addding temperature",
+)
 # surface data
 parser.add_option(
     "--surfdata_grid",
@@ -295,44 +383,128 @@ parser.add_option(
 )
 
 # model structural config options
-parser.add_option("--namelist_file", dest="namelist_file", default='', \
-                  help="File containing custom namelist options for user_nl_clm")
-parser.add_option("--tstep", dest="tstep", default=0.5, \
-                  help = 'CLM timestep (hours)')
-parser.add_option("--SP", dest="sp", default=False, action="store_true", \
-                  help = 'Use satellite phenology mode')
-parser.add_option("--lai", dest="lai", default=-999, \
-                  help = 'Set constant LAI (SP mode only)')
-parser.add_option("--run_startyear", dest="run_startyear", default="1850", \
-                  help="Starting year for simulation (SP mode only)")
-parser.add_option("--crop", action="store_true", default=False, \
-                  help="Perform a crop model simulation")
-parser.add_option("--humhol", dest="humhol", default=False, action="store_true", \
-                  help = 'Use hummock/hollow microtopography')
-parser.add_option("--marsh", dest="marsh", default=False, \
-                  help = 'Use marsh hydrology/elevation', action="store_true")
-parser.add_option("--tide_components_file", dest="tide_components_file", default='', \
-                    help = 'NOAA tide components file')
-parser.add_option("--tide_forcing_file", dest="tide_forcing_file", default='', \
-                    help = 'Tide height and salinity forcing time series file')
-parser.add_option("--nofire", dest="nofire", default=False, action="store_true", \
-                  help='Turn off fire algorithms')
-parser.add_option("--C13", dest="C13", default=False, action="store_true", \
-                  help = 'Switch to turn on C13')
-parser.add_option("--C14", dest="C14", default=False, action="store_true", \
-                  help = 'Use C14 as C13 (no decay)')
-parser.add_option("--aero_rcp85",dest="aerorcp85", action="store_true", default=False,help="Use RCP8.5 aerosols")
-parser.add_option("--ndep_rcp85",dest="ndeprcp85", action="store_true", default=False,help="Use RCP8.5 N dep")
-parser.add_option("--harvmod", action="store_true", dest='harvmod', default=False, \
-                  help="turn on harvest modification:  All harvest at first timestep")
-parser.add_option("--no_dynroot", dest="no_dynroot", default=False, action="store_true", \
-                  help = 'Turn off dynamic root distribution')
-parser.add_option("--vertsoilc", dest="vsoilc", default=False, action="store_true", \
-                  help = 'To turn on CN with multiple soil layers, excluding CENTURY C module (CLM4ME on as well)')
-parser.add_option("--centbgc", dest="centbgc", default=False, action="store_true", \
-                  help = 'To turn on CN with multiple soil layers, CENTURY C module (CLM4ME on as well)')
-parser.add_option("--CH4", dest="CH4", default=False, action="store_true", \
-                  help = 'To turn on CN with CLM4me')
+parser.add_option(
+    "--namelist_file",
+    dest="namelist_file",
+    default="",
+    help="File containing custom namelist options for user_nl_clm",
+)
+parser.add_option("--tstep", dest="tstep", default=0.5, help="CLM timestep (hours)")
+parser.add_option(
+    "--SP",
+    dest="sp",
+    default=False,
+    action="store_true",
+    help="Use satellite phenology mode",
+)
+parser.add_option(
+    "--lai", dest="lai", default=-999, help="Set constant LAI (SP mode only)"
+)
+parser.add_option(
+    "--run_startyear",
+    dest="run_startyear",
+    default="1850",
+    help="Starting year for simulation (SP mode only)",
+)
+parser.add_option(
+    "--crop", action="store_true", default=False, help="Perform a crop model simulation"
+)
+parser.add_option(
+    "--humhol",
+    dest="humhol",
+    default=False,
+    action="store_true",
+    help="Use hummock/hollow microtopography",
+)
+parser.add_option(
+    "--marsh",
+    dest="marsh",
+    default=False,
+    help="Use marsh hydrology/elevation",
+    action="store_true",
+)
+parser.add_option(
+    "--tide_components_file",
+    dest="tide_components_file",
+    default="",
+    help="NOAA tide components file",
+)
+parser.add_option(
+    "--tide_forcing_file",
+    dest="tide_forcing_file",
+    default="",
+    help="Tide height and salinity forcing time series file",
+)
+parser.add_option(
+    "--nofire",
+    dest="nofire",
+    default=False,
+    action="store_true",
+    help="Turn off fire algorithms",
+)
+parser.add_option(
+    "--C13",
+    dest="C13",
+    default=False,
+    action="store_true",
+    help="Switch to turn on C13",
+)
+parser.add_option(
+    "--C14",
+    dest="C14",
+    default=False,
+    action="store_true",
+    help="Use C14 as C13 (no decay)",
+)
+parser.add_option(
+    "--aero_rcp85",
+    dest="aerorcp85",
+    action="store_true",
+    default=False,
+    help="Use RCP8.5 aerosols",
+)
+parser.add_option(
+    "--ndep_rcp85",
+    dest="ndeprcp85",
+    action="store_true",
+    default=False,
+    help="Use RCP8.5 N dep",
+)
+parser.add_option(
+    "--harvmod",
+    action="store_true",
+    dest="harvmod",
+    default=False,
+    help="turn on harvest modification:  All harvest at first timestep",
+)
+parser.add_option(
+    "--no_dynroot",
+    dest="no_dynroot",
+    default=False,
+    action="store_true",
+    help="Turn off dynamic root distribution",
+)
+parser.add_option(
+    "--vertsoilc",
+    dest="vsoilc",
+    default=False,
+    action="store_true",
+    help="To turn on CN with multiple soil layers, excluding CENTURY C module (CLM4ME on as well)",
+)
+parser.add_option(
+    "--centbgc",
+    dest="centbgc",
+    default=False,
+    action="store_true",
+    help="To turn on CN with multiple soil layers, CENTURY C module (CLM4ME on as well)",
+)
+parser.add_option(
+    "--CH4",
+    dest="CH4",
+    default=False,
+    action="store_true",
+    help="To turn on CN with CLM4me",
+)
 parser.add_option(
     "--no_methane",
     dest="no_methane",
@@ -340,36 +512,106 @@ parser.add_option(
     action="store_true",
     help="To turn off CH4 for BGC runs",
 )
-parser.add_option("--fates", dest="fates", default=False, action="store_true", \
-                  help = 'Use fates model')
-parser.add_option("--fates_nutrient", dest="fates_nutrient", default="", \
-                  help = 'Which version of fates_nutrient to use (RD or ECA)')
-parser.add_option("--fates_logging", dest="fates_logging", default=False, action="store_true", \
-                  help = 'Set fates logging to true')
-parser.add_option("--ECA", dest="eca", default=False, action="store_true", \
-                  help = 'Use ECA compset')
-parser.add_option("--c_only", dest="c_only", default=False, action ="store_true",  \
-                  help='Carbon only (saturated N&P)')
-parser.add_option("--cn_only", dest="cn_only", default=False, action ="store_true", \
-                  help='Carbon/Nitrogen only (saturated P)') 
-parser.add_option("--srcmods_loc", dest="srcmods_loc", default='', \
-                  help = 'Copy sourcemods from this location')
-parser.add_option("--daymet", dest="daymet", default=False, \
-                  action="store_true", help = 'Use Daymet corrected meteorology')
-parser.add_option("--daymet4", dest="daymet4", default=False, \
-                  action="store_true", help = "Daymet v4 downscaled GSWP3-v2 or ERA5 forcing with user-provided domain and surface data)")
-parser.add_option("--dailyvars", dest="dailyvars", default=False, \
-                 action="store_true", help="Write daily ouptut variables")
-parser.add_option("--var_soilthickness",dest="var_soilthickness", default=False, \
-                  help = 'Use variable soil depth from surface data file',action='store_true')
-parser.add_option("--no_budgets", dest="no_budgets", default=False, \
-                  help = 'Turn off CNP budget calculations', action='store_true')
-parser.add_option("--alquimia", dest="alquimia",default='',  help="Compile model with alquimia BGC interface using specified input file")
-parser.add_option("--alquimia_ad",dest='alquimia_ad',default='',help='Alquimia input file for ad spinup')
-parser.add_option("--use_hydrstress", dest="use_hydrstress", default=False, \
-                  help = 'Turn on hydraulic stress', action='store_true')
-parser.add_option("--spruce_treatments", dest="spruce_treatments", default=False, \
-                  help = 'Run SPRUCE treatment simulations (ensemble mode)', action='store_true')
+parser.add_option(
+    "--fates", dest="fates", default=False, action="store_true", help="Use fates model"
+)
+parser.add_option(
+    "--fates_nutrient",
+    dest="fates_nutrient",
+    default="",
+    help="Which version of fates_nutrient to use (RD or ECA)",
+)
+parser.add_option(
+    "--fates_logging",
+    dest="fates_logging",
+    default=False,
+    action="store_true",
+    help="Set fates logging to true",
+)
+parser.add_option(
+    "--ECA", dest="eca", default=False, action="store_true", help="Use ECA compset"
+)
+parser.add_option(
+    "--c_only",
+    dest="c_only",
+    default=False,
+    action="store_true",
+    help="Carbon only (saturated N&P)",
+)
+parser.add_option(
+    "--cn_only",
+    dest="cn_only",
+    default=False,
+    action="store_true",
+    help="Carbon/Nitrogen only (saturated P)",
+)
+parser.add_option(
+    "--srcmods_loc",
+    dest="srcmods_loc",
+    default="",
+    help="Copy sourcemods from this location",
+)
+parser.add_option(
+    "--daymet",
+    dest="daymet",
+    default=False,
+    action="store_true",
+    help="Use Daymet corrected meteorology",
+)
+parser.add_option(
+    "--daymet4",
+    dest="daymet4",
+    default=False,
+    action="store_true",
+    help="Daymet v4 downscaled GSWP3-v2 or ERA5 forcing with user-provided domain and surface data)",
+)
+parser.add_option(
+    "--dailyvars",
+    dest="dailyvars",
+    default=False,
+    action="store_true",
+    help="Write daily ouptut variables",
+)
+parser.add_option(
+    "--var_soilthickness",
+    dest="var_soilthickness",
+    default=False,
+    help="Use variable soil depth from surface data file",
+    action="store_true",
+)
+parser.add_option(
+    "--no_budgets",
+    dest="no_budgets",
+    default=False,
+    help="Turn off CNP budget calculations",
+    action="store_true",
+)
+parser.add_option(
+    "--alquimia",
+    dest="alquimia",
+    default="",
+    help="Compile model with alquimia BGC interface using specified input file",
+)
+parser.add_option(
+    "--alquimia_ad",
+    dest="alquimia_ad",
+    default="",
+    help="Alquimia input file for ad spinup",
+)
+parser.add_option(
+    "--use_hydrstress",
+    dest="use_hydrstress",
+    default=False,
+    help="Turn on hydraulic stress",
+    action="store_true",
+)
+parser.add_option(
+    "--spruce_treatments",
+    dest="spruce_treatments",
+    default=False,
+    help="Run SPRUCE treatment simulations (ensemble mode)",
+    action="store_true",
+)
 
 # model output options
 parser.add_option(
@@ -557,7 +799,7 @@ parser.add_option(
 
 
 def _write_cmd(cmd, tag, lineno):
-    if options.options_log_json == 'None':
+    if options.options_log_json == "None":
         return
 
     if not os.path.exists(options.options_log_json):
@@ -647,46 +889,48 @@ if os.path.exists(options.csmdir + "/components/elm"):
 else:
     model_name = "clm2"
 
-#get machine info if not specified
-npernode=32
-if (options.machine == ''):
-   hostname = socket.gethostname()
-   print('')
-   print('Machine not specified.  Using hostname '+hostname+' to determine machine')
-   if ('or-slurm' in hostname):
-       options.machine = 'cades'
-       npernode=32
-   elif ('blues' in hostname or 'blogin' in hostname):
-       print('Hostname = '+hostname+' and machine not specified.  Assuming anvil')
-       options.machine = 'anvil' 
-       npernode=36
-   elif ('compy' in hostname):
-       options.machine = 'compy'
-       npernode=40
-   elif ('ubuntu' in hostname):
-       options.machine = 'ubuntu'
-       npernode = 8
-   elif ('chrlogin' in hostname):
-       options.machine = 'chrysalis'
-       npernode = 64    
-   else:
-       print('ERROR in site_fullrun.py:  Machine not specified.  Aborting')
-       sys.exit(1)
+# get machine info if not specified
+npernode = 32
+if options.machine == "":
+    hostname = socket.gethostname()
+    print("")
+    print(
+        "Machine not specified.  Using hostname " + hostname + " to determine machine"
+    )
+    if "or-slurm" in hostname:
+        options.machine = "cades"
+        npernode = 32
+    elif "blues" in hostname or "blogin" in hostname:
+        print("Hostname = " + hostname + " and machine not specified.  Assuming anvil")
+        options.machine = "anvil"
+        npernode = 36
+    elif "compy" in hostname:
+        options.machine = "compy"
+        npernode = 40
+    elif "ubuntu" in hostname:
+        options.machine = "ubuntu"
+        npernode = 8
+    elif "chrlogin" in hostname:
+        options.machine = "chrysalis"
+        npernode = 64
+    else:
+        print("ERROR in site_fullrun.py:  Machine not specified.  Aborting")
+        sys.exit(1)
 
 if options.ccsm_input != "":
     ccsm_input = options.ccsm_input
-elif (options.machine == 'cades'):
-    ccsm_input = '/nfs/data/ccsi/proj-shared/E3SM/inputdata/'
-elif (options.machine == 'edison'):
-    ccsm_input = '/project/projectdirs/acme/inputdata'
-elif ('anvil' in options.machine or 'chrysalis' in options.machine):
-    ccsm_input = '/home/ccsm-data/inputdata'
-elif ('compy' in options.machine):
-    ccsm_input = '/compyfs/inputdata/'
+elif options.machine == "cades":
+    ccsm_input = "/nfs/data/ccsi/proj-shared/E3SM/inputdata/"
+elif options.machine == "edison":
+    ccsm_input = "/project/projectdirs/acme/inputdata"
+elif "anvil" in options.machine or "chrysalis" in options.machine:
+    ccsm_input = "/home/ccsm-data/inputdata"
+elif "compy" in options.machine:
+    ccsm_input = "/compyfs/inputdata/"
 elif "docker" in options.machine:
     ccsm_input = "/home/e3smuser/inputdata"
 
-#if (options.compiler != ''):
+# if (options.compiler != ''):
 #    if (options.machine == 'cades'):
 #        options.compiler = 'gnu'
 
@@ -712,14 +956,14 @@ csmdir = options.csmdir
 myproject = "e3sm"
 if options.runroot == "" or not os.path.exists(options.runroot):
     myuser = getpass.getuser()
-    if (options.machine == 'cades'):
-        runroot='/lustre/or-scratch/cades-ccsi/scratch/'+myuser
-    elif ('anvil' in options.machine or 'chrysalis' in options.machine):
-        runroot="/lcrc/group/acme/"+myuser
-        myproject='e3sm'
-    elif ('compy' in options.machine):
-        runroot='/compyfs/'+myuser+'/e3sm_scratch'
-        myproject='e3sm'
+    if options.machine == "cades":
+        runroot = "/lustre/or-scratch/cades-ccsi/scratch/" + myuser
+    elif "anvil" in options.machine or "chrysalis" in options.machine:
+        runroot = "/lcrc/group/acme/" + myuser
+        myproject = "e3sm"
+    elif "compy" in options.machine:
+        runroot = "/compyfs/" + myuser + "/e3sm_scratch"
+        myproject = "e3sm"
     else:
         runroot = csmdir + "/run"
 else:
@@ -785,33 +1029,43 @@ elif "all" not in mysites and (options.ensemble_file == ""):
     npernode = len(mysites)
 
 for row in AFdatareader:
-    if (row[0] in mysites) or ('all' in mysites and row[0] !='site_code' \
-                                      and row[0] != ''):
-        site      = row[0]
-        if (sitenum == 0):
-            firstsite=site
-        site_lat  = row[4]
-        site_lon  = row[3]
-        if (options.cruncepv8 or options.cruncep or options.era5 or options.gswp3 or options.gswp3_w5e5 or options.princeton or options.crujra or options.trendy25):
-          startyear = 1901
-          endyear = 1920
-          if (options.cruncepv8):
-            endyear_trans=2016
-          # RPF dapper files end in 2024 or 2025 currently, may need to add options here for era5 alone and era5-daymet4
-          elif (options.era5):
-            endyear_trans=2023 
-          elif (options.gswp3):
-            endyear_trans=2014
-          elif (options.gswp3_w5e5):
-            endyear_trans=2019
-          elif (options.princeton):
-            endyear_trans=2012
-          elif (options.crujra):
-            endyear_trans=2024
-          elif options.trendy25:
-            endyear_trans=2021
-          else:
-            endyear_trans=2010
+    if (row[0] in mysites) or (
+        "all" in mysites and row[0] != "site_code" and row[0] != ""
+    ):
+        site = row[0]
+        if sitenum == 0:
+            firstsite = site
+        site_lat = row[4]
+        site_lon = row[3]
+        if (
+            options.cruncepv8
+            or options.cruncep
+            or options.era5
+            or options.gswp3
+            or options.gswp3_w5e5
+            or options.princeton
+            or options.crujra
+            or options.trendy25
+        ):
+            startyear = 1901
+            endyear = 1920
+            if options.cruncepv8:
+                endyear_trans = 2016
+            # RPF dapper files end in 2024 or 2025 currently, may need to add options here for era5 alone and era5-daymet4
+            elif options.era5:
+                endyear_trans = 2023
+            elif options.gswp3:
+                endyear_trans = 2014
+            elif options.gswp3_w5e5:
+                endyear_trans = 2019
+            elif options.princeton:
+                endyear_trans = 2012
+            elif options.crujra:
+                endyear_trans = 2024
+            elif options.trendy25:
+                endyear_trans = 2021
+            else:
+                endyear_trans = 2010
         else:
             startyear = int(row[6])
             endyear = int(row[7])
@@ -939,7 +1193,7 @@ for row in AFdatareader:
         if options.cn_only:
             basecmd = basecmd + " --cn_only"
         if options.CH4:
-            basecmd = basecmd + " --CH4"        
+            basecmd = basecmd + " --CH4"
         if options.no_methane:
             basecmd = basecmd + " --no_methane"
         if options.cruncep:
@@ -1053,8 +1307,8 @@ for row in AFdatareader:
         if options.use_onset_gdd_extension:
             basecmd = basecmd + " --use_onset_gdd_extension"
         # alquimia
-        if (options.alquimia != ''):
-            basecmd = basecmd + ' --alquimia '+options.alquimia
+        if options.alquimia != "":
+            basecmd = basecmd + " --alquimia " + options.alquimia
 
         # ---------------- build commands for runcase.py -----------------------------
 
@@ -1163,21 +1417,21 @@ for row in AFdatareader:
                 else:
                     ad_case = site + "_ICBCLM45BC"
         else:
-            cmd_adsp = cmd_adsp+' --compset I1850'+mycompset_adsp
-            ad_case = site+'_I1850'+mycompset_adsp
+            cmd_adsp = cmd_adsp + " --compset I1850" + mycompset_adsp
+            ad_case = site + "_I1850" + mycompset_adsp
 
-        if (options.noad == False):
-            ad_case = ad_case+'_ad_spinup'
-        if (options.makemet):
-            cmd_adsp = cmd_adsp+' --makemetdat'
-        if (options.spinup_vars):
-            cmd_adsp = cmd_adsp+' --spinup_vars'
-        if (mycaseid != ''):
-            ad_case = mycaseid+'_'+ad_case
-        if (sitenum == 0 and options.exeroot == ''):
-            ad_exeroot = os.path.abspath(runroot+'/'+ad_case+'/bld')
-        if (options.alquimia_ad != ''):
-            cmd_adsp = cmd_adsp.replace(options.alquimia,options.alquimia_ad)
+        if options.noad == False:
+            ad_case = ad_case + "_ad_spinup"
+        if options.makemet:
+            cmd_adsp = cmd_adsp + " --makemetdat"
+        if options.spinup_vars:
+            cmd_adsp = cmd_adsp + " --spinup_vars"
+        if mycaseid != "":
+            ad_case = mycaseid + "_" + ad_case
+        if sitenum == 0 and options.exeroot == "":
+            ad_exeroot = os.path.abspath(runroot + "/" + ad_case + "/bld")
+        if options.alquimia_ad != "":
+            cmd_adsp = cmd_adsp.replace(options.alquimia, options.alquimia_ad)
 
         # final spinup
         if mycaseid != "":
@@ -1644,18 +1898,22 @@ for row in AFdatareader:
         # sys.exit('temp stop pre submit script copy & edit')
 
         for c in case_list:
-            mysubmit_type = 'qsub'
-            groupnum = int(sitenum/npernode)
-            if ('cades' in options.machine or 'anvil' in options.machine or 'chrysalis' in options.machine or \
-                'compy' in options.machine):
-                mysubmit_type = 'sbatch'
-            if ('ubuntu' in options.machine):
-                mysubmit_type = ''
-            if ('mac' in options.machine):
-                mysubmit_type = ''
-            if ('docker' in options.machine):
-                mysubmit_type = ''
-            if ((sitenum % npernode) == 0):
+            mysubmit_type = "qsub"
+            groupnum = int(sitenum / npernode)
+            if (
+                "cades" in options.machine
+                or "anvil" in options.machine
+                or "chrysalis" in options.machine
+                or "compy" in options.machine
+            ):
+                mysubmit_type = "sbatch"
+            if "ubuntu" in options.machine:
+                mysubmit_type = ""
+            if "mac" in options.machine:
+                mysubmit_type = ""
+            if "docker" in options.machine:
+                mysubmit_type = ""
+            if (sitenum % npernode) == 0:
                 mycase_firstsite = ad_case_firstsite
                 if options.noad:
                     mycase_firstsite = fin_case_firstsite
@@ -1711,29 +1969,29 @@ for row in AFdatareader:
                         if mysubmit_type == "qsub":
                             output.write("#PBS -l walltime=" + timestr + "\n")
                         else:
-                            output.write('#SBATCH --time='+timestr+'\n')
-                            if ('anvil' in options.machine):
-                                output.write('#SBATCH -A condo\n')
-                                output.write('#SBATCH -p acme-small\n')
-                            elif (myproject != ''):
-                                output.write('#SBATCH -A '+myproject+'\n')
-                            if ('edison' in options.machine):
-                                if (options.debug):
-                                    output.write('#SBATCH --partition=debug\n')
+                            output.write("#SBATCH --time=" + timestr + "\n")
+                            if "anvil" in options.machine:
+                                output.write("#SBATCH -A condo\n")
+                                output.write("#SBATCH -p acme-small\n")
+                            elif myproject != "":
+                                output.write("#SBATCH -A " + myproject + "\n")
+                            if "edison" in options.machine:
+                                if options.debug:
+                                    output.write("#SBATCH --partition=debug\n")
                                 else:
-                                    output.write('#SBATCH --partition=regular\n')
-                            if ('cades-baseline' in options.machine):
-                                output.write('#SBATCH -A CLI185\n')
-                                output.write('#SBATCH -p batch_ccsi\n')
-                                output.write('#SBATCH --ntasks-per-node 128\n')
-                            elif ('cades' in options.machine):
-                                output.write('#SBATCH -A ccsi\n')
-                                output.write('#SBATCH -p batch\n')
-                                output.write('#SBATCH --mem=64G\n')
-                                output.write('#SBATCH --ntasks-per-node 32\n')
-                    elif ("#" in s and "ppn" in s):
-                        if ('cades' in options.machine):
-                            #if ('diags' in c or 'iniadjust' in c):
+                                    output.write("#SBATCH --partition=regular\n")
+                            if "cades-baseline" in options.machine:
+                                output.write("#SBATCH -A CLI185\n")
+                                output.write("#SBATCH -p batch_ccsi\n")
+                                output.write("#SBATCH --ntasks-per-node 128\n")
+                            elif "cades" in options.machine:
+                                output.write("#SBATCH -A ccsi\n")
+                                output.write("#SBATCH -p batch\n")
+                                output.write("#SBATCH --mem=64G\n")
+                                output.write("#SBATCH --ntasks-per-node 32\n")
+                    elif "#" in s and "ppn" in s:
+                        if "cades" in options.machine:
+                            # if ('diags' in c or 'iniadjust' in c):
                             #    output.write("#PBS -l nodes=1:ppn=1\n")
                             # else:
                             output.write(
@@ -1753,11 +2011,11 @@ for row in AFdatareader:
                             output.write(s.replace(firstsite, site))
                 input.close()
                 output.write("\n")
-            
-                if ('cades' in options.machine):
-                    output.write('source $MODULESHOME/init/bash\n')
-                    output.write('module unload python\n')
-                    output.write('module load python/2.7.12\n')
+
+                if "cades" in options.machine:
+                    output.write("source $MODULESHOME/init/bash\n")
+                    output.write("module unload python\n")
+                    output.write("module load python/2.7.12\n")
             else:
                 output = open(
                     "./scripts/"

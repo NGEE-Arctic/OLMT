@@ -13,7 +13,7 @@ from optparse import OptionParser
 
 
 def _write_cmd(cmd, tag, lineno):
-    if options.options_log_json == 'None':
+    if options.options_log_json == "None":
         return
 
     if not os.path.exists(options.options_log_json):
@@ -217,16 +217,29 @@ parser.add_option("--tide_forcing_file", dest="tide_forcing_file", default='', \
 parser.add_option("--mask", dest="mymask", default='', \
                   help = 'Mask file to use (regional only)')
 
-parser.add_option("--model", dest="mymodel", default='', \
-                  help = 'Model to use (ELM,CLM5)')
+parser.add_option("--model", dest="mymodel", default="", help="Model to use (ELM,CLM5)")
 
-parser.add_option("--namelist_file",  dest="namelist_file", default='', \
-                  help="File containing custom namelist options for user_nl_clm")
+parser.add_option(
+    "--namelist_file",
+    dest="namelist_file",
+    default="",
+    help="File containing custom namelist options for user_nl_clm",
+)
 
-parser.add_option("--ilambvars", dest="ilambvars", default=False, \
-                 action="store_true", help="Write special outputs for diagnostics")
-parser.add_option("--dailyvars", dest="dailyvars", default=False, \
-                 action="store_true", help="Write daily ouptut variables")
+parser.add_option(
+    "--ilambvars",
+    dest="ilambvars",
+    default=False,
+    action="store_true",
+    help="Write special outputs for diagnostics",
+)
+parser.add_option(
+    "--dailyvars",
+    dest="dailyvars",
+    default=False,
+    action="store_true",
+    help="Write daily ouptut variables",
+)
 
 parser.add_option(
     "--res", dest="res", default="CLM_USRDAT", help="Resoultion for global simulation"
@@ -999,24 +1012,24 @@ else:
     mylsm = "CLM"
     model_name = "clm2"
 
-#machine info:  cores per node
-ppn=1
-if ('cades-baseline' in options.machine):
-    ppn=128
-elif ('cades' in options.machine):
-    ppn=32
-elif ('anvil' in options.machine):
-    ppn=36
-elif ('compy' in options.machine):
-    ppn=40
-elif ('chrysalis' in options.machine):
-    ppn=64
-elif ('pm-cpu' in options.machine):
-    ppn=128
-elif ('docker' in options.machine):
-    ppn=4
-if (options.ensemble_file == ''):
-  ppn=min(ppn, int(options.np))
+# machine info:  cores per node
+ppn = 1
+if "cades-baseline" in options.machine:
+    ppn = 128
+elif "cades" in options.machine:
+    ppn = 32
+elif "anvil" in options.machine:
+    ppn = 36
+elif "compy" in options.machine:
+    ppn = 40
+elif "chrysalis" in options.machine:
+    ppn = 64
+elif "pm-cpu" in options.machine:
+    ppn = 128
+elif "docker" in options.machine:
+    ppn = 4
+if options.ensemble_file == "":
+    ppn = min(ppn, int(options.np))
 
 PTCLMdir = os.getcwd()
 
@@ -1367,8 +1380,8 @@ if not options.nopointdata:
 
     print(ptcmd)
     result = os.system(ptcmd)
-    if (result > 0):
-        print ('PointCLM:  Error creating point data.  Aborting')
+    if result > 0:
+        print("PointCLM:  Error creating point data.  Aborting")
         sys.exit(1)
 
     if options.makepointdata_only:
@@ -1418,8 +1431,8 @@ if not isglobal:
             alignyear = int(row[8])
             if options.diags:
                 timezone = int(row[9])
-            if (options.humhol):
-                numxpts=2
+            if options.humhol:
+                numxpts = 2
             else:
                 numxpts = 1
             numypts = 1
@@ -1467,63 +1480,186 @@ if options.mod_parm_file != "":
         sys.exit(1)
 else:
     print(parm_file)
-    print('nccopy -3 '+options.ccsm_input+'/lnd/clm2/paramdata/'+parm_file+' '+tmpdir+'/clm_params.nc')
-    os.system('nccopy -3 '+options.ccsm_input+'/lnd/clm2/paramdata/'+parm_file+' ' \
-              +tmpdir+'/clm_params.nc')
+    print(
+        "nccopy -3 "
+        + options.ccsm_input
+        + "/lnd/clm2/paramdata/"
+        + parm_file
+        + " "
+        + tmpdir
+        + "/clm_params.nc"
+    )
+    os.system(
+        "nccopy -3 "
+        + options.ccsm_input
+        + "/lnd/clm2/paramdata/"
+        + parm_file
+        + " "
+        + tmpdir
+        + "/clm_params.nc"
+    )
 
-myncap = 'ncap'
-if ( 'chrysalis' in options.machine or 'compy' in options.machine or 'ubuntu' in options.machine \
-        or 'mymac' in options.machine or 'anvil' in options.machine or 'cades-baseline' in options.machine):
-    myncap='ncap2'
+myncap = "ncap"
+if (
+    "chrysalis" in options.machine
+    or "compy" in options.machine
+    or "ubuntu" in options.machine
+    or "mymac" in options.machine
+    or "anvil" in options.machine
+    or "cades-baseline" in options.machine
+):
+    myncap = "ncap2"
 
-    flnr = nffun.getvar(tmpdir+'/clm_params.nc','flnr')
-    if (options.humhol or options.marsh):
-      print('Adding hummock-hollow parameters (default for SPRUCE site)')
-    #   print('humhol_ht = 0.15m')
-    #   print('humhol_dist = 1.0m')
-      print('setting rsub_top_globalmax = 1.2e-5')
-    #   print('Making br_mr a PFT-specific parameter')
-      os.system(myncap+' -O -s "humhol_ht = br_mr*0+0.15" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-      if options.marsh:
-        os.system(myncap+' -O -s "hum_frac = br_mr*0+0.50" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-        print('hum_frac  = 0.50')
-      else:
-        os.system(myncap+' -O -s "hum_frac = br_mr*0+0.64" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-        print('hum_frac  = 0.64')
-      os.system(myncap+' -O -s "humhol_dist = br_mr*0+1.0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-      if options.marsh:
-        print('qflx_h2osfc_surfrate = 0.0')
-        os.system(myncap+' -O -s "qflx_h2osfc_surfrate = br_mr*0+0.0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-      else:
-        print('qflx_h2osfc_surfrate = 1.0e-7')
-        os.system(myncap+' -O -s "qflx_h2osfc_surfrate = br_mr*0+1.0e-7" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-      os.system(myncap+' -O -s "moss_swc_adjust=0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-      os.system(myncap+' -O -s "rsub_top_globalmax = br_mr*0+1.2e-5" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-      os.system(myncap+' -O -s "h2osoi_offset = br_mr*0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+    flnr = nffun.getvar(tmpdir + "/clm_params.nc", "flnr")
+    if options.humhol or options.marsh:
+        print("Adding hummock-hollow parameters (default for SPRUCE site)")
+        #   print('humhol_ht = 0.15m')
+        #   print('humhol_dist = 1.0m')
+        print("setting rsub_top_globalmax = 1.2e-5")
+        #   print('Making br_mr a PFT-specific parameter')
+        os.system(
+            myncap
+            + ' -O -s "humhol_ht = br_mr*0+0.15" '
+            + tmpdir
+            + "/clm_params.nc "
+            + tmpdir
+            + "/clm_params.nc"
+        )
+        if options.marsh:
+            os.system(
+                myncap
+                + ' -O -s "hum_frac = br_mr*0+0.50" '
+                + tmpdir
+                + "/clm_params.nc "
+                + tmpdir
+                + "/clm_params.nc"
+            )
+            print("hum_frac  = 0.50")
+        else:
+            os.system(
+                myncap
+                + ' -O -s "hum_frac = br_mr*0+0.64" '
+                + tmpdir
+                + "/clm_params.nc "
+                + tmpdir
+                + "/clm_params.nc"
+            )
+            print("hum_frac  = 0.64")
+        os.system(
+            myncap
+            + ' -O -s "humhol_dist = br_mr*0+1.0" '
+            + tmpdir
+            + "/clm_params.nc "
+            + tmpdir
+            + "/clm_params.nc"
+        )
+        if options.marsh:
+            print("qflx_h2osfc_surfrate = 0.0")
+            os.system(
+                myncap
+                + ' -O -s "qflx_h2osfc_surfrate = br_mr*0+0.0" '
+                + tmpdir
+                + "/clm_params.nc "
+                + tmpdir
+                + "/clm_params.nc"
+            )
+        else:
+            print("qflx_h2osfc_surfrate = 1.0e-7")
+            os.system(
+                myncap
+                + ' -O -s "qflx_h2osfc_surfrate = br_mr*0+1.0e-7" '
+                + tmpdir
+                + "/clm_params.nc "
+                + tmpdir
+                + "/clm_params.nc"
+            )
+        os.system(
+            myncap
+            + ' -O -s "moss_swc_adjust=0" '
+            + tmpdir
+            + "/clm_params.nc "
+            + tmpdir
+            + "/clm_params.nc"
+        )
+        os.system(
+            myncap
+            + ' -O -s "rsub_top_globalmax = br_mr*0+1.2e-5" '
+            + tmpdir
+            + "/clm_params.nc "
+            + tmpdir
+            + "/clm_params.nc"
+        )
+        os.system(
+            myncap
+            + ' -O -s "h2osoi_offset = br_mr*0" '
+            + tmpdir
+            + "/clm_params.nc "
+            + tmpdir
+            + "/clm_params.nc"
+        )
     #   flnr = nffun.getvar(tmpdir+'/clm_params.nc','flnr')
     #   os.system(myncap+' -O -s "br_mr = flnr" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
     #   ierr = nffun.putvar(tmpdir+'/clm_params.nc','br_mr', flnr*0.0+2.52e-6)
-    if (options.marsh and options.tide_components_file != ''):
-        print('Adding tidal cycle components from file %s'%options.tide_components_file)
-        print('Assuming file is in NOAA tide component format, degrees and meters units (e.g.: https://tidesandcurrents.noaa.gov/harcon.html?id=8441241&unit=0)')
-        print('Tide datum (tide_baseline parameter) needs to be specified separately. Default is 800 mm')
+    if options.marsh and options.tide_components_file != "":
+        print(
+            "Adding tidal cycle components from file %s" % options.tide_components_file
+        )
+        print(
+            "Assuming file is in NOAA tide component format, degrees and meters units (e.g.: https://tidesandcurrents.noaa.gov/harcon.html?id=8441241&unit=0)"
+        )
+        print(
+            "Tide datum (tide_baseline parameter) needs to be specified separately. Default is 800 mm"
+        )
         import pandas
 
         tidecomps = pandas.read_csv(options.tide_components_file)
         for comp in range(len(tidecomps)):
-            os.system(myncap+' -O -s "tide_coeff_amp_%d = humhol_ht*0+%1.4e" '%(comp+1,tidecomps['Amplitude'].iloc[comp]*1000)+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-            os.system(myncap+' -O -s "tide_coeff_period_%d = humhol_ht*0+%1.4e" '%(comp+1,360*3600/tidecomps['Speed'].iloc[comp])+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-            os.system(myncap+' -O -s "tide_coeff_phase_%d = humhol_ht*0+%1.4e" '%(comp+1,tidecomps['Phase'].iloc[comp]*math.pi/180)+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-            os.system(myncap+' -O -s "tide_baseline = humhol_ht*0+800.0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-    elif (options.marsh and options.tide_forcing_file == ''):
-        print('Tidal cycle coefficients not specified. Model will use GCREW defaults. Can also edit in parm file.')
-    #os.system(myncap+' -O -s "crit_gdd1 = flnr" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-    #os.system(myncap+' -O -s "crit_gdd2 = flnr" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-    #os.system(myncap+' -O -s "crit_onset_gdd = ndays_on" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-    #ierr = nffun.putvar(tmpdir+'/clm_params.nc','crit_gdd1', flnr*0.0+4.8)
-    #ierr = nffun.putvar(tmpdir+'/clm_params.nc','crit_gdd2', flnr*0.0+0.13)
-    #ndays_on = nffun.getvar(tmpdir+'/clm_params.nc','ndays_on')
-    #ierr = nffun.putvar(tmpdir+'/clm_params.nc','crit_onset_gdd', ndays_on*0.0+200.0)
+            os.system(
+                myncap
+                + ' -O -s "tide_coeff_amp_%d = humhol_ht*0+%1.4e" '
+                % (comp + 1, tidecomps["Amplitude"].iloc[comp] * 1000)
+                + tmpdir
+                + "/clm_params.nc "
+                + tmpdir
+                + "/clm_params.nc"
+            )
+            os.system(
+                myncap
+                + ' -O -s "tide_coeff_period_%d = humhol_ht*0+%1.4e" '
+                % (comp + 1, 360 * 3600 / tidecomps["Speed"].iloc[comp])
+                + tmpdir
+                + "/clm_params.nc "
+                + tmpdir
+                + "/clm_params.nc"
+            )
+            os.system(
+                myncap
+                + ' -O -s "tide_coeff_phase_%d = humhol_ht*0+%1.4e" '
+                % (comp + 1, tidecomps["Phase"].iloc[comp] * math.pi / 180)
+                + tmpdir
+                + "/clm_params.nc "
+                + tmpdir
+                + "/clm_params.nc"
+            )
+            os.system(
+                myncap
+                + ' -O -s "tide_baseline = humhol_ht*0+800.0" '
+                + tmpdir
+                + "/clm_params.nc "
+                + tmpdir
+                + "/clm_params.nc"
+            )
+    elif options.marsh and options.tide_forcing_file == "":
+        print(
+            "Tidal cycle coefficients not specified. Model will use GCREW defaults. Can also edit in parm file."
+        )
+    # os.system(myncap+' -O -s "crit_gdd1 = flnr" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+    # os.system(myncap+' -O -s "crit_gdd2 = flnr" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+    # os.system(myncap+' -O -s "crit_onset_gdd = ndays_on" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+    # ierr = nffun.putvar(tmpdir+'/clm_params.nc','crit_gdd1', flnr*0.0+4.8)
+    # ierr = nffun.putvar(tmpdir+'/clm_params.nc','crit_gdd2', flnr*0.0+0.13)
+    # ndays_on = nffun.getvar(tmpdir+'/clm_params.nc','ndays_on')
+    # ierr = nffun.putvar(tmpdir+'/clm_params.nc','crit_onset_gdd', ndays_on*0.0+200.0)
 
     # BSulman: These Nfix constants can break the model if they don't have the right length.
     # os.system(myncap+' -O -s "Nfix_NPP_c1 = br_mr*+1.8" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
@@ -1745,13 +1881,12 @@ if options.topounits_atmdownscale and options.mymodel == "ELM":
 if options.no_methane:
     print("Turning OFF methane cycle")
     xval = subprocess.check_output(
-        ["./xmlquery", "--value", f"{mylsm}_BLDNML_OPTS"],
-        text=True).strip()
-    xval = xval.strip('"').replace("-methane","")
+        ["./xmlquery", "--value", f"{mylsm}_BLDNML_OPTS"], text=True
+    ).strip()
+    xval = xval.strip('"').replace("-methane", "")
     subprocess.run(
-        ["./xmlchange", "--id", f"{mylsm}_BLDNML_OPTS", "--val", xval], 
-        check=True)
-
+        ["./xmlchange", "--id", f"{mylsm}_BLDNML_OPTS", "--val", xval], check=True
+    )
 
 
 # if (options.use_hydrstress):
@@ -1817,10 +1952,7 @@ if "20TR" in compset or options.istrans:
         runcmd("./xmlchange RUN_STARTDATE=1850-01-01")
 
 # No pnetcdf for small cases on compy
-if (
-    "docker" in options.machine
-    or "compy" in options.machine
-) and int(options.np) < 80:
+if ("docker" in options.machine or "compy" in options.machine) and int(options.np) < 80:
     runcmd("./xmlchange PIO_TYPENAME=netcdf")
 
 comps = ["ATM", "LND", "ICE", "OCN", "CPL", "GLC", "ROF", "WAV", "ESP", "IAC"]
@@ -1848,17 +1980,16 @@ if options.rest_n > 0:
 if int(options.maxpatch_pft) != 17:
     print("resetting maxpatch_pft to " + str(options.maxpatch_pft))
     xval = subprocess.check_output(
-        ["./xmlquery","--value", f"{mylsm}_BLDNML_OPTS"], 
-        cwd=casedir,
-        text=True
+        ["./xmlquery", "--value", f"{mylsm}_BLDNML_OPTS"], cwd=casedir, text=True
     ).strip()
     xval = f"-maxpft {options.maxpatch_pft} {xval}"
     subprocess.run(
         ["./xmlchange", "--id", f"{mylsm}_BLDNML_OPTS", "--val", xval],
         cwd=casedir,
         capture_output=True,
-        text=True, 
-        check=True)
+        text=True,
+        check=True,
+    )
 
 # for spinup and transient runs, PIO_TYPENAME is pnetcdf, which now not works well
 if "mac" in options.machine or "cades" in options.machine:
@@ -2481,8 +2612,10 @@ for i in range(1, int(options.ninst) + 1):
         output.write(" use_polygonal_tundra = .true.\n")
         if options.unified_polygonal_tundra:
             output.write(" unified_polygonal_tundra = .true.\n")
-    if options.unified_polygonal_tundra and not options.use_polygonal_tundra: 
-        print("Error:  unified_polygonal_tundra option requires use_polygonal_tundra to be set.  Aborting")
+    if options.unified_polygonal_tundra and not options.use_polygonal_tundra:
+        print(
+            "Error:  unified_polygonal_tundra option requires use_polygonal_tundra to be set.  Aborting"
+        )
         sys.exit(1)
     if options.use_arctic_init:
         output.write(" use_arctic_init = .true.\n")
@@ -2492,16 +2625,16 @@ for i in range(1, int(options.ninst) + 1):
     if options.use_onset_gdd_extension:
         output.write(" use_onset_gdd_extension = .true.\n")
 
-    if (options.alquimia != ""):
+    if options.alquimia != "":
         output.write(" use_alquimia = .TRUE.\n")
-        output.write(" alquimia_inputfile = '%s'\n"%options.alquimia)
+        output.write(" alquimia_inputfile = '%s'\n" % options.alquimia)
 
-    #pft dynamics file for transient run
-    if ('20TR' in compset or options.istrans):
-        if (options.nopftdyn):
-            output.write(" flanduse_timeseries = ' '\n") 
-        elif(options.pftdynfile !=''):
-            output.write(" flanduse_timeseries = '"+options.pftdynfile+"'\n")
+    # pft dynamics file for transient run
+    if "20TR" in compset or options.istrans:
+        if options.nopftdyn:
+            output.write(" flanduse_timeseries = ' '\n")
+        elif options.pftdynfile != "":
+            output.write(" flanduse_timeseries = '" + options.pftdynfile + "'\n")
         else:
             output.write(" flanduse_timeseries = '" + rundir + "/surfdata.pftdyn.nc'\n")
         if options.mymodel == "ELM":
@@ -2577,7 +2710,7 @@ for i in range(1, int(options.ninst) + 1):
         elif options.fates_nutrient != "":
             output.write(" use_lch4 = .true.\n")
         if options.no_methane:
-            output.write(" use_lch4 = .false.\n")        
+            output.write(" use_lch4 = .false.\n")
         if options.nofire:
             output.write(" use_nofire = .true.\n")
         if options.C13:
@@ -2639,18 +2772,30 @@ for i in range(1, int(options.ninst) + 1):
                     )
                 else:
                     output.write(" metdata_type = 'cru-ncep'\n")
-                    output.write(" metdata_bypass = '"+options.ccsm_input+"/atm/datm7/" \
-                         +"atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715/cpl_bypass_full'\n")
-            elif (options.crujra):
-                    output.write(" metdata_type = 'crujra'\n")
-                    output.write(" metdata_bypass = '"+options.ccsm_input+"/atm/datm7/" \
-                         +"atm_forcing.datm7.CRUJRA.0.5d.v1.c190604/cpl_bypass_full'\n")
-            elif (options.trendy25):
-                    output.write(" metdata_type = 'crujra_trendy2025'\n")
-                    output.write(" metdata_bypass = '"+options.ccsm_input+"/atm/datm7/" \
-                         +"atm_forcing.CRUJRA_trendy_2025/cpl_bypass_full'\n")
-            elif (options.gswp3):
-                if (options.livneh):
+                    output.write(
+                        " metdata_bypass = '"
+                        + options.ccsm_input
+                        + "/atm/datm7/"
+                        + "atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715/cpl_bypass_full'\n"
+                    )
+            elif options.crujra:
+                output.write(" metdata_type = 'crujra'\n")
+                output.write(
+                    " metdata_bypass = '"
+                    + options.ccsm_input
+                    + "/atm/datm7/"
+                    + "atm_forcing.datm7.CRUJRA.0.5d.v1.c190604/cpl_bypass_full'\n"
+                )
+            elif options.trendy25:
+                output.write(" metdata_type = 'crujra_trendy2025'\n")
+                output.write(
+                    " metdata_bypass = '"
+                    + options.ccsm_input
+                    + "/atm/datm7/"
+                    + "atm_forcing.CRUJRA_trendy_2025/cpl_bypass_full'\n"
+                )
+            elif options.gswp3:
+                if options.livneh:
                     output.write(" metdata_type = 'gswp3_livneh'\n")
                     output.write(
                         " metdata_bypass = '"
@@ -2720,19 +2865,19 @@ for i in range(1, int(options.ninst) + 1):
         elif options.metdir != "none":
             if options.daymet4 and options.gswp3:
                 output.write(" metdata_type = 'gswp3_daymet4'\n")
-            elif (options.daymet4 and options.era5):
+            elif options.daymet4 and options.era5:
                 if options.daymet4:
                     output.write(" metdata_type = 'era5_daymet4'\n")
                 else:
                     output.write(" metdata_type = 'era5'\n")
-            elif (options.daymet and options.gswp3):
+            elif options.daymet and options.gswp3:
                 output.write(" metdata_type = 'gswp3v1_daymet'\n")
             elif options.gswp3:
                 output.write(" metdata_type = 'gswp3'\n")
-            #else:
+            # else:
             #    output.write(" metdata_type = 'gswp3v1_daymet'\n") # This needs to be updated for other types
-            output.write(" metdata_bypass = '%s'\n"%options.metdir)
-            
+            output.write(" metdata_bypass = '%s'\n" % options.metdir)
+
         # not reanalysis
         else:
             if options.site_forcing == "":
@@ -2793,12 +2938,12 @@ for i in range(1, int(options.ninst) + 1):
                 + "trop_mozart_aero/aero/aerosoldep_rcp4.5_monthly_1849-2104_1.9x2.5_c100402.nc'\n"
             )
 
-    if (options.addco2 != 0):
-      output.write(" add_co2 = "+str(options.addco2)+"\n")
-      output.write(" startdate_add_co2 = '"+str(options.sd_addco2)+"'\n")
+    if options.addco2 != 0:
+        output.write(" add_co2 = " + str(options.addco2) + "\n")
+        output.write(" startdate_add_co2 = '" + str(options.sd_addco2) + "'\n")
 
-    if (cpl_bypass and options.marsh and options.tide_forcing_file != ''):
-        output.write(" tide_file = '%s'"%options.tide_forcing_file)
+    if cpl_bypass and options.marsh and options.tide_forcing_file != "":
+        output.write(" tide_file = '%s'" % options.tide_forcing_file)
 
     if options.addt != 0:
         output.write(" add_temperature = " + str(options.addt) + "\n")
@@ -2809,59 +2954,61 @@ for i in range(1, int(options.ninst) + 1):
         output.write(" startdate_add_co2 = '" + str(options.sd_addco2) + "'\n")
     output.close()
 
-#configure case
-#if (isglobal):
+# configure case
+# if (isglobal):
 os.system("./xmlchange BATCH_SYSTEM=none")
-if (not options.no_config):
-    print('Running case.setup')
-    result = os.system('./case.setup > case_setup.log')
-    if (result > 0):
-        print('Error: runcase.py failed to setup case')
+if not options.no_config:
+    print("Running case.setup")
+    result = os.system("./case.setup > case_setup.log")
+    if result > 0:
+        print("Error: runcase.py failed to setup case")
         sys.exit(1)
 else:
     print("Warning:  No case configure performed")
     sys.exit(1)
 
-#Land CPPDEF modifications
+# Land CPPDEF modifications
 # At least for E3SM v2, cppdefs appear to only work as a list after one "-cppdefs". With repeated "-cppdefs" it only applies the last one!
-status,opts=subprocess.getstatusoutput("./xmlquery -value %s_CONFIG_OPTS"%mylsm)
+status, opts = subprocess.getstatusoutput("./xmlquery -value %s_CONFIG_OPTS" % mylsm)
 if status != 0:
     raise RuntimeError('Command failed: "./xmlquery -value %s_CONFIG_OPTS"%mylsm')
 
-if 'cppdefs' in opts:
-    cppdefs=opts[opts.find('cppdefs')+7:].strip().strip("'").split()
+if "cppdefs" in opts:
+    cppdefs = opts[opts.find("cppdefs") + 7 :].strip().strip("'").split()
 else:
-    cppdefs=[]
+    cppdefs = []
 
-if (options.humhol):
+if options.humhol:
     print("Turning on HUM_HOL modification\n")
     # os.system("./xmlchange -id "+mylsm+"_CONFIG_OPTS --append --val '-cppdefs -DHUM_HOL'")
-    cppdefs.append('-DHUM_HOL')
+    cppdefs.append("-DHUM_HOL")
 
 if options.marsh:
     print("Turning on MARSH modification\n")
     # os.system("./xmlchange -id "+mylsm+"_CONFIG_OPTS --append --val '-cppdefs -DMARSH'")
-    cppdefs.append('-DMARSH')
-if (options.alquimia != ""):
+    cppdefs.append("-DMARSH")
+if options.alquimia != "":
     print("Turning on alquimia interface for compilation and running")
     # os.system("./xmlchange -id "+mylsm+"_CONFIG_OPTS --append --val '-cppdefs -DUSE_ALQUIMIA_LIB'")
-    cppdefs.append('-DUSE_ALQUIMIA_LIB')
-    result = os.system("./xmlchange "+mylsm+"_USE_ALQUIMIA=TRUE")
+    cppdefs.append("-DUSE_ALQUIMIA_LIB")
+    result = os.system("./xmlchange " + mylsm + "_USE_ALQUIMIA=TRUE")
     if result != 0:
-        raise RuntimeError('Command failed: "./xmlchange '+mylsm+'_USE_ALQUIMIA=TRUE"')
-if (options.harvmod):
-    print('Turning on HARVMOD modification\n')
+        raise RuntimeError(
+            'Command failed: "./xmlchange ' + mylsm + '_USE_ALQUIMIA=TRUE"'
+        )
+if options.harvmod:
+    print("Turning on HARVMOD modification\n")
     # os.system("./xmlchange -id "+mylsm+"_CONFIG_OPTS --append --val '-cppdefs -DHARVMOD'")
-    cppdefs.append('-DHARVMOD')
+    cppdefs.append("-DHARVMOD")
 
-if len(cppdefs)>0:
-    cppdefs_str='-cppdefs "'
+if len(cppdefs) > 0:
+    cppdefs_str = '-cppdefs "'
     for cppdef in cppdefs:
-        if cppdef.startswith('-D'):
-            cppdefs_str = cppdefs_str + ' ' + cppdef
+        if cppdef.startswith("-D"):
+            cppdefs_str = cppdefs_str + " " + cppdef
     cppdefs_str = cppdefs_str + '"'
-    print("./xmlchange --append "+mylsm+"_CONFIG_OPTS='%s'"%(cppdefs_str))
-    os.system("./xmlchange --append "+mylsm+"_CONFIG_OPTS='%s'"%(cppdefs_str))
+    print("./xmlchange --append " + mylsm + "_CONFIG_OPTS='%s'" % (cppdefs_str))
+    os.system("./xmlchange --append " + mylsm + "_CONFIG_OPTS='%s'" % (cppdefs_str))
 
 # Global CPPDEF modifications
 if cpl_bypass:
@@ -2903,14 +3050,16 @@ if cpl_bypass:
             "echo 'string(APPEND CPPDEFS \" -DCPL_BYPASS\")' >> cmake_macros/universal.cmake"
         )
 
-    if (options.alquimia != ""):
-        os.system('''echo 'set(ELM_USE_ALQUIMIA "TRUE")' >> cmake_macros/universal.cmake''')
+    if options.alquimia != "":
+        os.system(
+            """echo 'set(ELM_USE_ALQUIMIA "TRUE")' >> cmake_macros/universal.cmake"""
+        )
 
-#copy sourcemods
-os.chdir('..')
-if (options.srcmods_loc != ''):
-    if (not os.path.exists(options.srcmods_loc)):
-        print('Invalid srcmods directory.  Exiting')
+# copy sourcemods
+os.chdir("..")
+if options.srcmods_loc != "":
+    if not os.path.exists(options.srcmods_loc):
+        print("Invalid srcmods directory.  Exiting")
         sys.exit(1)
     options.srcmods_loc = os.path.abspath(options.srcmods_loc)
     runcmd("cp -r " + options.srcmods_loc + "/* ./" + casename + "/SourceMods")
@@ -2919,18 +3068,18 @@ if options.caseroot == "./":
 else:
     chdir(casedir)
 
-os.system('mkdir Srcfiles')
-#clean build if requested
-if (options.clean_build):
-    os.system('./case.build --clean')
-#compile model
-if (not options.no_build):
-    print('Running case.build')
-    result = os.system('./case.build') 
-    #result = os.system('./case.build > case_build.log')
-    if (result > 0):
-        print('Error:  Pointclm.py failed to build case.  Aborting')
-        print('See '+os.getcwd()+'/case_build.log for details')
+os.system("mkdir Srcfiles")
+# clean build if requested
+if options.clean_build:
+    os.system("./case.build --clean")
+# compile model
+if not options.no_build:
+    print("Running case.build")
+    result = os.system("./case.build")
+    # result = os.system('./case.build > case_build.log')
+    if result > 0:
+        print("Error:  Pointclm.py failed to build case.  Aborting")
+        print("See " + os.getcwd() + "/case_build.log for details")
         sys.exit(1)
 else:
     runcmd("./xmlchange BUILD_COMPLETE=TRUE")
@@ -3099,10 +3248,16 @@ if not cpl_bypass and not isglobal:
         myinput.close()
         myoutput.close()
     # run preview_namelists to copy user_datm.streams.... to CaseDocs
-    if os.path.exists(os.path.abspath(options.csmdir)+'/cime/scripts/Tools/preview_namelists'):
-      os.system(os.path.abspath(options.csmdir)+'/cime/scripts/Tools/preview_namelists')
+    if os.path.exists(
+        os.path.abspath(options.csmdir) + "/cime/scripts/Tools/preview_namelists"
+    ):
+        os.system(
+            os.path.abspath(options.csmdir) + "/cime/scripts/Tools/preview_namelists"
+        )
     else:
-      os.system(os.path.abspath(options.csmdir)+'/cime/CIME/Tools/preview_namelists')
+        os.system(
+            os.path.abspath(options.csmdir) + "/cime/CIME/Tools/preview_namelists"
+        )
 
 
 # copy site data to run directory
@@ -3192,108 +3347,198 @@ if (options.ensemble_file != "" or int(options.mc_ensemble) != -1) and (
         myinput.close()
     elif int(options.mc_ensemble) > 0:
         nsamples = int(options.mc_ensemble)
-        samples=numpy.zeros((n_parameters,nsamples), dtype=float)
-        for i in range(0,nsamples):
-            for j in range(0,n_parameters):
-                samples[j][i] = param_min[j]+(param_max[j]-param_min[j])*numpy.random.rand(1)
-        numpy.savetxt('mcsamples_'+casename+'.txt', numpy.transpose(samples))
-        options.ensemble_file = 'mcsamples_'+casename+'.txt'
+        samples = numpy.zeros((n_parameters, nsamples), dtype=float)
+        for i in range(0, nsamples):
+            for j in range(0, n_parameters):
+                samples[j][i] = param_min[j] + (
+                    param_max[j] - param_min[j]
+                ) * numpy.random.rand(1)
+        numpy.savetxt("mcsamples_" + casename + ".txt", numpy.transpose(samples))
+        options.ensemble_file = "mcsamples_" + casename + ".txt"
 
-    print('')
-    print('')
-    print('Parameter ensembles selected:') 
-    print(str(n_parameters)+' parameters are being modified') 
-    print(str(nsamples)+' parameter samples provided')
-  
-    #total number of processors required in each pbs script
-    np_total = int(options.np)*int(options.ng)
-    #number of scripts required
-    n_scripts = int(math.ceil(nsamples/float(options.ninst*options.ng)))
- 
-    num=0
-    #Launch ensemble if requested 
-    mysubmit_type = 'qsub'
-    if ('cades' in options.machine or 'compy' in options.machine or 'ubuntu' in options.machine or \
-        options.machine == 'anvil' or options.machine == 'chrysalis'):
-        mysubmit_type = 'sbatch'
-    if (options.ensemble_file != ''):
-        os.system('mkdir -p '+PTCLMdir+'/scripts/'+myscriptsdir)
-        output_run  = open(PTCLMdir+'/scripts/'+myscriptsdir+'/ensemble_run_'+casename+'.pbs','w')
-        timestr=str(int(float(options.walltime)))+':'+str(int((float(options.walltime)- \
-                                     int(float(options.walltime)))*60))+':00'
-        if (options.debug):
-           timestr='00:30:00'
-           if ('compy' in options.machine):
-             timestr='02:00:00'
+    print("")
+    print("")
+    print("Parameter ensembles selected:")
+    print(str(n_parameters) + " parameters are being modified")
+    print(str(nsamples) + " parameter samples provided")
+
+    # total number of processors required in each pbs script
+    np_total = int(options.np) * int(options.ng)
+    # number of scripts required
+    n_scripts = int(math.ceil(nsamples / float(options.ninst * options.ng)))
+
+    num = 0
+    # Launch ensemble if requested
+    mysubmit_type = "qsub"
+    if (
+        "cades" in options.machine
+        or "compy" in options.machine
+        or "ubuntu" in options.machine
+        or options.machine == "anvil"
+        or options.machine == "chrysalis"
+    ):
+        mysubmit_type = "sbatch"
+    if options.ensemble_file != "":
+        os.system("mkdir -p " + PTCLMdir + "/scripts/" + myscriptsdir)
+        output_run = open(
+            PTCLMdir
+            + "/scripts/"
+            + myscriptsdir
+            + "/ensemble_run_"
+            + casename
+            + ".pbs",
+            "w",
+        )
+        timestr = (
+            str(int(float(options.walltime)))
+            + ":"
+            + str(int((float(options.walltime) - int(float(options.walltime))) * 60))
+            + ":00"
+        )
+        if options.debug:
+            timestr = "00:30:00"
+            if "compy" in options.machine:
+                timestr = "02:00:00"
         output_run.write("#!/bin/csh -f\n")
-        if (mysubmit_type == 'qsub'):
-            output_run.write('#PBS -l walltime='+timestr+'\n')
-            output_run.write('#PBS -N ens_'+casename+'\n')
-            if (options.project != ''):
-                output_run.write('#PBS -A '+options.project+'\n')
-            #if (options.machine == 'cades'):
+        if mysubmit_type == "qsub":
+            output_run.write("#PBS -l walltime=" + timestr + "\n")
+            output_run.write("#PBS -N ens_" + casename + "\n")
+            if options.project != "":
+                output_run.write("#PBS -A " + options.project + "\n")
+            # if (options.machine == 'cades'):
             #    output_run.write('#PBS -l nodes='+str(int(math.ceil(np_total/(ppn*1.0))))+ \
             #                        ':ppn='+str(ppn)+'\n')
             #    output_run.write('#PBS -W group_list=cades-ccsi\n')
-            #else:
-            output_run.write('#PBS -l nodes='+str(int(math.ceil(np_total/(ppn*1.0))))+ \
-                                     '\n')
+            # else:
+            output_run.write(
+                "#PBS -l nodes=" + str(int(math.ceil(np_total / (ppn * 1.0)))) + "\n"
+            )
         else:
-            output_run.write('#SBATCH --time='+timestr+'\n')
-            output_run.write('#SBATCH -J ens_'+casename+'\n')
-            output_run.write('#SBATCH --nodes='+str(int(math.ceil(np_total/(ppn*1.0))))+'\n')
-            if ('compy' in options.machine and options.debug):
-              output_run.write('#SBATCH --qos=short\n')
-            if ('cades-baseline' in options.machine):
-              output_run.write('#SBATCH -A CLI185\n')
-              output_run.write('#SBATCH -p batch_ccsi\n')
-              output_run.write('#SBATCH --ntasks-per-node 128\n')
-            elif ('cades' in options.machine):
-               output_run.write('#SBATCH -A ccsi\n')
-               output_run.write('#SBATCH -p batch\n')
-               output_run.write('#SBATCH --mem=64G\n')
-               output_run.write('#SBATCH --ntasks-per-node 32\n')
-            if ('anvil' in options.machine):
-              output_run.write('#SBATCH -A condo\n')
-              output_run.write('#SBATCH -p acme-small\n')
+            output_run.write("#SBATCH --time=" + timestr + "\n")
+            output_run.write("#SBATCH -J ens_" + casename + "\n")
+            output_run.write(
+                "#SBATCH --nodes=" + str(int(math.ceil(np_total / (ppn * 1.0)))) + "\n"
+            )
+            if "compy" in options.machine and options.debug:
+                output_run.write("#SBATCH --qos=short\n")
+            if "cades-baseline" in options.machine:
+                output_run.write("#SBATCH -A CLI185\n")
+                output_run.write("#SBATCH -p batch_ccsi\n")
+                output_run.write("#SBATCH --ntasks-per-node 128\n")
+            elif "cades" in options.machine:
+                output_run.write("#SBATCH -A ccsi\n")
+                output_run.write("#SBATCH -p batch\n")
+                output_run.write("#SBATCH --mem=64G\n")
+                output_run.write("#SBATCH --ntasks-per-node 32\n")
+            if "anvil" in options.machine:
+                output_run.write("#SBATCH -A condo\n")
+                output_run.write("#SBATCH -p acme-small\n")
         output_run.write("\n")
-        if ('cades' in options.machine or 'compy' in options.machine or 'anvil' in options.machine or 'chrysalis' in options.machine):
-            #get the software environment
-            softenvfile = open(casedir+'/software_environment.txt','r')
+        if (
+            "cades" in options.machine
+            or "compy" in options.machine
+            or "anvil" in options.machine
+            or "chrysalis" in options.machine
+        ):
+            # get the software environment
+            softenvfile = open(casedir + "/software_environment.txt", "r")
             for line in softenvfile:
                 if "LD_LIBRARY_PATH" in line[0:20]:
                     output_run.write("setenv " + line.replace("=", " "))
             softenvfile.close()
-        output_run.write('cd '+PTCLMdir+'\n')
-        cnp = 'True'
-        if (options.cn_only or options.c_only):
-            cnp= 'False'
-        if ('docker' in options.machine or 'oic' in options.machine or 'cades' in options.machine or 'ubuntu' in options.machine):
-            mpicmd = 'mpirun'
-            if ('cades' in options.machine):
-               #mpicmd = '/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/openmpi/1.10.3/centos7.2_gnu5.3.0/bin/mpirun'
-               mpicmd = 'srun'
-               cmd = mpicmd+' -n '+str(np_total)+' python manage_ensemble.py ' \
-               +'--case '+casename+' --runroot '+runroot+' --n_ensemble '+str(nsamples)+' --ens_file '+ \
-               options.ensemble_file+' --exeroot '+exeroot+' --parm_list '+options.parm_list+' --cnp '+cnp + \
-               ' --site '+options.site+' --model_name '+model_name
-        elif ('compy' in options.machine):
-            cmd = 'mpirun -np '+str(np_total)+' python manage_ensemble.py ' \
-               +'--case '+casename+' --runroot '+runroot+' --n_ensemble '+str(nsamples)+' --ens_file '+ \
-               options.ensemble_file+' --exeroot '+exeroot+' --parm_list '+options.parm_list+' --cnp '+cnp + \
-               ' --site '+options.site+' --model_name '+model_name
-        elif ('anvil' in options.machine or 'chrysalis' in options.machine):
-            cmd = 'srun -n '+str(np_total)+' python manage_ensemble.py ' \
-               +'--case '+casename+' --runroot '+runroot+' --n_ensemble '+str(nsamples)+' --ens_file '+ \
-               options.ensemble_file+' --exeroot '+exeroot+' --parm_list '+options.parm_list+' --cnp '+cnp + \
-               ' --site '+options.site+' --model_name '+model_name
-        if (options.constraints != ''):
-            cmd = cmd + ' --constraints '+options.constraints
-        if (options.postproc_file != ''): 
-            cmd = cmd + ' --postproc_file '+options.postproc_file
-        if (options.spruce_treatments):
-            cmd = cmd + ' --spruce_treatments'
-        output_run.write(cmd+'\n')
+        output_run.write("cd " + PTCLMdir + "\n")
+        cnp = "True"
+        if options.cn_only or options.c_only:
+            cnp = "False"
+        if (
+            "docker" in options.machine
+            or "oic" in options.machine
+            or "cades" in options.machine
+            or "ubuntu" in options.machine
+        ):
+            mpicmd = "mpirun"
+            if "cades" in options.machine:
+                # mpicmd = '/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/openmpi/1.10.3/centos7.2_gnu5.3.0/bin/mpirun'
+                mpicmd = "srun"
+                cmd = (
+                    mpicmd
+                    + " -n "
+                    + str(np_total)
+                    + " python manage_ensemble.py "
+                    + "--case "
+                    + casename
+                    + " --runroot "
+                    + runroot
+                    + " --n_ensemble "
+                    + str(nsamples)
+                    + " --ens_file "
+                    + options.ensemble_file
+                    + " --exeroot "
+                    + exeroot
+                    + " --parm_list "
+                    + options.parm_list
+                    + " --cnp "
+                    + cnp
+                    + " --site "
+                    + options.site
+                    + " --model_name "
+                    + model_name
+                )
+        elif "compy" in options.machine:
+            cmd = (
+                "mpirun -np "
+                + str(np_total)
+                + " python manage_ensemble.py "
+                + "--case "
+                + casename
+                + " --runroot "
+                + runroot
+                + " --n_ensemble "
+                + str(nsamples)
+                + " --ens_file "
+                + options.ensemble_file
+                + " --exeroot "
+                + exeroot
+                + " --parm_list "
+                + options.parm_list
+                + " --cnp "
+                + cnp
+                + " --site "
+                + options.site
+                + " --model_name "
+                + model_name
+            )
+        elif "anvil" in options.machine or "chrysalis" in options.machine:
+            cmd = (
+                "srun -n "
+                + str(np_total)
+                + " python manage_ensemble.py "
+                + "--case "
+                + casename
+                + " --runroot "
+                + runroot
+                + " --n_ensemble "
+                + str(nsamples)
+                + " --ens_file "
+                + options.ensemble_file
+                + " --exeroot "
+                + exeroot
+                + " --parm_list "
+                + options.parm_list
+                + " --cnp "
+                + cnp
+                + " --site "
+                + options.site
+                + " --model_name "
+                + model_name
+            )
+        if options.constraints != "":
+            cmd = cmd + " --constraints " + options.constraints
+        if options.postproc_file != "":
+            cmd = cmd + " --postproc_file " + options.postproc_file
+        if options.spruce_treatments:
+            cmd = cmd + " --spruce_treatments"
+        output_run.write(cmd + "\n")
         output_run.close()
 
         if not options.no_submit:
