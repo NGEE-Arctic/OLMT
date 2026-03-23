@@ -483,6 +483,13 @@ parser.add_option(
     help="Turn on the polygonal tundra parameterizations, NGEE Arctic Phase 3 IM1",
     action="store_true",
 )
+parser.add_option(
+    "--unified_polygonal_tundra",
+    dest="unified_polygonal_tundra",
+    default=False,
+    help="Use unified polygonal tundra parameterization across all topounits",
+    action="store_true",
+)
 # cold initialization:
 parser.add_option(
     "--use_arctic_init",
@@ -1060,6 +1067,8 @@ for row in AFdatareader:
         # polygonal tundra
         if options.use_polygonal_tundra:
             basecmd = basecmd + " --use_polygonal_tundra"
+        if options.unified_polygonal_tundra:
+            basecmd = basecmd + " --unified_polygonal_tundra"
         if options.use_arctic_init:
             basecmd = basecmd + " --use_arctic_init"
         # Arctic hillslope hydrology
