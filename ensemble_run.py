@@ -295,9 +295,9 @@ for filename in os.listdir(UQdir+'/'+options.constraints):
                 elif (depth > 0):
                     #depth-specific constraint (column level only)
                     layers = [0,1.8,4.5,9.1,16.6,28.9,49.3,82.9,138.3,229.6,343.3]
-                    for l in range(0,10):
-                        if (depth >= layers[l] and depth < layers[l+1]):
-                            thislayer = l
+                    for val in range(0,10):
+                        if (depth >= layers[val] and depth < layers[val+1]):
+                            thislayer = val
                             model_val = myvals[doy,thislayer,0]   
                             sse = sse + ((model_val-value) / unc )**2        
                             myoutput.write(str(myvarname)+' '+yst+' '+str(doy)+' '+str(depth)+' '+ \

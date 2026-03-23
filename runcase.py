@@ -1082,14 +1082,14 @@ if options.mymodel == "":
         sys.exit(1)
 
 # check for valid csm directory
-if os.path.exists(options.csmdir) == False:
+if not os.path.exists(options.csmdir):
     print("Error:  invalid model root directory.  Please specify with --model_root")
     sys.exit(1)
 else:
     csmdir = options.csmdir
     scriptsdir = csmdir + "/cime/scripts"
 # case directory
-if options.caseroot == "" or (os.path.exists(options.caseroot) == False):
+if options.caseroot == "" or not os.path.exists(options.caseroot):
     caseroot = csmdir + "/cime/scripts"
 else:
     caseroot = os.path.abspath(options.caseroot)
@@ -1098,7 +1098,7 @@ else:
 runroot = os.path.abspath(options.runroot)
 
 # check for valid input data directory
-if options.ccsm_input == "" or (os.path.exists(options.ccsm_input) == False):
+if options.ccsm_input == "" or not os.path.exists(options.ccsm_input):
     print("Error:  invalid input data directory")
     sys.exit(1)
 else:
@@ -1185,9 +1185,9 @@ if options.exit_spinup:
 
 if options.finidat == "" and options.finidat_case == "":  # not user-defined
     if (
-        options.coldstart == False
+        not options.coldstart
         and compset == "I1850CLM45" + mybgc
-        and options.ad_spinup == False
+        and not options.ad_spinup
     ):
         if options.mycaseid != "":
             options.finidat_case = (
@@ -1225,7 +1225,7 @@ if options.finidat == "" and options.finidat_case == "":  # not user-defined
             finidat_year = 1850
 
             # finidat is required for transient compset
-            if os.path.exists(runroot + "/" + options.finidat_case) == False:
+            if not os.path.exists(runroot + "/" + options.finidat_case):
                 print(
                     "Error:  must provide initial data file for I20TRCLM45CN/BGC compset OR "
                     + runroot
@@ -1331,7 +1331,7 @@ if os.path.exists(casedir):
 print("CASE directory is: " + casedir)
 
 # Construct case build and run directory
-if options.exeroot == "" or (os.path.exists(options.exeroot) == False):
+if options.exeroot == "" or not os.path.exists(options.exeroot):
     exeroot = runroot + "/" + casename + "/bld"
 else:
     options.no_build = True
@@ -1340,7 +1340,7 @@ print("CASE exeroot is: " + exeroot)
 rundir = runroot + "/" + casename + "/run"
 print("CASE rundir is: " + rundir)
 if options.rmold:
-    if options.no_build == False:
+    if not options.no_build:
         print("Removing build directory: " + exeroot)
         runcmd("rm -rf " + exeroot)
     print("Removing run directory: " + rundir)
@@ -1443,7 +1443,7 @@ if options.metdir != "none":
 # get site year information
 sitedatadir = os.path.abspath(PTCLMfiledir)
 chdir(sitedatadir)
-if isglobal == False:
+if not isglobal:
     AFdatareader = csv.reader(open(options.sitegroup + "_sitedata.txt", "r"))
     for row in AFdatareader:
         if row[0] == options.site:
@@ -1488,7 +1488,7 @@ else:
             endyear = 1972
 
 ptstr = ""
-if isglobal == False:
+if not isglobal:
     ptstr = str(numxpts) + "x" + str(numypts) + "pt"
 chdir(csmdir + "/cime/scripts")
 
@@ -1561,8 +1561,8 @@ if ( 'chrysalis' in options.machine or 'compy' in options.machine or 'ubuntu' in
             os.system(myncap+' -O -s "tide_coeff_period_%d = humhol_ht*0+%1.4e" '%(comp+1,360*3600/tidecomps['Speed'].iloc[comp])+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
             os.system(myncap+' -O -s "tide_coeff_phase_%d = humhol_ht*0+%1.4e" '%(comp+1,tidecomps['Phase'].iloc[comp]*math.pi/180)+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
             os.system(myncap+' -O -s "tide_baseline = humhol_ht*0+800.0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-        elif options.marsh and options.tide_forcing_file == '':
-            print('Tidal cycle coefficients not specified. Model will use GCREW defaults. Can also edit in parm file.')
+    elif (options.marsh and options.tide_forcing_file == ''):
+        print('Tidal cycle coefficients not specified. Model will use GCREW defaults. Can also edit in parm file.')
     #os.system(myncap+' -O -s "crit_gdd1 = flnr" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
     #os.system(myncap+' -O -s "crit_gdd2 = flnr" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
     #os.system(myncap+' -O -s "crit_onset_gdd = ndays_on" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
@@ -1769,7 +1769,7 @@ runcmd("./xmlchange DIN_LOC_ROOT=" + options.ccsm_input)
 runcmd("./xmlchange DIN_LOC_ROOT_CLMFORC=" + options.ccsm_input + "/atm/datm7/")
 
 # define mask and resoultion
-if isglobal == False:
+if not isglobal:
     runcmd(
         "./xmlchange "
         + mylsm
@@ -1829,7 +1829,7 @@ if not cpl_bypass:
         if options.gswp3:
             runcmd("./xmlchange DATM_MODE=CLMGSWP3v1")
     else:
-        if isglobal == False:
+        if not isglobal:
             runcmd("./xmlchange DATM_MODE=CLM1PT")
     runcmd("./xmlchange DATM_CLMNCEP_YR_START=" + str(startyear))
     runcmd("./xmlchange DATM_CLMNCEP_YR_END=" + str(endyear))
@@ -1850,8 +1850,8 @@ if options.branch or options.exit_spinup:
 else:
     if (
         ("CN" in compset or "BGC" in compset)
-        and options.ad_spinup == False
-        and options.coldstart == False
+        and not options.ad_spinup
+        and not options.coldstart
     ):
         runcmd("./xmlchange RUN_REFDATE=" + finidat_yst[1:] + "-01-01")
 
@@ -2413,7 +2413,7 @@ for i in range(1, int(options.ninst) + 1):
         myline = myline + "\n"
         output.write(myline + "\n")
 
-    if options.spinup_vars and (not "20TR" in compset) and (not options.istrans):
+    if options.spinup_vars and ("20TR" not in compset) and (not options.istrans):
         output.write(" hist_empty_htapes = .true.\n")
         h0varst = " hist_fincl1 = "
         for v in var_list_spinup:
@@ -2461,7 +2461,7 @@ for i in range(1, int(options.ninst) + 1):
 
     if options.ad_spinup:
         # Write long-term average pool values
-        if not "ED" in compset and not "FATES" in compset:
+        if "ED" not in compset and "FATES" not in compset:
             output.write(" hist_dov2xy = .true., .false.\n")
             h1_advars = [
                 "CWDX_vr",
@@ -2490,7 +2490,7 @@ for i in range(1, int(options.ninst) + 1):
             output.write(" suplphos = 'ALL'\n")
         if options.mymodel == "ELM":
             output.write(" finidat = ''\n")
-    elif options.coldstart == False:
+    elif not options.coldstart:
         # user-defined initial data file
         output.write(" finidat = '" + finidat + "'\n")
 
@@ -2947,8 +2947,8 @@ if cpl_bypass:
             "echo 'string(APPEND CPPDEFS \" -DCPL_BYPASS\")' >> cmake_macros/universal.cmake"
         )
 
-  if (options.alquimia != ""):
-      os.system('''echo 'set(ELM_USE_ALQUIMIA "TRUE")' >> cmake_macros/universal.cmake''')
+    if (options.alquimia != ""):
+        os.system('''echo 'set(ELM_USE_ALQUIMIA "TRUE")' >> cmake_macros/universal.cmake''')
 
 #copy sourcemods
 os.chdir('..')
@@ -3195,7 +3195,7 @@ if (
 chdir(PTCLMdir)
 
 if (options.ensemble_file != "" or int(options.mc_ensemble) != -1) and (
-    options.constraints == "" or (options.constraints != "" and not "1850" in casename)
+    options.constraints == "" or (options.constraints != "" and "1850" not in casename)
 ):
     if not (os.path.isfile(options.parm_list)):
         print("parm_list file does not exist")
@@ -3351,5 +3351,3 @@ if (options.ensemble_file != "" or int(options.mc_ensemble) != -1) and (
                 + casename
                 + ".pbs"
             )
-
-# END

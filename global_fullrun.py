@@ -281,7 +281,7 @@ elif (options.machine == 'titan' or options.machine == 'eos'):
     ccsm_input = '/lustre/atlas/world-shared/cli900/cesm/inputdata'
 elif (options.machine == 'cades' or options.machine == 'metis'):
     ccsm_input = '/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/'
-elif (options.machine == 'edison' or 'cori' in options.machine):
+elif (options.machine == 'edison'):
     ccsm_input = '/project/projectdirs/acme/inputdata'
 elif ('anvil' in options.machine):
     ccsm_input = '/home/ccsm-data/inputdata'
@@ -299,7 +299,7 @@ print(options.machine)
 if (options.compiler == ''):
     if (options.machine == 'titan' or options.machine == 'metis'):
         options.compiler = 'pgi'
-    if (options.machine == 'eos' or options.machine == 'edison' or 'cori' in options.machine):
+    if (options.machine == 'eos' or options.machine == 'edison'):
         options.compiler = 'intel'
     if (options.machine == 'cades'):
         options.compiler = 'gnu'
@@ -310,7 +310,7 @@ if (options.compiler == ''):
 
 #default MPIlibs
 if (options.mpilib == ''):    
-    if ('cori' in options.machine or 'edison' in options.machine):
+    if ('edison' in options.machine):
         options.mpilib = 'mpt'  
     elif ('cades' in options.machine):
         options.mpilib = 'openmpi'
@@ -394,7 +394,7 @@ if (options.runroot == ''):
         runroot = csmdir+'/run'
 else:
     runroot = os.path.abspath(options.runroot)
-if (options.caseroot == '' or (os.path.exists(options.caseroot) == False)):
+if (options.caseroot == '' or (not os.path.exists(options.caseroot))):
     caseroot = os.path.abspath(csmdir+'/cime/scripts')
 else:
     caseroot = os.path.abspath(options.caseroot)
@@ -465,8 +465,8 @@ if (options.region != ''):
 else:
     lat_bounds = options.lat_bounds.split(',')
     lon_bounds = options.lon_bounds.split(',')
-lat_bounds = [float(l) for l in lat_bounds]
-lon_bounds = [float(l) for l in lon_bounds]
+lat_bounds = [float(val) for val in lat_bounds]
+lon_bounds = [float(val) for val in lon_bounds]
 if (lon_bounds[0] > -180 or lon_bounds[1] < 180 or lat_bounds[0] > -90 or \
         lat_bounds[1] < 90):
     isregional=True
@@ -477,9 +477,9 @@ basecmd = 'python runcase.py --surfdata_grid --ccsm_input '+ \
 if (options.point_list != ''):
     basecmd = basecmd+' --point_list '+options.point_list
     # changing resolution of extracted grid point area
-    if(options.point_area_kmxkm!=None):# area in a square measured by kmxkm
+    if(options.point_area_kmxkm is not None):# area in a square measured by kmxkm
         basecmd = basecmd+' --point_area_kmxkm '+options.point_area_kmxkm
-    elif(options.point_area_degxdeg!=None):# area in a square measured by degreexdegree
+    elif(options.point_area_degxdeg is not None):# area in a square measured by degreexdegree
         basecmd = basecmd+' --point_area_degxdeg '+options.point_area_degxdeg
     lat_bounds = [-999,-999]
     lon_bounds = [-999,-999]
@@ -547,7 +547,8 @@ if (options.daymet):
     basecmd = basecmd+' --daymet'
 if (options.daymet4): # gswp3 v2 spatially-downscaled by daymet v4, usually together with user-defined domain and surface data
     basecmd = basecmd+' --daymet4'
-    if (not options.gswp3): basecmd = basecmd+' --gswp3'
+    if (not options.gswp3): 
+        basecmd = basecmd+' --gswp3'
 if (options.cplhist):
     basecmd = basecmd+' --cplhist'
 if (options.mymask != ''):
@@ -738,22 +739,26 @@ if ((options.cruncep or options.cruncepv8) \
 os.system('mkdir -p temp')
 
 #build cases
-if (options.noad == False):
+if (not options.noad):
     print('\nSetting up ad_spinup case\n')
     ierror = os.system(cmd_adsp)
-    if ierror != 0: sys.exit(-1)
-if (options.nofn == False):
+    if ierror != 0: 
+        sys.exit(-1)
+if (not options.nofn):
     print('\nSetting up final spinup case\n')
     ierror = os.system(cmd_fnsp)
-    if ierror != 0: sys.exit(-1)
-if (options.notrans == False):
+    if ierror != 0: 
+        sys.exit(-1)
+if (not options.notrans):
     print('\nSetting up transient case\n')
     ierror = os.system(cmd_trns)
-    if ierror != 0: sys.exit(-1)
+    if ierror != 0: 
+        sys.exit(-1)
 if ((options.cruncep or options.cruncepv8) and not options.cpl_bypass and not options.notrans):
     print('\nSetting up transient case phase 2\n')
     ierror = os.system(cmd_trns2)
-    if ierror != 0: sys.exit(-1)
+    if ierror != 0: 
+        sys.exit(-1)
         
 
 cases=[]
@@ -763,11 +768,11 @@ if mycaseid !='':
 else:
     basecase=res
 
-if (options.noad == False):
+if (not options.noad):
     cases.append(basecase+'_'+mymodel_adsp+'_ad_spinup')
-if (options.nofn == False):
+if (not options.nofn):
     cases.append(basecase+'_'+mymodel_fnsp)
-if (options.notrans == False):
+if (options.notrans):
     cases.append(basecase+'_'+mymodel_trns)
 
 if (options.mc_ensemble <= 0):
