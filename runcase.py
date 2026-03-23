@@ -912,6 +912,13 @@ parser.add_option(
     action="store_true",
 )
 parser.add_option(
+    "--unified_polygonal_tundra",
+    dest="unified_polygonal_tundra",
+    default=False,
+    help="Use unified polygonal tundra parameterization across all topounits",
+    action="store_true",
+)
+parser.add_option(
     "--use_arctic_init",
     dest="use_arctic_init",
     default=False,
@@ -1299,7 +1306,7 @@ mysimyr = 1850
 #    #note - spinup with 2000 conditions for FATES
 #    mysimyr=2000
 
-if options.nopointdata == False:
+if not options.nopointdata:
     ptcmd = (
         "python makepointdata.py --ccsm_input "
         + options.ccsm_input
@@ -2472,6 +2479,11 @@ for i in range(1, int(options.ninst) + 1):
     # NGEE Arctic IM1
     if options.use_polygonal_tundra:
         output.write(" use_polygonal_tundra = .true.\n")
+        if options.unified_polygonal_tundra:
+            output.write(" unified_polygonal_tundra = .true.\n")
+    if options.unified_polygonal_tundra and not options.use_polygonal_tundra: 
+        print("Error:  unified_polygonal_tundra option requires use_polygonal_tundra to be set.  Aborting")
+        sys.exit(1)
     if options.use_arctic_init:
         output.write(" use_arctic_init = .true.\n")
     # NGEE Arctic IM2
@@ -2800,7 +2812,7 @@ for i in range(1, int(options.ninst) + 1):
 #configure case
 #if (isglobal):
 os.system("./xmlchange BATCH_SYSTEM=none")
-if (options.no_config == False):
+if (not options.no_config):
     print('Running case.setup')
     result = os.system('./case.setup > case_setup.log')
     if (result > 0):
@@ -2897,7 +2909,7 @@ if cpl_bypass:
 #copy sourcemods
 os.chdir('..')
 if (options.srcmods_loc != ''):
-    if (os.path.exists(options.srcmods_loc) == False):
+    if (not os.path.exists(options.srcmods_loc)):
         print('Invalid srcmods directory.  Exiting')
         sys.exit(1)
     options.srcmods_loc = os.path.abspath(options.srcmods_loc)
@@ -2912,7 +2924,7 @@ os.system('mkdir Srcfiles')
 if (options.clean_build):
     os.system('./case.build --clean')
 #compile model
-if (options.no_build == False):
+if (not options.no_build):
     print('Running case.build')
     result = os.system('./case.build') 
     #result = os.system('./case.build > case_build.log')
@@ -3062,7 +3074,7 @@ if not cpl_bypass and not isglobal:
         myoutput.close()
 
     # reverse directories for CLM1PT and site
-    if options.cruncep == False:
+    if not options.cruncep:
         myinput = open(
             "./Buildconf/datmconf/datm.streams.txt.CLM1PT." + mylsm + "_USRDAT"
         )
@@ -3099,7 +3111,7 @@ if options.domainfile == "":
     runcmd("cp " + PTCLMdir + "/temp/domain.nc " + runroot + "/" + casename + "/run/")
 if options.surffile == "":
     runcmd("cp " + PTCLMdir + "/temp/surfdata.nc " + runroot + "/" + casename + "/run/")
-if "20TR" in compset and options.nopftdyn == False and options.pftdynfile == "":
+if "20TR" in compset and not options.nopftdyn and options.pftdynfile == "":
     runcmd(
         "cp "
         + PTCLMdir
@@ -3112,7 +3124,7 @@ if "20TR" in compset and options.nopftdyn == False and options.pftdynfile == "":
 
 # submit job if requested
 if (
-    options.no_submit == False
+    not options.no_submit
     and int(options.mc_ensemble) < 0
     and options.ensemble_file == ""
 ):
@@ -3284,7 +3296,7 @@ if (options.ensemble_file != "" or int(options.mc_ensemble) != -1) and (
         output_run.write(cmd+'\n')
         output_run.close()
 
-        if options.no_submit == False:
+        if not options.no_submit:
             runcmd(
                 mysubmit_type
                 + " "
