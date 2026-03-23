@@ -6,7 +6,6 @@ def getvar(fname, varname):
     try:
         import Scientific.IO.NetCDF as netcdf
     except ImportError:
-        import scipy
         from scipy.io import netcdf
         usescipy = True
     if (usescipy):
@@ -26,7 +25,6 @@ def putvar(fname, varname, varvals):
     try:
         import Scientific.IO.NetCDF as netcdf
     except ImportError:
-        import scipy
         from scipy.io import netcdf
         usescipy = True
     if (usescipy):

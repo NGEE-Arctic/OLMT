@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-import os, sys, csv, time, math
+import os
+import sys
+import csv
+import math
 from optparse import OptionParser
 import numpy
 import netcdf4_functions as nffun
@@ -459,17 +462,17 @@ if (n_grids > 1):
     #ierr = os.system('ncrcat -h '+domainfile_list+' '+domainfile_new) # OS error if '_list' too long
     ierr = os.system('find ./temp/ -name "'+domainfile_tmp+ \
                      '" | xargs ls | sort | ncrcat -O -h -o'+domainfile_new)
-    if(ierr!=0): raise RuntimeError('Error: ncrcat -', ierr); #os.sys.exit()
+    if(ierr!=0): raise RuntimeError('Error: ncrcat -', ierr) #os.sys.exit()
     ierr = os.system('nccopy -6 -u '+domainfile_new+' '+domainfile_new+'.tmp') #NC-3  with large dataset support due to 64bit offset
-    if(ierr!=0): raise RuntimeError('Error: nccopy -6 -u ', ierr); #os.sys.exit()
+    if(ierr!=0): raise RuntimeError('Error: nccopy -6 -u ', ierr) #os.sys.exit()
     ierr = os.system('ncpdq -h -O -a ni,nj '+domainfile_new+'.tmp '+domainfile_new)
-    if(ierr!=0): raise RuntimeError('Error: ncpdq', ierr); #os.sys.exit()
+    if(ierr!=0): raise RuntimeError('Error: ncpdq', ierr) #os.sys.exit()
     ierr = os.system('ncrename -h -O -d ni,ni_temp '+domainfile_new+' '+domainfile_new+' ')
-    if(ierr!=0): raise RuntimeError('Error: ncrename', ierr); #os.sys.exit()
+    if(ierr!=0): raise RuntimeError('Error: ncrename', ierr) #os.sys.exit()
     ierr = os.system('ncrename -h -O -d nj,ni '+domainfile_new+' '+domainfile_new+' ')
-    if(ierr!=0): raise RuntimeError('Error: ncrename', ierr); #os.sys.exit()
+    if(ierr!=0): raise RuntimeError('Error: ncrename', ierr) #os.sys.exit()
     ierr = os.system('ncrename -h -O -d ni_temp,nj '+domainfile_new+' '+domainfile_new+' ')
-    if(ierr!=0): raise RuntimeError('Error: ncrename', ierr); #os.sys.exit()
+    if(ierr!=0): raise RuntimeError('Error: ncrename', ierr) #os.sys.exit()
     os.system('find ./temp/ -name '+domainfile_tmp+' -exec rm {} \;')
     os.system('rm '+domainfile_new+'.tmp*')
 else:
@@ -482,7 +485,7 @@ if(ierr==0):
     ierr = os.system('nccopy -7 -u '+domainfile_new+' '+domainfile_new+'.tmp')
     if(ierr!=0):
         print('nccopy -7 -u '+domainfile_new+' '+domainfile_new+'.tmp')
-        raise RuntimeError('Error: nccopy -7 -u ');# os.sys.exit()
+        raise RuntimeError('Error: nccopy -7 -u ')# os.sys.exit()
     else:
         ierr = os.system('mv '+domainfile_new+'.tmp '+domainfile_new)
 
@@ -758,21 +761,21 @@ if (n_grids > 1):
   #os.system('ncecat '+surffile_list+' '+surffile_new) # not works with too long '_list'
   ierr = os.system('find ./temp/ -name "'+surffile_tmp+ \
                  '" | xargs ls | sort | ncecat -O -h -o'+surffile_new)
-  if(ierr!=0): raise RuntimeError('Error: ncecat '); #os.sys.exit()
+  if(ierr!=0): raise RuntimeError('Error: ncecat ') #os.sys.exit()
   #os.system('rm ./temp/surfdata?????.nc*') # not works with too many files
   os.system('find ./temp/ -name "'+surffile_tmp+'" -exec rm {} \;')
 
   #remove ni dimension
   ierr = os.system('ncwa -h -O -a lsmlat -d lsmlat,0,0 '+surffile_new+' '+surffile_new+'.tmp')
-  if(ierr!=0): raise RuntimeError('Error: ncwa '); #os.sys.exit()
+  if(ierr!=0): raise RuntimeError('Error: ncwa ') #os.sys.exit()
   ierr = os.system('nccopy -6 -u '+surffile_new+'.tmp'+' '+surffile_new+'.tmp2') #NC-3 with large dataset support (64bit offset)
-  if(ierr!=0): raise RuntimeError('Error: nccopy -6 -u '); #os.sys.exit()
+  if(ierr!=0): raise RuntimeError('Error: nccopy -6 -u ') #os.sys.exit()
   ierr = os.system('ncpdq -h -a lsmlon,record '+surffile_new+'.tmp2 '+surffile_new+'.tmp3')
-  if(ierr!=0): raise RuntimeError('Error: ncpdq '); #os.sys.exit()
+  if(ierr!=0): raise RuntimeError('Error: ncpdq ') #os.sys.exit()
   ierr = os.system('ncwa -h -O -a lsmlon -d lsmlon,0,0 '+surffile_new+'.tmp3 '+surffile_new+'.tmp4')
-  if(ierr!=0): raise RuntimeError('Error: ncwa '); #os.sys.exit()
+  if(ierr!=0): raise RuntimeError('Error: ncwa ') #os.sys.exit()
   ierr = os.system('ncrename -h -O -d record,gridcell '+surffile_new+'.tmp4 '+surffile_new+'.tmp5')
-  if(ierr!=0): raise RuntimeError('Error: ncrename '); #os.sys.exit()
+  if(ierr!=0): raise RuntimeError('Error: ncrename ') #os.sys.exit()
 
   os.system('mv '+surffile_new+'.tmp5 '+surffile_new)
   os.system('rm '+surffile_new+'.tmp*')
@@ -783,7 +786,7 @@ else:
 # but 'ncrename' used above may not works with NC-4
 ierr = os.system('nccopy -7 -u '+surffile_new+' '+surffile_new+'.tmp')
 if(ierr!=0): 
-    raise RuntimeError('Error: nccopy -7 -u ');# os.sys.exit()
+    raise RuntimeError('Error: nccopy -7 -u ')# os.sys.exit()
 else:
     ierr = os.system('mv '+surffile_new+'.tmp '+surffile_new)
 
@@ -994,22 +997,22 @@ if (options.nopftdyn == False):
       #ios.system('ncecat -h '+pftdyn_list+' '+pftdyn_new) # not works with too long '_list'
       ierr = os.system('find ./temp/ -name "'+pftdyn_tmp+ \
                     '" | xargs ls | sort | ncecat -O -h -o'+pftdyn_new)
-      if(ierr!=0): raise RuntimeError('Error: ncecat '); #os.sys.exit()
+      if(ierr!=0): raise RuntimeError('Error: ncecat ') #os.sys.exit()
 
       #os.system('rm ./temp/surfdata.pftdyn?????.nc*') # 'rm' not works for too long file list
       os.system('find ./temp/ -name "'+pftdyn_tmp+'" -exec rm {} \;')
 
       #remove ni dimension
       ierr = os.system('ncwa -h -O -a lsmlat -d lsmlat,0,0 '+pftdyn_new+' '+pftdyn_new+'.tmp')
-      if(ierr!=0): raise RuntimeError('Error: ncwa '); #os.sys.exit()
+      if(ierr!=0): raise RuntimeError('Error: ncwa ') #os.sys.exit()
       ierr = os.system('nccopy -6 -u '+pftdyn_new+'.tmp'+' '+pftdyn_new+'.tmp2') # NC-3 with large dataset support due to 64bit offset
-      if(ierr!=0): raise RuntimeError('Error: nccopy -6 -u '); #os.sys.exit()
+      if(ierr!=0): raise RuntimeError('Error: nccopy -6 -u ') #os.sys.exit()
       ierr = os.system('ncpdq -h -a lsmlon,record '+pftdyn_new+'.tmp2 '+pftdyn_new+'.tmp3')
-      if(ierr!=0): raise RuntimeError('Error: ncpdq '); #os.sys.exit()
+      if(ierr!=0): raise RuntimeError('Error: ncpdq ') #os.sys.exit()
       ierr = os.system('ncwa -h -O -a lsmlon -d lsmlon,0,0 '+pftdyn_new+'.tmp3 '+pftdyn_new+'.tmp4')
-      if(ierr!=0): raise RuntimeError('Error: ncwa '); #os.sys.exit()
+      if(ierr!=0): raise RuntimeError('Error: ncwa ') #os.sys.exit()
       ierr = os.system('ncrename -h -O -d record,gridcell '+pftdyn_new+'.tmp4 '+pftdyn_new+'.tmp5')
-      if(ierr!=0): raise RuntimeError('Error: ncrename '); #os.sys.exit()
+      if(ierr!=0): raise RuntimeError('Error: ncrename ') #os.sys.exit()
 
       os.system('mv '+pftdyn_new+'.tmp5 '+pftdyn_new)
       os.system('rm '+pftdyn_new+'.tmp*')
@@ -1021,7 +1024,7 @@ if (options.nopftdyn == False):
   # but 'ncrename' used above may not works with NC-4
   ierr = os.system('nccopy -7 -u '+pftdyn_new+' '+pftdyn_new+'.tmp')
   if(ierr!=0):    
-      raise RuntimeError('Error: nccopy -7 -u '); #os.sys.exit()
+      raise RuntimeError('Error: nccopy -7 -u ') #os.sys.exit()
   else:
       ierr = os.system('mv '+pftdyn_new+'.tmp '+pftdyn_new)
 

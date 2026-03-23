@@ -1,6 +1,5 @@
 import numpy as np
-from netCDF4 import Dataset
-import os,sys
+import os
 import gapfill
 import write_elm_met
 

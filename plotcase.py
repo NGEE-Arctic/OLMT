@@ -1,7 +1,9 @@
 #!/usr/bin/python
 
-import os, sys, csv, glob
-import numpy, scipy, math
+import os
+import sys
+import numpy
+import math
 from netCDF4 import Dataset
 from optparse import OptionParser
 import matplotlib as mpl

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import netcdf4_functions as nffun
-import os, sys, csv, time, math, numpy
+import os
 from optparse import OptionParser
 
 #Create, run and process a CLM/ALM model ensemble member
@@ -88,7 +88,7 @@ ens_dir  = os.path.abspath(options.runroot)+'/UQ/'+casename+'/g'+gst[1:]
 os.system('mkdir -p '+options.runroot+'/UQ/'+casename+'/g'+gst[1:]+'/timing/checkpoints')
 os.system('cp  '+orig_dir+'/*_in* '+ens_dir)
 os.system('cp  '+orig_dir+'/*nml '+ens_dir)
-if (not ('CB' in casename)):
+if ('CB' not in casename):
     os.system('cp  '+orig_dir+'/*stream* '+ens_dir)
 os.system('cp  '+orig_dir+'/*.rc '+ens_dir)
 os.system('cp  '+orig_dir+'/surf*.nc '+ens_dir)
@@ -151,7 +151,7 @@ for f in os.listdir(ens_dir):
                    if (finidat_file_orig[0:2] == './'):
                       finidat_file_orig = orig_dir+'/'+finidat_file_orig[2:]
                    #get finidat files from previous ensemble cases if available
-                   if (('1850' in casename or 'CROP' in casename) and not ('ad_spinup' in casename) and not \
+                   if (('1850' in casename or 'CROP' in casename) and 'ad_spinup' not in casename and not \
                           ('trans' in casename or '20TR' in casename)): 
                       finidat_file_path = os.path.abspath(options.runroot)+'/UQ/'+casename.replace('1850CNP','1850CN')+'_ad_spinup/g'+gst[1:]
                       if (os.path.exists(finidat_file_path)):
@@ -159,7 +159,7 @@ for f in os.listdir(ens_dir):
                             os.system('python adjust_restart.py --rundir '+finidat_file_path+' --casename '+ \
                                 casename.replace('1850CNP','1850CN')+'_ad_spinup')
                    if ('20TR' in casename):
-                      if ( not ('CO2' in casename)):
+                      if ( 'CO2' not in casename):
                           finidat_file_path = os.path.abspath(options.runroot)+'/UQ/'+casename.replace('20TR','1850')+ \
                                           '/g'+gst[1:]
                           if (os.path.exists(finidat_file_path)):

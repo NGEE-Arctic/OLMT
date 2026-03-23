@@ -1,9 +1,8 @@
-from netCDF4 import Dataset
 from sklearn.neural_network import MLPRegressor
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import os, math, sys
+import os
 import numpy as np
 #from mpi4py import MPI
 import pickle

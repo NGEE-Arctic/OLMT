@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import os, sys, csv, time, math, numpy, getpass
+import os
+import getpass
 from optparse import OptionParser
 
 #Create, run and process a CLM/ALM model ensemble member
@@ -41,7 +42,6 @@ def getvar(fname, varname):
     try:
         import Scientific.IO.NetCDF as netcdf
     except ImportError:
-        import scipy
         from scipy.io import netcdf
         usescipy = True
     if (usescipy):
@@ -61,7 +61,6 @@ def putvar(fname, varname, varvals):
     try:
         import Scientific.IO.NetCDF as netcdf
     except ImportError:
-        import scipy
         from scipy.io import netcdf
         usescipy = True
     if (usescipy):
