@@ -1049,10 +1049,8 @@ else:
 ppn=1
 if ('cades-baseline' in options.machine):
     ppn=128
-elif ('cori-haswell' in options.machine or 'cades' in options.machine):
+elif ('cades' in options.machine):
     ppn=32
-elif ('cori-knl' in options.machine):
-    ppn=64
 elif ('anvil' in options.machine):
     ppn=36
 elif ('compy' in options.machine):
@@ -3259,7 +3257,7 @@ if (options.ensemble_file != "" or int(options.mc_ensemble) != -1) and (
     num=0
     #Launch ensemble if requested 
     mysubmit_type = 'qsub'
-    if ('cades' in options.machine or 'compy' in options.machine or 'ubuntu' in options.machine or 'cori' in options.machine or \
+    if ('cades' in options.machine or 'compy' in options.machine or 'ubuntu' in options.machine or \
         options.machine == 'anvil' or options.machine == 'chrysalis'):
         mysubmit_type = 'sbatch'
     if (options.ensemble_file != ''):
@@ -3288,15 +3286,6 @@ if (options.ensemble_file != "" or int(options.mc_ensemble) != -1) and (
             output_run.write('#SBATCH --time='+timestr+'\n')
             output_run.write('#SBATCH -J ens_'+casename+'\n')
             output_run.write('#SBATCH --nodes='+str(int(math.ceil(np_total/(ppn*1.0))))+'\n')
-            if ('cori' in options.machine):
-              if (options.debug):
-                output_run.write('#SBATCH --qos=debug\n')
-              else:
-                output_run.write('#SBATCH --qos=regular\n')
-              if ('haswell' in options.machine):
-                output_run.write('#SBATCH --constraint=haswell\n')
-              if ('knl' in options.machine):
-                output_run.write('#SBATCH --constraint=knl\n')
             if ('compy' in options.machine and options.debug):
               output_run.write('#SBATCH --qos=short\n')
             if ('cades-baseline' in options.machine):
@@ -3337,7 +3326,7 @@ if (options.ensemble_file != "" or int(options.mc_ensemble) != -1) and (
                +'--case '+casename+' --runroot '+runroot+' --n_ensemble '+str(nsamples)+' --ens_file '+ \
                options.ensemble_file+' --exeroot '+exeroot+' --parm_list '+options.parm_list+' --cnp '+cnp + \
                ' --site '+options.site+' --model_name '+model_name
-        elif ('anvil' in options.machine or 'cori' in options.machine or 'chrysalis' in options.machine):
+        elif ('anvil' in options.machine or 'chrysalis' in options.machine):
             cmd = 'srun -n '+str(np_total)+' python manage_ensemble.py ' \
                +'--case '+casename+' --runroot '+runroot+' --n_ensemble '+str(nsamples)+' --ens_file '+ \
                options.ensemble_file+' --exeroot '+exeroot+' --parm_list '+options.parm_list+' --cnp '+cnp + \
