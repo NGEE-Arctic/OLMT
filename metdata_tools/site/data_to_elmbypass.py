@@ -72,7 +72,7 @@ for y in range(start_year, end_year + 1):
                                     metdata[outvars[v]].append(val)
                                 else:
                                     metdata[outvars[v]].append(np.NaN)
-                            except:
+                            except (ValueError, IndexError):
                                 metdata[outvars[v]].append(np.NaN)
         lnum = lnum + 1
 

@@ -67,7 +67,7 @@ def comparencfiles(f1, f2, vars_compare=[]):
                                 + str(np.ma.mean(data2[key][:].squeeze()))
                             )
                             hasdiff = True
-                    except:
+                    except Exception:
                         print("      Can not compare " + key)
     return hasdiff
 

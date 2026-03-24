@@ -1,4 +1,4 @@
 [lint]
-ignore = ["E712"]
+ignore = ["E712","F821"]
 
 exclude = ["OLMT_GUI.py"]

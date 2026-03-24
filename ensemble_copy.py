@@ -367,7 +367,7 @@ for p in parm_names:
         elif parm_indices[pnum] == 0:
             try:
                 param[:] = parm_values[pnum]
-            except:
+            except (IndexError):
                 param = parm_values[pnum]
         ierr = nffun.putvar(myfile, p, param)
         # if ('fr_flig' in p):

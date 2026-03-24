@@ -36,7 +36,6 @@ os.system("mkdir -p " + UQ_output + "/MCMC_output")
 
 def posterior(parms):
     # Calculate the posterior (prior and log likelihood)
-    line = 0
     # Uniform priors
     prior = 1.0
     for j in range(0, model.nparms):
@@ -101,9 +100,6 @@ def MCMC(parms, nevals, type="uniform", nburn=1000, burnsteps=10, default_output
         # update proposal step size
         if i > 0 and (i % nburn) == 0 and i < burnsteps * nburn:
             acc_ratio = float(accepted_step) / nburn
-            mycov_step = np.cov(
-                chain_prop[0:nparms, accepted_tot - accepted_step : accepted_tot]
-            )
             mycov_chain = np.cov(
                 chain_burn[0:nparms, int(accepted_tot / 4) : accepted_tot]
             )
@@ -130,9 +126,6 @@ def MCMC(parms, nevals, type="uniform", nburn=1000, burnsteps=10, default_output
                         print(j, scalefac, mycov[j, j] / (parm_step[j] ** 2))
 
             print("BURNSTEP", i / nburn, acc_ratio, thisscalefac, scalefac)
-            mycov_step = np.cov(
-                chain_prop[0:nparms, accepted_tot - accepted_step : accepted_tot]
-            )
             # print(np.corrcoef(chain[0:4,i-nburn:i]))
             accepted_step = 0
 
