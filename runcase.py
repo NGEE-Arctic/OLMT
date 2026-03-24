@@ -206,54 +206,6 @@ parser.add_option(
     help="longitude range for regional run",
 )
 
-parser.add_option(
-    "--humhol",
-    dest="humhol",
-    default=False,
-    help="Use hummock/hollow microtopography",
-    action="store_true",
-)
-parser.add_option(
-    "--marsh",
-    dest="marsh",
-    default=False,
-    help="Use marsh hydrology/elevation",
-    action="store_true",
-)
-parser.add_option(
-    "--tide_components_file",
-    dest="tide_components_file",
-    default="",
-    help="NOAA tide components file",
-)
-parser.add_option(
-    "--mask", dest="mymask", default="", help="Mask file to use (regional only)"
-)
-
-parser.add_option("--model", dest="mymodel", default="", help="Model to use (ELM,CLM5)")
-
-parser.add_option(
-    "--namelist_file",
-    dest="namelist_file",
-    default="",
-    help="File containing custom namelist options for user_nl_clm",
-)
-
-parser.add_option(
-    "--ilambvars",
-    dest="ilambvars",
-    default=False,
-    action="store_true",
-    help="Write special outputs for diagnostics",
-)
-parser.add_option(
-    "--dailyvars",
-    dest="dailyvars",
-    default=False,
-    action="store_true",
-    help="Write daily ouptut variables",
-)
-
 parser.add_option("--humhol", dest="humhol", default=False, \
                   help = 'Use hummock/hollow microtopography', action="store_true")
 parser.add_option("--marsh", dest="marsh", default=False, \
@@ -390,13 +342,6 @@ parser.add_option(
     default=False,
     action="store_true",
     help="Use ERA5 atmospheric reanalysis",
-)
-parser.add_option(
-    "--era5_land",
-    dest="era5_land",
-    default=False,
-    action="store_true",
-    help="Use ERA5-Land reanalysis data",
 )
 parser.add_option(
     "--monthly_metdata",
@@ -837,6 +782,8 @@ parser.add_option(
     help="Turn off CNP budget calculations",
     action="store_true",
 )
+parser.add_option("--alquimia", dest="alquimia",default='',  help="Compile model with alquimia BGC interface using specified input file")
+parser.add_option("--alquimia_ad",dest='alquimia_ad',default='',help='Alquimia input file for ad spinup')
 parser.add_option(
     "--use_hydrstress",
     dest="use_hydrstress",
@@ -2531,10 +2478,7 @@ for i in range(1, int(options.ninst) + 1):
     if options.use_IM2_hillslope_hydrology:
         output.write(" use_IM2_hillslope_hydrology = .true.\n")
     if options.use_onset_gdd_extension:
-        output.write(" onset_gdd_extension = .true.\n")
-    # InteRFACE
-    if options.use_lake_wat_storage:
-        output.write(" use_lake_wat_storage = .true.\n")
+        output.write(" use_onset_gdd_extension = .true.\n")
 
     if (options.alquimia != ""):
         output.write(" use_alquimia = .TRUE.\n")
