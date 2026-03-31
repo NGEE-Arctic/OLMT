@@ -28,14 +28,20 @@ jobs:
           run: |
             mkdir -p .cache/inputdata
 
+        - name: Compute inputdata script hash
+          run: |
+            if [ -f Field-to-Model/tools/scripts/get_inputdata.sh ]; then
+              echo "script_hash=$(sha256sum Field-to-Model/tools/scripts/get_inputdata.sh | awk '{print $1}')" >> $GITHUB_OUTPUT
+            else
+              echo "script_hash=none" >> $GITHUB_OUTPUT
+            fi
+          id: hash
+          
         - name: Restore cached inputdata
-          id: cache-inputdata
           uses: actions/cache@v5
           with:
             path: .cache/inputdata
-            key: inputdata-v2-${{ hashFiles('tools/scripts/get_inputdata.sh') }}
-            restore-keys: |
-              inputdata-v2-
+            key: inputdata-v2-${{ steps.hash.outputs.script_hash }}
 
         - name: Get input data (only if cache miss)
           if: steps.cache-inputdata.outputs.cache-hit != 'true'
