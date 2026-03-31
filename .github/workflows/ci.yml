@@ -45,8 +45,8 @@ jobs:
 
             docker run --rm \
               --user "$(id -u):$(id -g)" \
-              -v $(pwd):/home/modex_user \
-              -v $(pwd)/.cache/inputdata:/mnt/inputdata \
+              -v ${{ github.workspace }}:/home/modex_user \
+              -v ${{ github.workspace }}/.cache/inputdata:/mnt/inputdata \
               yuanfornl/ngee-arctic-modex26:models-main-latest \
               /home/modex_user/tools/scripts/get_inputdata.sh
 
@@ -105,8 +105,8 @@ jobs:
             # ensure writable by current user
             chmod -R u+rwX .cache/inputdata || true
 
-            docker run --rm -v $(pwd):/home/modex_user \
-              -v $(pwd)/.cache/inputdata:/mnt/inputdata \
+            docker run --rm -v ${{ github.workspace }}:/home/modex_user \
+              -v ${{ github.workspace }}/.cache/inputdata:/mnt/inputdata \
               -v output:/mnt/output \
               yuanfornl/ngee-arctic-modex26:models-main-latest \
               /home/modex_user/model_examples/ELM/run_ngeearctic_site.sh \
