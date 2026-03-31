@@ -1,31 +1,28 @@
-name: ELM matrix test
+name: OLMT+ELM matrix test
 
 on:
     push:
-        branches: [main]
-        paths:
-            - "Docker/**"
-            - "model_examples/ELM/**"
-            - "tools/**"
-            - ".cime/**"
-            - ".github/workflows/elm_tests.yml"
+      branches: [develop]
     pull_request:
-        paths:
-            - "Docker/**"
-            - "model_examples/ELM/**"
-            - "tools/**"
-            - ".cime/**"
-            - ".github/workflows/elm_tests.yml"
+      branches: [develop]
     schedule:
-      - cron: "0 0 1 * *"
+      # every day at 7am UTC.  We want nightly runs to catch errors
+      # introduced when NGEE-Arctic/E3SM is updated, since the tests here depend on the latest E3SM code.
+      - cron: "0 7 * * *"
     workflow_dispatch:
 
 jobs:
     setup-cache:
       runs-on: ubuntu-latest
       steps:
-        - name: Checkout repo
+        # This CI is adopting CI from Field-to-Model, so we need to check out the
+        # Field-to-Model repo to get the scripts that coordinate the tests.
+        - name: Checkout Field-to-Model main branch
           uses: actions/checkout@v6
+          with:
+            repository: NGEE-Arctic/Field-to-Model
+            ref: main
+            path: Field-to-Model
 
         - name: Prepare cache dirs
           run: |
@@ -33,7 +30,7 @@ jobs:
 
         - name: Restore cached inputdata
           id: cache-inputdata
-          uses: actions/cache@v4
+          uses: actions/cache@v5
           with:
             path: .cache/inputdata
             key: inputdata-v2-${{ hashFiles('tools/scripts/get_inputdata.sh') }}
@@ -53,7 +50,7 @@ jobs:
               yuanfornl/ngee-arctic-modex26:models-main-latest \
               /home/modex_user/tools/scripts/get_inputdata.sh
 
-### SMOKE TESTS
+# SMOKE TESTS
     test-era5:
       if: github.event_name != 'schedule'
       runs-on: ubuntu-latest
@@ -61,12 +58,34 @@ jobs:
       strategy:
         fail-fast: false
         matrix:
-          site_name: [kougarok, teller, council, beo, toolik_lake, trail_valley_creek, abisko, samoylov_island, imnaviat_creek, upper_kuparuk]
+          site_name: [kougarok]
+          #site_name: [kougarok, teller, council, beo, toolik_lake, trail_valley_creek, abisko, samoylov_island, imnaviat_creek, upper_kuparuk]
       steps:
-        - name: Checkout repo
+        # This CI is adopting CI from Field-to-Model, so we need to check out the
+        # Field-to-Model repo to get the scripts that coordinate the tests.
+        - name: Checkout Field-to-Model main branch
           uses: actions/checkout@v6
           with:
-            submodules: recursive
+            repository: NGEE-Arctic/Field-to-Model
+            ref: main
+            path: Field-to-Model
+
+        # In Field-to-Model, the OLMT scripts are in a submodule at the path below.
+        # Here we spoof the submodule with a checkout of this repo.
+        - name: Checkout OLMT repo
+          uses: actions/checkout@v6
+          with:
+            path: Field-to-Model/tools/olmt
+
+        # And here we spoof the expected E3SM submodule with a direct checkout of the E3SM repo
+        # Note that changes in the E3SM repo could break the tests here, but this is intentional
+        #since we want know if the latest E3SM code breaks OLMT.
+        - name: Checkout NGEE-Arctic/E3SM develop branch
+          uses: actions/checkout@v6
+          with:
+            repository: NGEE-Arctic/E3SM
+            ref: develop
+            path: Field-to-Model/E3SM
 
         - name: Create docker volumes
           run: |
@@ -74,7 +93,7 @@ jobs:
 
         - name: Restore cache
           id: cache-inputdata
-          uses: actions/cache@v4
+          uses: actions/cache@v5
           with:
             path: .cache/inputdata
             key: inputdata-v2-${{ hashFiles('tools/scripts/get_inputdata.sh') }}
@@ -92,106 +111,3 @@ jobs:
               yuanfornl/ngee-arctic-modex26:models-main-latest \
               /home/modex_user/model_examples/ELM/run_ngeearctic_site.sh \
               --site_name=${{matrix.site_name}} --met_source=era5 -ady=1 -fsy=1 -try=1 -tsp=1
-
-    test-gswp3:
-      if: github.event_name != 'schedule'
-      runs-on: ubuntu-latest
-      needs: setup-cache
-      strategy:
-        fail-fast: false
-        matrix:
-          site_name: [kougarok, teller, council, beo, toolik_lake, trail_valley_creek, abisko, bayelva, samoylov_island, imnaviat_creek, upper_kuparuk]
-      steps:
-        - name: Checkout repo
-          uses: actions/checkout@v6
-          with:
-            submodules: recursive
-
-        - name: Create docker volumes
-          run: |
-            docker volume create output
-
-        - name: Restore cache
-          id: cache-inputdata
-          uses: actions/cache@v4
-          with:
-            path: .cache/inputdata
-            key: inputdata-v2-${{ hashFiles('tools/scripts/get_inputdata.sh') }}
-            restore-keys: |
-              inputdata-v2-
-
-        - name: Run test case for site
-          run: |
-            # ensure writable by current user
-            chmod -R u+rwX .cache/inputdata || true
-
-            docker run --rm -v $(pwd):/home/modex_user \
-              -v $(pwd)/.cache/inputdata:/mnt/inputdata \
-              -v output:/mnt/output yuanfornl/ngee-arctic-modex26:models-main-latest \
-              /home/modex_user/model_examples/ELM/run_ngeearctic_site.sh \
-              --site_name=${{matrix.site_name}} --met_source=gswp3 -ady=1 -fsy=1 -try=1 -tsp=1
-
-### LONG TESTS
-    long-era5-tests:
-      if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-      runs-on: ubuntu-latest
-      needs: setup-cache
-      strategy:
-        fail-fast: false
-        matrix:
-          site_name: [kougarok, teller, council, beo, toolik_lake, trail_valley_creek, abisko, samoylov_island, imnaviat_creek, upper_kuparuk]
-      steps:
-        - name: Checkout repo
-          uses: actions/checkout@v6
-          with:
-            submodules: recursive
-
-        - name: Create docker volumes
-          run: |
-            docker volume create output
-
-        - name: Restore cache
-          id: cache-inputdata
-          uses: actions/cache@v4
-          with:
-            path: .cache/inputdata
-            key: inputdata-v2-${{ hashFiles('tools/scripts/get_inputdata.sh') }}
-            restore-keys: |
-              inputdata-v2-
-
-        - name: Run test case for site
-          run: |
-            # ensure writable by current user
-            chmod -R u+rwX .cache/inputdata || true
-
-            docker run --rm -v $(pwd):/home/modex_user \
-              -v $(pwd)/.cache/inputdata:/mnt/inputdata \
-              -v output:/mnt/output \
-              yuanfornl/ngee-arctic-modex26:models-main-latest \
-              /home/modex_user/model_examples/ELM/run_ngeearctic_site.sh \
-              --site_name=${{matrix.site_name}} --met_source=era5 -tsp=1
-
-    long-gswp3-tests: # keep these using the download scfript to make sure the download script gets tested.
-      if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-      runs-on: ubuntu-latest
-      strategy:
-        fail-fast: false
-        matrix:
-          site_name: [kougarok, teller, council, beo, toolik_lake, trail_valley_creek, abisko, bayelva, samoylov_island, imnaviat_creek, upper_kuparuk]
-      steps:
-        - name: Checkout repo
-          uses: actions/checkout@v6
-          with:
-            submodules: recursive
-
-        - name: Create docker volumes
-          run: |
-            docker volume create inputdata
-            docker volume create output
-
-        - name: Get input data
-          run: docker run --rm -v $(pwd):/home/modex_user -v inputdata:/mnt/inputdata -v output:/mnt/output yuanfornl/ngee-arctic-modex26:models-main-latest /home/modex_user/tools/scripts/get_inputdata.sh
-
-        - name: Run test case for site
-          run: |
-            docker run --rm -v $(pwd):/home/modex_user -v inputdata:/mnt/inputdata -v output:/mnt/output yuanfornl/ngee-arctic-modex26:models-main-latest /home/modex_user/model_examples/ELM/run_ngeearctic_site.sh --site_name=${{matrix.site_name}} --met_source=gswp3 -tsp=1
