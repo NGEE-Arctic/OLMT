@@ -95,9 +95,8 @@ jobs:
             path: Field-to-Model/E3SM
             submodules: recursive
 
-        - name: Create docker volumes
-          run: |
-            docker volume create output
+        - name: Prepare output dir
+          run: mkdir -p ${{ github.workspace }}/output
 
         - name: Restore cache
           id: cache-inputdata
@@ -115,7 +114,7 @@ jobs:
 
             docker run --rm -v ${{ github.workspace }}/Field-to-Model:/home/modex_user \
               -v ${{ github.workspace }}/.cache/inputdata:/mnt/inputdata \
-              -v output:/mnt/output \
+              -v ${{ github.workspace }}/output:/mnt/output \
               yuanfornl/ngee-arctic-modex26:models-main-latest \
               /home/modex_user/model_examples/ELM/run_ngeearctic_site.sh \
               --site_name=${{matrix.site_name}} --met_source=era5 -ady=1 -fsy=1 -try=1 -tsp=1
