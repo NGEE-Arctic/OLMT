@@ -93,6 +93,7 @@ jobs:
             repository: NGEE-Arctic/E3SM
             ref: develop
             path: Field-to-Model/E3SM
+            submodules: recursive
 
         - name: Create docker volumes
           run: |
