@@ -15,8 +15,6 @@ jobs:
     test-site:
       if: github.event_name != 'schedule'
       runs-on: ubuntu-latest
-      strategy:
-        fail-fast: false
       steps:
         - name: Checkout OLMT repo
           uses: actions/checkout@v6
@@ -41,7 +39,7 @@ jobs:
           uses: actions/checkout@v6
           with:
             repository: NGEE-Arctic/field-to-model-inputdata
-            ref: main
+            ref: a087f2c44a38577852ccde2fc708884d7c47cc96
             path: field-to-model-inputdata
             fetch-depth: 0
 
@@ -51,6 +49,9 @@ jobs:
             git sparse-checkout init --cone
             git sparse-checkout set E3SM
 
+        - name: Prepare output dir
+          run: mkdir -p ${{ github.workspace }}/output
+
         - name: Run test case for site
           run: |
             # ensure writable by current user
@@ -58,8 +59,9 @@ jobs:
 
             docker run --rm -v ${{ github.workspace }}:/home/e3smuser \
               -v ${{ github.workspace }}/field-to-model-inputdata/E3SM:/home/e3smuser/inputdata \
+              -v ${{ github.workspace }}/output:/home/e3smuser/output \
               -w /home/e3smuser/OLMT \
-              yuanfornl/ngee-arctic-modex26:models-main-latest \
+              rfiorella/model-containers:e3sm-openmpi-dev-latest \
               ./site_fullrun.py \
               --machine docker \
               --compiler gnu --mpilib openmpi \
@@ -70,6 +72,7 @@ jobs:
               --surffile /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_kougarok-GRID_simyr1850_c360x720_c171002.nc \
               --landusefile /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_kougarok-GRID_simyr1850-2015_c180423.nc \
               --nofire --no_budgets --nopointdata \
-              --model_root /home/e3smuser/E3SM --runroot /home/e3smuser/output \
+              --model_root /home/e3smuser/E3SM \
+              --runroot /home/e3smuser/output \
               --ccsm_input /home/e3smuser/inputdata \
               --nyears_ad_spinup 1 --nyears_final_spinup 1 --nyears_transient 1
