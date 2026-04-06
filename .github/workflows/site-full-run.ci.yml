@@ -57,7 +57,9 @@ jobs:
             # ensure writable by current user
             chmod -R u+rwX .cache/inputdata || true
 
-            docker run --rm -v ${{ github.workspace }}:/home/e3smuser \
+            docker run --rm \
+              -v ${{ github.workspace }}/OLMT:/home/e3smuser/OLMT \
+              -v ${{ github.workspace }}/E3SM:/home/e3smuser/E3SM \
               -v ${{ github.workspace }}/field-to-model-inputdata/E3SM:/home/e3smuser/inputdata \
               -v ${{ github.workspace }}/output:/home/e3smuser/output \
               -w /home/e3smuser/OLMT \
