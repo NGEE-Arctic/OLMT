@@ -124,6 +124,7 @@ contains
     character(len=CL)  :: stream_fldFileName_popdens ! poplulation density stream filename
     character(len=CL)  :: stream_fldFileName_ndep    ! nitrogen deposition stream filename
     logical :: use_sitedata, has_zonefile, use_daymet, use_livneh
+    logical :: metyrs_flexible
     data caldaym / 1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 /    
 
     ! Constants to compute vapor pressure
@@ -264,6 +265,8 @@ contains
               use_daymet = .true.
           end if
  
+          metyrs_flexible = .false.
+
           metvars(1) = 'TBOT'
           metvars(2) = 'PSRF'
           metvars(3) = 'QBOT'
@@ -326,6 +329,19 @@ contains
             atm2lnd_vars%startyear_met      = 1950
             atm2lnd_vars%endyear_met_spinup = 1970
             atm2lnd_vars%endyear_met_trans  = 2025
+            !get year information from file, if available
+            ! note the starting/ending year in file name(s) are removed.
+            ierr = nf90_open(trim(metdata_bypass) // '/'ERA5_TBOT_z01.nc', nf90_nowrite, ncid)
+            ierr = nf90_inq_varid(ncid, 'start_year', varid)
+            if (ierr == 0) then
+              ierr = nf90_get_var(ncid, varid, atm2lnd_vars%startyear_met)
+              ierr = nf90_inq_varid(ncid, 'end_year', varid)
+              ierr = nf90_get_var(ncid, varid, atm2lnd_vars%endyear_met_trans)
+              ierr = nf90_close(ncid)
+              atm2lnd_vars%endyear_met_spinup = min(atm2lnd_vars%endyear_met_trans,1970)
+
+              metyrs_flexible = .true.
+            end if
           end if
 
           if (use_livneh) then 
@@ -428,6 +444,8 @@ contains
                     metdata_fname = 'CBGC1850S.ne30_' // trim(metvars(v)) // '_0566-0590_z' // zst(2:3) // '.nc'
             else if (atm2lnd_vars%metsource == 6) then
                 metdata_fname = 'ERA5_' // trim(metvars(v)) // '_1950-2024_z' // zst(2:3) // '.nc'
+                if (metyrs_flexible) metdata_fname = 'ERA5_' // trim(metvars(v)) // '_z' // zst(2:3) // '.nc'
+
                 if (use_daymet) then
                     metdata_fname = 'Daymet_ERA5' // trim(metvars(v)) // '_1980-2024_z' // zst(2:3) // '.nc'
                 end if
