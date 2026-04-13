@@ -792,7 +792,8 @@ for row in AFdatareader:
             endyear_trans=2016
           # RPF dapper files end in 2024 or 2025 currently, may need to add options here for era5 alone and era5-daymet4
           elif (options.era5):
-            endyear_trans=2023 
+            endyear_trans=2025
+            if (options.daymet4): endyear_trans = 2024
           elif (options.gswp3):
             endyear_trans=2014
           elif (options.gswp3_w5e5):
@@ -945,14 +946,16 @@ for row in AFdatareader:
             basecmd = basecmd + " --gswp3_w5e5"
         if options.princeton:
             basecmd = basecmd + " --princeton"
+        if options.era5:
+            basecmd = basecmd + " --era5"
         if options.daymet:
             basecmd = basecmd + " --daymet"
         if options.daymet4:  # gswp3 v2 spatially-downscaled by daymet v4, usually together with user-defined domain and surface data
             basecmd = basecmd + " --daymet4"
             if not options.gswp3:
                 basecmd = basecmd + " --gswp3"
-        if options.era5:
-            basecmd = basecmd + " --era5"
+            elif not options.era5:
+                basecmd = basecmd + " --era5"
         if options.fates_paramfile != "":
             basecmd = basecmd + " --fates_paramfile " + options.fates_paramfile
         if options.fates_nutrient != "":

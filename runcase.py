@@ -1055,8 +1055,9 @@ else:
 # check for a specific forcing data, GSWP3-Daymet4, to offline ELM
 # This is high-resolution dataset, usually together with user-defined domain and surface data
 if options.daymet4:
-    if not options.gswp3:
-        options.gswp3 = True
+    if not options.gswp3 or not options.era5:
+        print('Error:  must set " --gswp3 " or " --era5"  for " --daymet4"')
+        sys.exit(1)
     if options.metdir == "none":
         print('Error:  must provide user-defined " --metdir " for " --daymet4"')
         sys.exit(1)
@@ -2709,16 +2710,15 @@ for i in range(1, int(options.ninst) + 1):
             if options.daymet4 and options.gswp3:
                 output.write(" metdata_type = 'gswp3_daymet4'\n")
             elif (options.daymet4 and options.era5):
-                if options.daymet4:
-                    output.write(" metdata_type = 'era5_daymet4'\n")
-                else:
-                    output.write(" metdata_type = 'era5'\n")
+                output.write(" metdata_type = 'era5_daymet4'\n")
             elif (options.daymet and options.gswp3):
                 output.write(" metdata_type = 'gswp3v1_daymet'\n")
             elif options.gswp3:
                 output.write(" metdata_type = 'gswp3'\n")
+            elif options.era5:
+                output.write(" metdata_type = 'era5'\n")
             #else:
-            #    output.write(" metdata_type = 'gswp3v1_daymet'\n") # This needs to be updated for other types
+            #   # This needs to be updated for other types (TODO)
             output.write(" metdata_bypass = '%s'\n"%options.metdir)
             
         # not reanalysis
