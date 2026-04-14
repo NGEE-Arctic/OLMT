@@ -254,28 +254,6 @@ parser.add_option(
     help="Write daily ouptut variables",
 )
 
-parser.add_option("--humhol", dest="humhol", default=False, \
-                  help = 'Use hummock/hollow microtopography', action="store_true")
-parser.add_option("--marsh", dest="marsh", default=False, \
-                  help = 'Use marsh hydrology/elevation', action="store_true")
-parser.add_option("--tide_components_file", dest="tide_components_file", default='', \
-                    help = 'NOAA tide components file')
-parser.add_option("--tide_forcing_file", dest="tide_forcing_file", default='', \
-                    help = 'Tide height and salinity forcing time series file')
-parser.add_option("--mask", dest="mymask", default='', \
-                  help = 'Mask file to use (regional only)')
-
-parser.add_option("--model", dest="mymodel", default='', \
-                  help = 'Model to use (ELM,CLM5)')
-
-parser.add_option("--namelist_file",  dest="namelist_file", default='', \
-                  help="File containing custom namelist options for user_nl_clm")
-
-parser.add_option("--ilambvars", dest="ilambvars", default=False, \
-                 action="store_true", help="Write special outputs for diagnostics")
-parser.add_option("--dailyvars", dest="dailyvars", default=False, \
-                 action="store_true", help="Write daily ouptut variables")
-
 parser.add_option(
     "--res", dest="res", default="CLM_USRDAT", help="Resoultion for global simulation"
 )
