@@ -968,6 +968,13 @@ parser.add_option(
 )
 
 parser.add_option(
+    "--alquimia",
+    dest="alquimia",
+    default="",
+    help="Compile model with alquimia BGC interface using specified input file"
+)
+
+parser.add_option(
     "--options_log_json",
     dest="options_log_json",
     default="None",
