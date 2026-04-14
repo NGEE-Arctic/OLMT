@@ -1556,8 +1556,8 @@ if ( 'chrysalis' in options.machine or 'compy' in options.machine or 'ubuntu' in
             os.system(myncap+' -O -s "tide_coeff_period_%d = humhol_ht*0+%1.4e" '%(comp+1,360*3600/tidecomps['Speed'].iloc[comp])+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
             os.system(myncap+' -O -s "tide_coeff_phase_%d = humhol_ht*0+%1.4e" '%(comp+1,tidecomps['Phase'].iloc[comp]*math.pi/180)+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
             os.system(myncap+' -O -s "tide_baseline = humhol_ht*0+800.0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-        elif options.marsh and options.tide_forcing_file == '':
-            print('Tidal cycle coefficients not specified. Model will use GCREW defaults. Can also edit in parm file.')
+    elif options.marsh and options.tide_forcing_file == '':
+        print('Tidal cycle coefficients not specified. Model will use GCREW defaults. Can also edit in parm file.')
     #os.system(myncap+' -O -s "crit_gdd1 = flnr" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
     #os.system(myncap+' -O -s "crit_gdd2 = flnr" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
     #os.system(myncap+' -O -s "crit_onset_gdd = ndays_on" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
@@ -2527,9 +2527,6 @@ for i in range(1, int(options.ninst) + 1):
         output.write(" use_IM2_hillslope_hydrology = .true.\n")
     if options.use_onset_gdd_extension:
         output.write(" onset_gdd_extension = .true.\n")
-    # InteRFACE
-    if options.use_lake_wat_storage:
-        output.write(" use_lake_wat_storage = .true.\n")
 
     if (options.alquimia != ""):
         output.write(" use_alquimia = .TRUE.\n")
@@ -2942,8 +2939,10 @@ if cpl_bypass:
             "echo 'string(APPEND CPPDEFS \" -DCPL_BYPASS\")' >> cmake_macros/universal.cmake"
         )
 
-  if (options.alquimia != ""):
-      os.system('''echo 'set(ELM_USE_ALQUIMIA "TRUE")' >> cmake_macros/universal.cmake''')
+    if (options.alquimia != ""):
+        runcmd(
+            "echo 'set(ELM_USE_ALQUIMIA \"TRUE\")' >> cmake_macros/universal.cmake"
+        )
 
 #copy sourcemods
 os.chdir('..')
