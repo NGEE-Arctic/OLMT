@@ -392,13 +392,6 @@ parser.add_option(
     help="Use ERA5 atmospheric reanalysis",
 )
 parser.add_option(
-    "--era5_land",
-    dest="era5_land",
-    default=False,
-    action="store_true",
-    help="Use ERA5-Land reanalysis data",
-)
-parser.add_option(
     "--monthly_metdata",
     dest="monthly_metdata",
     default="",
