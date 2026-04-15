@@ -1,5 +1,4 @@
 import numpy as np
-from sklearn.neural_network import MLPRegressor
 import pickle
  
 class MyModel(object):

@@ -1,5 +1,5 @@
 #!/usr/bin/env/python
-import os, sys, csv, time, math
+import os
 from optparse import OptionParser
 import netcdf4_functions as nffun
 import glob

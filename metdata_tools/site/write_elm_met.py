@@ -90,7 +90,7 @@ def bypass_format(filename, met_data, lat, lon, startyear, endyear, edge=0.1, ti
     ea = 0.70 + 5.95e-5*mye*np.exp(1500.0/all_hourly['TBOT'][0,:])
     all_hourly['FLDS'][0,:] = ea * stebol * (all_hourly['TBOT'][0,:]) ** 4
 
-  if (not 'ZBOT' in metvars):
+  if ('ZBOT' not in metvars):
     all_hourly.createVariable('ZBOT','f',('gridcell','DTIME',))
     all_hourly['ZBOT'][:,:] = zbot
     all_hourly['ZBOT'].units = units['ZBOT']

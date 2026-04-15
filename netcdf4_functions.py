@@ -15,7 +15,6 @@ def getvar(fname, varname):
 
 def putvar(fname, varname, varvals):
     from netCDF4 import Dataset
-    import numpy as np
     nffile = Dataset(fname,"a")
     if (varname in nffile.variables):
       nffile.variables[varname][...] = varvals

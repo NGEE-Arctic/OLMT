@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import os, sys, csv, time, math, numpy, getpass
+import os
+import getpass
 from optparse import OptionParser
 
 #Create, run and process a CLM/ALM model ensemble member
@@ -41,7 +42,6 @@ def getvar(fname, varname):
     try:
         import Scientific.IO.NetCDF as netcdf
     except ImportError:
-        import scipy
         from scipy.io import netcdf
         usescipy = True
     if (usescipy):
@@ -61,7 +61,6 @@ def putvar(fname, varname, varvals):
     try:
         import Scientific.IO.NetCDF as netcdf
     except ImportError:
-        import scipy
         from scipy.io import netcdf
         usescipy = True
     if (usescipy):
@@ -296,9 +295,9 @@ for filename in os.listdir(UQdir+'/'+options.constraints):
                 elif (depth > 0):
                     #depth-specific constraint (column level only)
                     layers = [0,1.8,4.5,9.1,16.6,28.9,49.3,82.9,138.3,229.6,343.3]
-                    for l in range(0,10):
-                        if (depth >= layers[l] and depth < layers[l+1]):
-                            thislayer = l
+                    for val in range(0,10):
+                        if (depth >= layers[val] and depth < layers[val+1]):
+                            thislayer = val
                             model_val = myvals[doy,thislayer,0]   
                             sse = sse + ((model_val-value) / unc )**2        
                             myoutput.write(str(myvarname)+' '+yst+' '+str(doy)+' '+str(depth)+' '+ \

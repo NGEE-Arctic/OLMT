@@ -1,10 +1,13 @@
 #!/usr/bin/python
 
-import os, sys, csv, glob
-import numpy, scipy, math
+import os
+import sys
+import numpy
+import math
 from netCDF4 import Dataset
 from optparse import OptionParser
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 def getvar(fname, varname, npf, index, scale_factor):
     nffile = Dataset(fname,"r")
@@ -102,8 +105,7 @@ parser.add_option("--outputdir", dest="outputdir", default='', \
 cesmdir=os.path.abspath(options.mycsmdir)                 
 
 if (options.pdf or options.png):
-    mpl.use('Agg')	
-import matplotlib.pyplot as plt
+    mpl.use('Agg')
 
 
 if (options.runnames != ''):

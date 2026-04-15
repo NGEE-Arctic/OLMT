@@ -7,6 +7,11 @@ module lnd_import_export
   use lnd2glcMod   , only: lnd2glc_type
   use atm2lndType  , only: atm2lnd_type
   use glc2lndMod   , only: glc2lnd_type
+  use lnd2iacMod   , only: lnd2iac_type
+  use iac2lndMod   , only: iac2lnd_type
+  use elm_varctl   , only: iac_present, iulog
+  use elm_varpar   , only: numpft, numharvest
+  use ocn2lndType  , only: ocn2lnd_type
   use GridcellType , only: grc_pp          ! for access to gridcell topology
   use TopounitDataType , only: top_as, top_af  ! atmospheric state and flux variables  
   use elm_cpl_indices
@@ -19,8 +24,7 @@ module lnd_import_export
 contains
 
   !===============================================================================
-  subroutine lnd_import( bounds, x2l, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars)
-
+  subroutine lnd_import( bounds, x2l, atm2lnd_vars, glc2lnd_vars, ocn2lnd_vars, lnd2atm_vars, iac2lnd_vars)
     !---------------------------------------------------------------------------
     ! !DESCRIPTION:
     ! Convert the input data from the coupler to the land model 
@@ -49,7 +53,9 @@ contains
     real(r8)           , intent(in)    :: x2l(:,:) ! driver import state to land model
     type(atm2lnd_type) , intent(inout) :: atm2lnd_vars      ! elm internal input data type
     type(glc2lnd_type) , intent(inout) :: glc2lnd_vars      ! elm internal input data type
+    type(ocn2lnd_type) , intent(inout) :: ocn2lnd_vars
     type(lnd2atm_type) , intent(in)    :: lnd2atm_vars
+    type(iac2lnd_type) , intent(inout) :: iac2lnd_vars ! elm iac to land   
     !
     ! !LOCAL VARIABLES:
     integer  :: g,topo,i,m,thism,nstep,ier  ! indices, number of steps, and error code
@@ -78,7 +84,8 @@ contains
     real(r8) :: swndf, swndr, swvdf, swvdr, ratio_rvrf, frac, q
     real(r8) :: thiscosz, avgcosz, szenith
     integer  :: swrad_period_len, swrad_period_start, thishr, thismin
-    real(r8) :: timetemp(2)
+    real(r8) :: timetemp(49)
+    integer  :: itemp
     real(r8) :: latixy(500000), longxy(500000)
     integer ::  ierr, varid, dimid, yr, mon, day, tod, nindex(2), caldaym(13)
     integer ::  ncid, met_ncids(14), mask_ncid, thisncid, ng, tm
@@ -118,6 +125,7 @@ contains
     character(len=CL)  :: stream_fldFileName_popdens ! poplulation density stream filename
     character(len=CL)  :: stream_fldFileName_ndep    ! nitrogen deposition stream filename
     logical :: use_sitedata, has_zonefile, use_daymet, use_livneh
+    logical :: metyrs_flexible
     data caldaym / 1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 /    
 
     ! Constants to compute vapor pressure
@@ -200,6 +208,14 @@ contains
          atm2lnd_vars%frac_h2orof_grc(g) = x2l(index_x2l_Sr_frac_h2orof,i)
        endif
 
+       if (index_x2l_So_ssh /= 0) then
+         ocn2lnd_vars%ssh_grc(g) = x2l(index_x2l_So_ssh,i)
+       endif
+
+       if (index_x2l_So_frac_h2oocn /= 0) then
+         ocn2lnd_vars%frac_h2oocn_grc(g) = x2l(index_x2l_So_frac_h2oocn,i)
+       endif
+
        ! Determine required receive fields
 
 #ifdef CPL_BYPASS
@@ -250,6 +266,8 @@ contains
               use_daymet = .true.
           end if
  
+          metyrs_flexible = .false.
+
           metvars(1) = 'TBOT'
           metvars(2) = 'PSRF'
           metvars(3) = 'QBOT'
@@ -312,6 +330,19 @@ contains
             atm2lnd_vars%startyear_met      = 1950
             atm2lnd_vars%endyear_met_spinup = 1970
             atm2lnd_vars%endyear_met_trans  = 2025
+            !get year information from file, if available
+            ! note the starting/ending year in file name(s) are removed.
+            ierr = nf90_open(trim(metdata_bypass) // '/'ERA5_TBOT_z01.nc', nf90_nowrite, ncid)
+            ierr = nf90_inq_varid(ncid, 'start_year', varid)
+            if (ierr == 0) then
+              ierr = nf90_get_var(ncid, varid, atm2lnd_vars%startyear_met)
+              ierr = nf90_inq_varid(ncid, 'end_year', varid)
+              ierr = nf90_get_var(ncid, varid, atm2lnd_vars%endyear_met_trans)
+              ierr = nf90_close(ncid)
+              atm2lnd_vars%endyear_met_spinup = min(atm2lnd_vars%endyear_met_trans,1970)
+
+              metyrs_flexible = .true.
+            end if
           end if
 
           if (use_livneh) then 
@@ -350,6 +381,12 @@ contains
             !Figure out the closest point and which zone file to open
             mindist=99999
             do g3 = 1,ng
+              ! in CPL_BYPASS met dataset, longitude is in format of 0-360, but 'ldomain%lonc(g)' may or may not.
+              if (ldomain%lonc(g) .lt. 0) then
+                if (longxy(g3) >= 180) longxy(g3) = longxy(g3)-360._r8
+              else if (ldomain%lonc(g) .ge. 180) then
+                if (longxy(g3) < 0) longxy(g3) = longxy(g3) + 360._r8
+              end if
               thisdist = 100*((latixy(g3) - ldomain%latc(g))**2 + &
                               (longxy(g3) - ldomain%lonc(g))**2)**0.5
               if (thisdist .lt. mindist) then 
@@ -406,27 +443,40 @@ contains
                     metdata_fname = 'GSWP3_Livneh_' // trim(metvars(v)) // '_1950-2010_z' // zst(2:3) // '.nc'                
                 else if (use_daymet .and. ztoget .ge. 16 .and. ztoget .le. 20) then 
                     metdata_fname = 'GSWP3_Daymet3_' // trim(metvars(v)) // '_1980-2010_z' // zst(2:3) // '.nc' 
+                else if (use_daymet) then
+                    metdata_fname = 'GSWP3_daymet4_' // trim(metvars(v)) // '_1980-2014_z' // zst(2:3) // '.nc'
                 end if
             else if (atm2lnd_vars%metsource == 5) then 
                     !metdata_fname = 'WCYCL1850S.ne30_' // trim(metvars(v)) // '_0076-0100_z' // zst(2:3) // '.nc'
                     metdata_fname = 'CBGC1850S.ne30_' // trim(metvars(v)) // '_0566-0590_z' // zst(2:3) // '.nc'
             else if (atm2lnd_vars%metsource == 6) then
                 metdata_fname = 'ERA5_' // trim(metvars(v)) // '_1950-2024_z' // zst(2:3) // '.nc'
+                if (metyrs_flexible) metdata_fname = 'ERA5_' // trim(metvars(v)) // '_z' // zst(2:3) // '.nc'
+
+                if (use_daymet) then
+                    metdata_fname = 'Daymet_ERA5_' // trim(metvars(v)) // '_1980-2024_z' // zst(2:3) // '.nc'
+                end if
             end if
   
             ierr = nf90_open(trim(metdata_bypass) // '/' // trim(metdata_fname), NF90_NOWRITE, met_ncids(v))
-            if (ierr .ne. 0) call endrun(msg=' ERROR: Failed to open cpl_bypass input meteorology file' )
+            if (ierr .ne. 0) call endrun(msg=' ERROR: Failed to open cpl_bypass input meteorology file ' // trim(metdata_bypass) // '/' // trim(metdata_fname))
        
             !get timestep information
             ierr = nf90_inq_dimid(met_ncids(v), 'DTIME', dimid)
             ierr = nf90_Inquire_Dimension(met_ncids(v), dimid, len = atm2lnd_vars%timelen(v))
 
             starti(1) = 1
-            counti(1) = 2
+            counti(1) = 49
             ierr = nf90_inq_varid(met_ncids(v), 'DTIME', varid)
             ierr = nf90_get_var(met_ncids(v), varid, timetemp, starti(1:1), counti(1:1))   
-            atm2lnd_vars%timeres(v)        = (timetemp(2)-timetemp(1))*24._r8
-            atm2lnd_vars%npf(v)            = 86400d0*(timetemp(2)-timetemp(1))/get_step_size()  
+            atm2lnd_vars%timeres(v)        = 0._r8
+            do itemp=2,counti(1)
+               atm2lnd_vars%timeres(v)     = atm2lnd_vars%timeres(v)+ &
+                                             (timetemp(itemp)-timetemp(itemp-1))*24._r8
+            end do
+            atm2lnd_vars%timeres(v)        = atm2lnd_vars%timeres(v)/(counti(1)-1.0_r8)
+            atm2lnd_vars%npf(v)            = 3600d0*atm2lnd_vars%timeres(v)/get_step_size()
+
             atm2lnd_vars%timelen_spinup(v) = nyears_spinup*(365*nint(24./atm2lnd_vars%timeres(v)))
     
             ierr = nf90_inq_varid(met_ncids(v), trim(metvars(v)), varid)
@@ -1366,7 +1416,22 @@ contains
           glc2lnd_vars%icemask_coupled_fluxes_grc(g)  = x2l(index_x2l_Sg_icemask_coupled_fluxes,i)
        end if
 
-    end do     
+       ! iac coupling
+       ! the passed values are fraction of actual grid cell (not fraction of
+       ! land), even though the coupler pct labels are still present
+
+       if (iac_present) then
+
+          do num = 0,numpft
+             iac2lnd_vars%frac_pft(g,num) = x2l(index_x2l_Sz_pct_pft(num),i)
+             iac2lnd_vars%frac_pft_prev(g,num) = x2l(index_x2l_Sz_pct_pft_prev(num),i)
+             if (num < numharvest) then
+                iac2lnd_vars%harvest_frac(g,num) = x2l(index_x2l_Sz_harvest_frac(num),i)
+             end if
+          end do
+        endif
+
+     end do
 #ifdef CPL_BYPASS
     atm2lnd_vars%loaded_bypassdata = 1
 #endif
@@ -1375,7 +1440,7 @@ contains
 
   !===============================================================================
 
-  subroutine lnd_export( bounds, lnd2atm_vars, lnd2glc_vars, l2x)
+	subroutine lnd_export( bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x)
 
     !---------------------------------------------------------------------------
     ! !DESCRIPTION:
@@ -1383,7 +1448,7 @@ contains
     ! 
     ! !USES:
     use shr_kind_mod       , only : r8 => shr_kind_r8
-    use elm_varctl         , only : iulog, create_glacier_mec_landunit
+    use elm_varctl         , only : iulog, create_glacier_mec_landunit, iac_present, use_finetop_rad
     use elm_time_manager   , only : get_nstep, get_step_size  
     use domainMod          , only : ldomain
     use seq_drydep_mod     , only : n_drydep
@@ -1394,10 +1459,12 @@ contains
     type(bounds_type) , intent(in)    :: bounds  ! bounds
     type(lnd2atm_type), intent(inout) :: lnd2atm_vars ! elm land to atmosphere exchange data type
     type(lnd2glc_type), intent(inout) :: lnd2glc_vars ! elm land to atmosphere exchange data type
+    type(lnd2iac_type), intent(inout) :: lnd2iac_vars ! elm lnd to gcam exchange vars
+
     real(r8)          , intent(out)   :: l2x(:,:)! land to coupler export state on land grid
     !
     ! !LOCAL VARIABLES:
-    integer  :: g,i   ! indices
+    integer  :: g,i,p ! indices
     integer  :: ier   ! error status
     integer  :: nstep ! time step index
     integer  :: dtime ! time step   
@@ -1415,10 +1482,19 @@ contains
        i = 1 + (g-bounds%begg)
        l2x(index_l2x_Sl_t,i)        =  lnd2atm_vars%t_rad_grc(g)
        l2x(index_l2x_Sl_snowh,i)    =  lnd2atm_vars%h2osno_grc(g)
-       l2x(index_l2x_Sl_avsdr,i)    =  lnd2atm_vars%albd_grc(g,1)
-       l2x(index_l2x_Sl_anidr,i)    =  lnd2atm_vars%albd_grc(g,2)
-       l2x(index_l2x_Sl_avsdf,i)    =  lnd2atm_vars%albi_grc(g,1)
-       l2x(index_l2x_Sl_anidf,i)    =  lnd2atm_vars%albi_grc(g,2)
+
+       if (use_finetop_rad) then
+          l2x(index_l2x_Sl_avsdr,i)    =  lnd2atm_vars%apparent_albd_grc(g,1)
+          l2x(index_l2x_Sl_anidr,i)    =  lnd2atm_vars%apparent_albd_grc(g,2)
+          l2x(index_l2x_Sl_avsdf,i)    =  lnd2atm_vars%apparent_albi_grc(g,1)
+          l2x(index_l2x_Sl_anidf,i)    =  lnd2atm_vars%apparent_albi_grc(g,2)
+       else
+          l2x(index_l2x_Sl_avsdr,i)    =  lnd2atm_vars%albd_grc(g,1)
+          l2x(index_l2x_Sl_anidr,i)    =  lnd2atm_vars%albd_grc(g,2)
+          l2x(index_l2x_Sl_avsdf,i)    =  lnd2atm_vars%albi_grc(g,1)
+          l2x(index_l2x_Sl_anidf,i)    =  lnd2atm_vars%albi_grc(g,2)
+       end if
+
        l2x(index_l2x_Sl_tref,i)     =  lnd2atm_vars%t_ref2m_grc(g)
        l2x(index_l2x_Sl_qref,i)     =  lnd2atm_vars%q_ref2m_grc(g)
        l2x(index_l2x_Sl_u10,i)      =  lnd2atm_vars%u_ref10m_grc(g)
@@ -1504,6 +1580,13 @@ contains
           end do
        end if
 
+       if (iac_present) then
+          do p = 0,numpft
+             l2x(index_l2x_Sl_hr(p),i) = lnd2iac_vars%hr(g,p)
+             l2x(index_l2x_Sl_npp(p),i) = lnd2iac_vars%npp(g,p)
+             l2x(index_l2x_Sl_pftwgt(p),i) = lnd2iac_vars%pftwgt(g,p)
+          end do
+       end if
     end do
 
   end subroutine lnd_export

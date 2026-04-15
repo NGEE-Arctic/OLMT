@@ -676,7 +676,7 @@ if options.ccsm_input != "":
     ccsm_input = options.ccsm_input
 elif (options.machine == 'cades'):
     ccsm_input = '/nfs/data/ccsi/proj-shared/E3SM/inputdata/'
-elif (options.machine == 'edison' or 'cori' in options.machine):
+elif (options.machine == 'edison'):
     ccsm_input = '/project/projectdirs/acme/inputdata'
 elif ('anvil' in options.machine or 'chrysalis' in options.machine):
     ccsm_input = '/home/ccsm-data/inputdata'
@@ -686,8 +686,6 @@ elif "docker" in options.machine:
     ccsm_input = "/home/e3smuser/inputdata"
 
 #if (options.compiler != ''):
-#    if ('cori' in options.machine):
-#        options.compiler = 'intel'
 #    if (options.machine == 'cades'):
 #        options.compiler = 'gnu'
 
@@ -715,12 +713,6 @@ if options.runroot == "" or not os.path.exists(options.runroot):
     myuser = getpass.getuser()
     if (options.machine == 'cades'):
         runroot='/lustre/or-scratch/cades-ccsi/scratch/'+myuser
-    elif ('cori' in options.machine):
-        runroot='/global/cscratch1/sd/'+myuser
-        myinput = open(os.environ.get('HOME')+'/.cesm_proj','r')
-        for s in myinput:
-           myproject=s[:-1] 
-        print('Project = '+myproject)
     elif ('anvil' in options.machine or 'chrysalis' in options.machine):
         runroot="/lcrc/group/acme/"+myuser
         myproject='e3sm'
@@ -1765,14 +1757,7 @@ for row in AFdatareader:
                             output.write(s.replace(firstsite, site))
                 input.close()
                 output.write("\n")
-        
-                if ('cori' in options.machine):
-                    output.write('source $MODULESHOME/init/csh\n')
-                    output.write('module unload python\n')
-                    output.write('module unload scipy\n')
-                    output.write('module unload numpy\n')
-                    output.write('module load python/2.7-anaconda\n')
-                    output.write('module load nco\n')     
+            
                 if ('cades' in options.machine):
                     output.write('source $MODULESHOME/init/bash\n')
                     output.write('module unload python\n')

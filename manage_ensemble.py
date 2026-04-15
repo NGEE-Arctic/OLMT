@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-import sys,os, time
+import sys
+import os
+import time
 import numpy as np
 import netcdf4_functions as nffun
-import subprocess
 from mpi4py import MPI
 from optparse import OptionParser
 
