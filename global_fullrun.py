@@ -752,8 +752,7 @@ if (not options.nofn):
 if (not options.notrans):
     print('\nSetting up transient case\n')
     ierror = os.system(cmd_trns)
-    if ierror != 0: 
-        sys.exit(-1)
+    if ierror != 0: sys.exit(-1)
 if ((options.cruncep or options.cruncepv8) and not options.cpl_bypass and not options.notrans):
     print('\nSetting up transient case phase 2\n')
     ierror = os.system(cmd_trns2)

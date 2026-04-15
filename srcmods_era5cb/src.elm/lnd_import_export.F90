@@ -454,7 +454,7 @@ contains
                 if (metyrs_flexible) metdata_fname = 'ERA5_' // trim(metvars(v)) // '_z' // zst(2:3) // '.nc'
 
                 if (use_daymet) then
-                    metdata_fname = 'Daymet_ERA5' // trim(metvars(v)) // '_1980-2024_z' // zst(2:3) // '.nc'
+                    metdata_fname = 'Daymet_ERA5_' // trim(metvars(v)) // '_1980-2024_z' // zst(2:3) // '.nc'
                 end if
             end if
   
@@ -1440,7 +1440,7 @@ contains
 
   !===============================================================================
 
-	  subroutine lnd_export( bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x)
+	subroutine lnd_export( bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x)
 
     !---------------------------------------------------------------------------
     ! !DESCRIPTION:

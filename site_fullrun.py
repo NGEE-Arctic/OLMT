@@ -640,31 +640,37 @@ if os.path.exists(options.csmdir + "/components/elm"):
 else:
     model_name = "clm2"
 
-#get machine info if not specified
-npernode=32
-if (options.machine == ''):
-   hostname = socket.gethostname()
-   print('')
-   print('Machine not specified.  Using hostname '+hostname+' to determine machine')
-   if ('or-slurm' in hostname):
-       options.machine = 'cades'
-       npernode=32
-   elif ('blues' in hostname or 'blogin' in hostname):
-       print('Hostname = '+hostname+' and machine not specified.  Assuming anvil')
-       options.machine = 'anvil' 
-       npernode=36
-   elif ('compy' in hostname):
-       options.machine = 'compy'
-       npernode=40
-   elif ('ubuntu' in hostname):
-       options.machine = 'ubuntu'
-       npernode = 8
-   elif ('chrlogin' in hostname):
-       options.machine = 'chrysalis'
-       npernode = 64    
-   else:
-       print('ERROR in site_fullrun.py:  Machine not specified.  Aborting')
-       sys.exit(1)
+# get machine info if not specified
+npernode = 32
+if options.machine == "":
+    hostname = socket.gethostname()
+    print("")
+    print(
+        "Machine not specified.  Using hostname " + hostname + " to determine machine"
+    )
+    if "or-slurm" in hostname:
+        options.machine = "cades"
+        npernode = 32
+    elif "cori" in hostname:
+        print("Cori machine not specified.  Setting to cori-haswell")
+        options.machine = "cori-haswell"
+        npernode = 32
+    elif "blues" in hostname or "blogin" in hostname:
+        print("Hostname = " + hostname + " and machine not specified.  Assuming anvil")
+        options.machine = "anvil"
+        npernode = 36
+    elif "compy" in hostname:
+        options.machine = "compy"
+        npernode = 40
+    elif "ubuntu" in hostname:
+        options.machine = "ubuntu"
+        npernode = 8
+    elif "chrlogin" in hostname:
+        options.machine = "chrysalis"
+        npernode = 64
+    else:
+        print("ERROR in site_fullrun.py:  Machine not specified.  Aborting")
+        sys.exit(1)
 
 if options.ccsm_input != "":
     ccsm_input = options.ccsm_input
@@ -792,8 +798,7 @@ for row in AFdatareader:
             endyear_trans=2016
           # RPF dapper files end in 2024 or 2025 currently, may need to add options here for era5 alone and era5-daymet4
           elif (options.era5):
-            endyear_trans=2025
-            if (options.daymet4): endyear_trans = 2024
+            endyear_trans=2023 
           elif (options.gswp3):
             endyear_trans=2014
           elif (options.gswp3_w5e5):
@@ -946,16 +951,14 @@ for row in AFdatareader:
             basecmd = basecmd + " --gswp3_w5e5"
         if options.princeton:
             basecmd = basecmd + " --princeton"
-        if options.era5:
-            basecmd = basecmd + " --era5"
         if options.daymet:
             basecmd = basecmd + " --daymet"
         if options.daymet4:  # gswp3 v2 spatially-downscaled by daymet v4, usually together with user-defined domain and surface data
             basecmd = basecmd + " --daymet4"
             if not options.gswp3:
                 basecmd = basecmd + " --gswp3"
-            elif not options.era5:
-                basecmd = basecmd + " --era5"
+        if options.era5:
+            basecmd = basecmd + " --era5"
         if options.fates_paramfile != "":
             basecmd = basecmd + " --fates_paramfile " + options.fates_paramfile
         if options.fates_nutrient != "":
@@ -1638,18 +1641,25 @@ for row in AFdatareader:
         # sys.exit('temp stop pre submit script copy & edit')
 
         for c in case_list:
-            mysubmit_type = 'qsub'
-            groupnum = int(sitenum/npernode)
-            if ('cades' in options.machine or 'anvil' in options.machine or 'chrysalis' in options.machine or \
-                'compy' in options.machine):
-                mysubmit_type = 'sbatch'
-            if ('ubuntu' in options.machine):
-                mysubmit_type = ''
-            if ('mac' in options.machine):
-                mysubmit_type = ''
-            if ('docker' in options.machine):
-                mysubmit_type = ''
-            if ((sitenum % npernode) == 0):
+            mysubmit_type = "qsub"
+            groupnum = int(sitenum / npernode)
+            if (
+                "cades" in options.machine
+                or "anvil" in options.machine
+                or "chrysalis" in options.machine
+                or "compy" in options.machine
+                or "cori" in options.machine
+            ):
+                mysubmit_type = "sbatch"
+            if (
+                "ubuntu" in options.machine
+                or "mac" in options.machine
+                or "docker" in options.machine
+            ):
+                mysubmit_type = ""
+            if "ees" in options.machine:
+                mysubmit_type = ""
+            if (sitenum % npernode) == 0:
                 mycase_firstsite = ad_case_firstsite
                 if options.noad:
                     mycase_firstsite = fin_case_firstsite
@@ -1705,15 +1715,15 @@ for row in AFdatareader:
                         if mysubmit_type == "qsub":
                             output.write("#PBS -l walltime=" + timestr + "\n")
                         else:
-                            output.write('#SBATCH --time='+timestr+'\n')
-                            if ('anvil' in options.machine):
-                                output.write('#SBATCH -A condo\n')
-                                output.write('#SBATCH -p acme-small\n')
-                            elif (myproject != ''):
-                                output.write('#SBATCH -A '+myproject+'\n')
-                            if ('edison' in options.machine):
-                                if (options.debug):
-                                    output.write('#SBATCH --partition=debug\n')
+                            output.write("#SBATCH --time=" + timestr + "\n")
+                            if "anvil" in options.machine:
+                                output.write("#SBATCH -A condo\n")
+                                output.write("#SBATCH -p acme-small\n")
+                            elif myproject != "":
+                                output.write("#SBATCH -A " + myproject + "\n")
+                            if "edison" in options.machine or "cori" in options.machine:
+                                if options.debug:
+                                    output.write("#SBATCH --partition=debug\n")
                                 else:
                                     output.write('#SBATCH --partition=regular\n')
                             if ('cades-baseline' in options.machine):
