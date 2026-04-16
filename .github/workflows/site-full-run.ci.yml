@@ -82,7 +82,7 @@ jobs:
 
         - name: Upload GSWP3 logs on failure
           if: failure()
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v5
           with:
             name: gswp3-case-logs
             path: |
@@ -120,7 +120,7 @@ jobs:
 
         - name: Upload ERA5 logs on failure
           if: failure()
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v5
           with:
             name: era5-case-logs
             path: |
