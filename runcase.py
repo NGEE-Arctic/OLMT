@@ -2431,12 +2431,21 @@ for i in range(1, int(options.ninst) + 1):
                     + str(options.hist_nhtfrq)
                     + ", -24\n"
                 )
-                output.write(
-                    " hist_fincl3 = 'TBOT','QBOT','RAIN','SNOW','QBOT','PBOT','WIND','FPSN','QVEGT',"
-                    + "'QVEGE','QSOIL','QRUNOFF','QDRAI','QOVER','H2OSFC','ZWT','SNOWDP','H2OSOI','TSOI','TWS',"
-                    + "'FSDS','FLDS','ALT','ALTMAX_EVER','SNOW_DEPTH','SOILICE','SOILLIQ','ZWT','ZWT_PERCH',"
-                    + "'QDRAI_PERCH','QH2OSFC','FH2OSFC','SUBSIDENCE','MICROREL','DEPRESS_DEPTH','EXCESS_ICE','EXCLUDED_VOL'\n"
-                )
+                if options.unified_polygonal_tundra:
+                    output.write(
+                        " hist_fincl3 = 'TBOT','QBOT','RAIN','SNOW','QBOT','PBOT','WIND','FPSN','QVEGT',"
+                        + "'QVEGE','QSOIL','QRUNOFF','QDRAI','QOVER','H2OSFC','H2OSFC_P','ZWT','SNOWDP','H2OSOI','TSOI','TWS',"
+                        + "'FSDS','FLDS','ALT','ALTMAX_EVER','SNOW_DEPTH','SOILICE','SOILLIQ','ZWT','ZWT_PERCH',"
+                        + "'QDRAI_PERCH','QH2OSFC','FH2OSFC','FH2OSFC_ACT','SUBSIDENCE','MICROREL','DEPRESS_DEPTH','EXCESS_ICE','EXCLUDED_VOL',"
+                        + "'DEGRADATION_INDEX'\n"
+                    )
+                else:
+                    output.write(
+                        " hist_fincl3 = 'TBOT','QBOT','RAIN','SNOW','QBOT','PBOT','WIND','FPSN','QVEGT',"
+                        + "'QVEGE','QSOIL','QRUNOFF','QDRAI','QOVER','H2OSFC','H2OSFC_P','ZWT','SNOWDP','H2OSOI','TSOI','TWS',"
+                        + "'FSDS','FLDS','ALT','ALTMAX_EVER','SNOW_DEPTH','SOILICE','SOILLIQ','ZWT','ZWT_PERCH',"
+                        + "'QDRAI_PERCH','QH2OSFC','FH2OSFC','FH2OSFC_ACT','SUBSIDENCE','MICROREL','DEPRESS_DEPTH','EXCESS_ICE','EXCLUDED_VOL'\n"
+                    )
             else:
                 output.write(
                     " hist_nhtfrq = "
