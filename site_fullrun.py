@@ -582,7 +582,7 @@ def _parse_cmd(cmd_i):
     return result
 
 
-def runcmd(cmd, echo=True, tag=os.path.basename(__file__)):
+def runcmd(cmd, echo=True, check=True, tag=os.path.basename(__file__)):
     lineno = inspect.stack()[1].lineno
     cmd_log = cmd
     if ".py" in cmd_log:
@@ -591,7 +591,12 @@ def runcmd(cmd, echo=True, tag=os.path.basename(__file__)):
 
     if echo:
         print(cmd)
-    return os.system(cmd)
+    result = os.system(cmd)
+    if check and result != 0:
+        print("Error: command failed with exit status "
+              + str(result) + ": " + cmd)
+        sys.exit(1)
+    return result
 
 
 # ----------------------------------------------------------
@@ -617,7 +622,7 @@ def submit(fname, submit_type="qsub", job_depend=""):
         myinput.close()
     else:
         thisjob = "0"
-        runcmd("rm temp/jobinfo")
+        runcmd("rm temp/jobinfo", check=False)
     return thisjob
 
 

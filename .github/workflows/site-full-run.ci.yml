@@ -54,6 +54,7 @@ jobs:
 
         - name: Run test case for site
           run: |
+            set -e
             # ensure writable by current user
             chmod -R u+rwX .cache/inputdata || true
 
@@ -79,8 +80,18 @@ jobs:
               --ccsm_input /home/e3smuser/inputdata \
               --nyears_ad_spinup 1 --nyears_final_spinup 1 --nyears_transient 1
 
+        - name: Upload GSWP3 logs on failure
+          if: failure()
+          uses: actions/upload-artifact@v4
+          with:
+            name: gswp3-case-logs
+            path: |
+              ${{ github.workspace }}/output/**/bld/*.bldlog.*
+              ${{ github.workspace }}/output/**/run/*.log.*
+
         - name: Run ERA5 test for site
           run: |
+            set -e
             # ensure writable by current user
             chmod -R u+rwX .cache/inputdata || true
 
@@ -104,4 +115,14 @@ jobs:
               --model_root /home/e3smuser/E3SM \
               --runroot /home/e3smuser/output \
               --ccsm_input /home/e3smuser/inputdata \
+              --srcmods_loc /home/e3smuser/OLMT/srcmods_era5cb \
               --nyears_ad_spinup 1 --nyears_final_spinup 1 --nyears_transient 1
+
+        - name: Upload ERA5 logs on failure
+          if: failure()
+          uses: actions/upload-artifact@v4
+          with:
+            name: era5-case-logs
+            path: |
+              ${{ github.workspace }}/output/**/bld/*.bldlog.*
+              ${{ github.workspace }}/output/**/run/*.log.*
