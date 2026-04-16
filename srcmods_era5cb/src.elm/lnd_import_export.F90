@@ -332,7 +332,7 @@ contains
             atm2lnd_vars%endyear_met_trans  = 2025
             !get year information from file, if available
             ! note the starting/ending year in file name(s) are removed.
-            ierr = nf90_open(trim(metdata_bypass) // '/'ERA5_TBOT_z01.nc', nf90_nowrite, ncid)
+            ierr = nf90_open(trim(metdata_bypass) // '/ERA5_TBOT_z01.nc', nf90_nowrite, ncid)
             ierr = nf90_inq_varid(ncid, 'start_year', varid)
             if (ierr == 0) then
               ierr = nf90_get_var(ncid, varid, atm2lnd_vars%startyear_met)
