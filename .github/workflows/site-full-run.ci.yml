@@ -82,7 +82,7 @@ jobs:
 
         - name: Upload GSWP3 logs on failure
           if: failure()
-          uses: actions/upload-artifact@v5
+          uses: actions/upload-artifact@v7
           with:
             name: gswp3-case-logs
             path: |
@@ -120,7 +120,45 @@ jobs:
 
         - name: Upload ERA5 logs on failure
           if: failure()
-          uses: actions/upload-artifact@v5
+          uses: actions/upload-artifact@v7
+          with:
+            name: era5-case-logs
+            path: |
+              ${{ github.workspace }}/output/**/bld/*.bldlog.*
+              ${{ github.workspace }}/output/**/run/*.log.*
+
+        - name: Run ERA5-daymet4 test for site
+          run: |
+            set -e
+            # ensure writable by current user
+            chmod -R u+rwX .cache/inputdata || true
+
+            docker run --rm \
+              -v ${{ github.workspace }}/OLMT:/home/e3smuser/OLMT \
+              -v ${{ github.workspace }}/E3SM:/home/e3smuser/E3SM \
+              -v ${{ github.workspace }}/field-to-model-inputdata/E3SM:/home/e3smuser/inputdata \
+              -v ${{ github.workspace }}/output:/home/e3smuser/output \
+              -w /home/e3smuser/OLMT \
+              rfiorella/model-containers:e3sm-openmpi-dev-latest \
+              ./site_fullrun.py \
+              --machine docker \
+              --compiler gnu --mpilib openmpi \
+              --site AK-BEOG --sitegroup NGEEArctic \
+              --cpl_bypass --era5 --daymet4 \
+              --metdir /home/e3smuser/inputdata/atm/datm7/daymet4/utq \
+              --domainfile /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_beo-GRID_navy.nc \
+              --surffile /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_beo-GRID_simyr1850_c360x720_c171002.nc \
+              --landusefile /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_beo-GRID_simyr1850-2015_c180423.nc \
+              --nofire --no_budgets --nopointdata \
+              --model_root /home/e3smuser/E3SM \
+              --runroot /home/e3smuser/output \
+              --ccsm_input /home/e3smuser/inputdata \
+              --srcmods_loc /home/e3smuser/OLMT/srcmods_era5cb \
+              --nyears_ad_spinup 1 --nyears_final_spinup 1 --nyears_transient 1
+
+        - name: Upload ERA5-daymet4 logs on failure
+          if: failure()
+          uses: actions/upload-artifact@v7
           with:
             name: era5-case-logs
             path: |
