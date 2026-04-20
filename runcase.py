@@ -1091,7 +1091,9 @@ else:
 # check for a specific forcing data, GSWP3-Daymet4, to offline ELM
 # This is high-resolution dataset, usually together with user-defined domain and surface data
 if options.daymet4:
-    if not options.gswp3:
+    if options.era5:
+        pass
+    elif not options.gswp3:
         options.gswp3 = True
     if options.metdir == "none":
         print('Error:  must provide user-defined " --metdir " for " --daymet4"')
@@ -1106,6 +1108,14 @@ if options.daymet4:
         if options.pftdynfile == "" and not options.nopftdyn:
             print('Error:  must provide user-defined " --pftdynfile " for " --daymet4"')
             sys.exit(1)
+    # RPF - add check to make sure daymet cannot be enabled with gswp3 AND era5
+    forcing_count = sum([options.gswp3, options.era5])
+    if forcing_count > 1:
+        print('Error: --daymet4 can only be combined with one base forcing (--gswp3 OR --era5, not both)')
+        sys.exit(1)
+    elif forcing_count == 0:
+        # Default to gswp3 if no forcing specified
+        options.gswp3 = True
 # ----------------------------------------------------------------------------------
 
 compset = options.compset

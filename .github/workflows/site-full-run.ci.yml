@@ -122,11 +122,12 @@ jobs:
             # Execute the command
             eval $DOCKER_CMD
 
-        - name: Upload ${{ matrix.simulation }} logs on failure
-          if: failure()
+        - name: Upload ${{ matrix.simulation }} logs
+          if: always()
           uses: actions/upload-artifact@v7
           with:
             name: ${{ matrix.simulation }}-case-logs
+            retention-days: 1
             path: |
               ${{ github.workspace }}/output/**/bld/*.bldlog.*
               ${{ github.workspace }}/output/**/run/*.log.*
