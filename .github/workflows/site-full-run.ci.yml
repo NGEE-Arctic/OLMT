@@ -13,7 +13,6 @@ on:
 
 jobs:
     test-site:
-      if: github.event_name != 'schedule'
       runs-on: ubuntu-latest
       strategy:
         fail-fast: false
@@ -76,6 +75,7 @@ jobs:
             cd field-to-model-inputdata
             git sparse-checkout init --cone
             git sparse-checkout set E3SM
+            find ${{ github.workspace }}/field-to-model-inputdata -name "*.gz" -exec gunzip -v {} +
 
         - name: Prepare output dir
           run: mkdir -p ${{ github.workspace }}/output
@@ -131,3 +131,4 @@ jobs:
             path: |
               ${{ github.workspace }}/output/**/bld/*.bldlog.*
               ${{ github.workspace }}/output/**/run/*.log.*
+              ${{ github.workspace }}/output/**/run/*_in    
