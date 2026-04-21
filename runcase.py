@@ -45,7 +45,7 @@ def _parse_cmd(cmd_i):
     return result
 
 
-def runcmd(cmd, echo=True, tag=os.path.basename(__file__)):
+def runcmd(cmd, echo=True, check=True, tag=os.path.basename(__file__)):
     lineno = inspect.stack()[1].lineno
     cmd_log = cmd
     if any([x in cmd.split(" ")[0] for x in [".py", "newcase"]]):
@@ -54,7 +54,12 @@ def runcmd(cmd, echo=True, tag=os.path.basename(__file__)):
 
     if echo:
         print(cmd)
-    return os.system(cmd)
+    result = os.system(cmd)
+    if check and result != 0:
+        print("Error: command failed with exit status "
+              + str(result) + ": " + cmd)
+        sys.exit(1)
+    return result
 
 
 def chdir(path, echo=True, tag=os.path.basename(__file__)):
@@ -1086,7 +1091,9 @@ else:
 # check for a specific forcing data, GSWP3-Daymet4, to offline ELM
 # This is high-resolution dataset, usually together with user-defined domain and surface data
 if options.daymet4:
-    if not options.gswp3:
+    if options.era5:
+        pass
+    elif not options.gswp3:
         options.gswp3 = True
     if options.metdir == "none":
         print('Error:  must provide user-defined " --metdir " for " --daymet4"')
@@ -1101,6 +1108,14 @@ if options.daymet4:
         if options.pftdynfile == "" and not options.nopftdyn:
             print('Error:  must provide user-defined " --pftdynfile " for " --daymet4"')
             sys.exit(1)
+    # RPF - add check to make sure daymet cannot be enabled with gswp3 AND era5
+    forcing_count = sum([options.gswp3, options.era5])
+    if forcing_count > 1:
+        print('Error: --daymet4 can only be combined with one base forcing (--gswp3 OR --era5, not both)')
+        sys.exit(1)
+    elif forcing_count == 0:
+        # Default to gswp3 if no forcing specified
+        options.gswp3 = True
 # ----------------------------------------------------------------------------------
 
 compset = options.compset
@@ -1299,11 +1314,11 @@ if os.path.exists(casedir):
     print("Warning:  Case directory exists")
     if options.rmold:
         print("--rmold specified.  Removing old case ")
-        runcmd("rm -rf " + casedir)
+        runcmd("rm -rf " + casedir, check=False)
     else:
         var = input("proceed (p), remove old (r), or exit (x)? ")
         if var[0] == "r":
-            runcmd("rm -rf " + casedir)
+            runcmd("rm -rf " + casedir, check=False)
         if var[0] == "x":
             sys.exit(1)
 print("CASE directory is: " + casedir)
@@ -1320,9 +1335,9 @@ print("CASE rundir is: " + rundir)
 if options.rmold:
     if options.no_build == False:
         print("Removing build directory: " + exeroot)
-        runcmd("rm -rf " + exeroot)
+        runcmd("rm -rf " + exeroot, check=False)
     print("Removing run directory: " + rundir)
-    runcmd("rm -rf " + rundir)
+    runcmd("rm -rf " + rundir, check=False)
 
 # ------Make domain, surface data and pftdyn files ------------------
 mysimyr = 1850
@@ -1390,10 +1405,7 @@ if options.nopointdata == False:
         ptcmd = ptcmd + " --humhol"
 
     print(ptcmd)
-    result = os.system(ptcmd)
-    if (result > 0):
-        print ('PointCLM:  Error creating point data.  Aborting')
-        sys.exit(1)
+    runcmd(ptcmd)
 
     if options.makepointdata_only:
         print(
@@ -1492,8 +1504,8 @@ if options.mod_parm_file != "":
 else:
     print(parm_file)
     print('nccopy -3 '+options.ccsm_input+'/lnd/clm2/paramdata/'+parm_file+' '+tmpdir+'/clm_params.nc')
-    os.system('nccopy -3 '+options.ccsm_input+'/lnd/clm2/paramdata/'+parm_file+' ' \
-              +tmpdir+'/clm_params.nc')
+    runcmd('nccopy -3 '+options.ccsm_input+'/lnd/clm2/paramdata/'+parm_file+' '
+           +tmpdir+'/clm_params.nc')
 
 myncap = 'ncap'
 if ( 'chrysalis' in options.machine or 'compy' in options.machine or 'ubuntu' in options.machine \
@@ -1507,23 +1519,23 @@ if ( 'chrysalis' in options.machine or 'compy' in options.machine or 'ubuntu' in
     #   print('humhol_dist = 1.0m')
       print('setting rsub_top_globalmax = 1.2e-5')
     #   print('Making br_mr a PFT-specific parameter')
-      os.system(myncap+' -O -s "humhol_ht = br_mr*0+0.15" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+      runcmd(myncap+' -O -s "humhol_ht = br_mr*0+0.15" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
       if options.marsh:
-        os.system(myncap+' -O -s "hum_frac = br_mr*0+0.50" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+        runcmd(myncap+' -O -s "hum_frac = br_mr*0+0.50" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
         print('hum_frac  = 0.50')
       else:
-        os.system(myncap+' -O -s "hum_frac = br_mr*0+0.64" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+        runcmd(myncap+' -O -s "hum_frac = br_mr*0+0.64" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
         print('hum_frac  = 0.64')
-      os.system(myncap+' -O -s "humhol_dist = br_mr*0+1.0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+      runcmd(myncap+' -O -s "humhol_dist = br_mr*0+1.0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
       if options.marsh:
         print('qflx_h2osfc_surfrate = 0.0')
-        os.system(myncap+' -O -s "qflx_h2osfc_surfrate = br_mr*0+0.0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+        runcmd(myncap+' -O -s "qflx_h2osfc_surfrate = br_mr*0+0.0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
       else:
         print('qflx_h2osfc_surfrate = 1.0e-7')
-        os.system(myncap+' -O -s "qflx_h2osfc_surfrate = br_mr*0+1.0e-7" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-      os.system(myncap+' -O -s "moss_swc_adjust=0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-      os.system(myncap+' -O -s "rsub_top_globalmax = br_mr*0+1.2e-5" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-      os.system(myncap+' -O -s "h2osoi_offset = br_mr*0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+        runcmd(myncap+' -O -s "qflx_h2osfc_surfrate = br_mr*0+1.0e-7" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+      runcmd(myncap+' -O -s "moss_swc_adjust=0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+      runcmd(myncap+' -O -s "rsub_top_globalmax = br_mr*0+1.2e-5" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+      runcmd(myncap+' -O -s "h2osoi_offset = br_mr*0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
     #   flnr = nffun.getvar(tmpdir+'/clm_params.nc','flnr')
     #   os.system(myncap+' -O -s "br_mr = flnr" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
     #   ierr = nffun.putvar(tmpdir+'/clm_params.nc','br_mr', flnr*0.0+2.52e-6)
@@ -1535,10 +1547,10 @@ if ( 'chrysalis' in options.machine or 'compy' in options.machine or 'ubuntu' in
 
         tidecomps = pandas.read_csv(options.tide_components_file)
         for comp in range(len(tidecomps)):
-            os.system(myncap+' -O -s "tide_coeff_amp_%d = humhol_ht*0+%1.4e" '%(comp+1,tidecomps['Amplitude'].iloc[comp]*1000)+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-            os.system(myncap+' -O -s "tide_coeff_period_%d = humhol_ht*0+%1.4e" '%(comp+1,360*3600/tidecomps['Speed'].iloc[comp])+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-            os.system(myncap+' -O -s "tide_coeff_phase_%d = humhol_ht*0+%1.4e" '%(comp+1,tidecomps['Phase'].iloc[comp]*math.pi/180)+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
-            os.system(myncap+' -O -s "tide_baseline = humhol_ht*0+800.0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+            runcmd(myncap+' -O -s "tide_coeff_amp_%d = humhol_ht*0+%1.4e" '%(comp+1,tidecomps['Amplitude'].iloc[comp]*1000)+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+            runcmd(myncap+' -O -s "tide_coeff_period_%d = humhol_ht*0+%1.4e" '%(comp+1,360*3600/tidecomps['Speed'].iloc[comp])+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+            runcmd(myncap+' -O -s "tide_coeff_phase_%d = humhol_ht*0+%1.4e" '%(comp+1,tidecomps['Phase'].iloc[comp]*math.pi/180)+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
+            runcmd(myncap+' -O -s "tide_baseline = humhol_ht*0+800.0" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
     elif options.marsh and options.tide_forcing_file == '':
         print('Tidal cycle coefficients not specified. Model will use GCREW defaults. Can also edit in parm file.')
     #os.system(myncap+' -O -s "crit_gdd1 = flnr" '+tmpdir+'/clm_params.nc '+tmpdir+'/clm_params.nc')
@@ -2832,13 +2844,10 @@ for i in range(1, int(options.ninst) + 1):
 
 #configure case
 #if (isglobal):
-os.system("./xmlchange BATCH_SYSTEM=none")
+runcmd("./xmlchange BATCH_SYSTEM=none")
 if (options.no_config == False):
     print('Running case.setup')
-    result = os.system('./case.setup > case_setup.log')
-    if (result > 0):
-        print('Error: runcase.py failed to setup case')
-        sys.exit(1)
+    runcmd('./case.setup > case_setup.log')
 else:
     print("Warning:  No case configure performed")
     sys.exit(1)
@@ -2867,9 +2876,7 @@ if (options.alquimia != ""):
     print("Turning on alquimia interface for compilation and running")
     # os.system("./xmlchange -id "+mylsm+"_CONFIG_OPTS --append --val '-cppdefs -DUSE_ALQUIMIA_LIB'")
     cppdefs.append('-DUSE_ALQUIMIA_LIB')
-    result = os.system("./xmlchange "+mylsm+"_USE_ALQUIMIA=TRUE")
-    if result != 0:
-        raise RuntimeError('Command failed: "./xmlchange '+mylsm+'_USE_ALQUIMIA=TRUE"')
+    runcmd("./xmlchange "+mylsm+"_USE_ALQUIMIA=TRUE")
 if (options.harvmod):
     print('Turning on HARVMOD modification\n')
     # os.system("./xmlchange -id "+mylsm+"_CONFIG_OPTS --append --val '-cppdefs -DHARVMOD'")
@@ -2882,7 +2889,7 @@ if len(cppdefs)>0:
             cppdefs_str = cppdefs_str + ' ' + cppdef
     cppdefs_str = cppdefs_str + '"'
     print("./xmlchange --append "+mylsm+"_CONFIG_OPTS='%s'"%(cppdefs_str))
-    os.system("./xmlchange --append "+mylsm+"_CONFIG_OPTS='%s'"%(cppdefs_str))
+    runcmd("./xmlchange --append "+mylsm+"_CONFIG_OPTS='%s'"%(cppdefs_str))
 
 # Global CPPDEF modifications
 if cpl_bypass:
@@ -2942,19 +2949,14 @@ if options.caseroot == "./":
 else:
     chdir(casedir)
 
-os.system('mkdir Srcfiles')
+runcmd('mkdir -p Srcfiles', check=False)
 #clean build if requested
 if (options.clean_build):
-    os.system('./case.build --clean')
+    runcmd('./case.build --clean', check=False)
 #compile model
 if (options.no_build == False):
     print('Running case.build')
-    result = os.system('./case.build') 
-    #result = os.system('./case.build > case_build.log')
-    if (result > 0):
-        print('Error:  Pointclm.py failed to build case.  Aborting')
-        print('See '+os.getcwd()+'/case_build.log for details')
-        sys.exit(1)
+    runcmd('./case.build')
 else:
     runcmd("./xmlchange BUILD_COMPLETE=TRUE")
     runcmd("mkdir -p " + rundir)
@@ -3123,9 +3125,9 @@ if not cpl_bypass and not isglobal:
         myoutput.close()
     # run preview_namelists to copy user_datm.streams.... to CaseDocs
     if os.path.exists(os.path.abspath(options.csmdir)+'/cime/scripts/Tools/preview_namelists'):
-      os.system(os.path.abspath(options.csmdir)+'/cime/scripts/Tools/preview_namelists')
+      runcmd(os.path.abspath(options.csmdir)+'/cime/scripts/Tools/preview_namelists')
     else:
-      os.system(os.path.abspath(options.csmdir)+'/cime/CIME/Tools/preview_namelists')
+      runcmd(os.path.abspath(options.csmdir)+'/cime/CIME/Tools/preview_namelists')
 
 
 # copy site data to run directory
@@ -3240,7 +3242,7 @@ if (options.ensemble_file != "" or int(options.mc_ensemble) != -1) and (
         options.machine == 'anvil' or options.machine == 'chrysalis'):
         mysubmit_type = 'sbatch'
     if (options.ensemble_file != ''):
-        os.system('mkdir -p '+PTCLMdir+'/scripts/'+myscriptsdir)
+        runcmd('mkdir -p '+PTCLMdir+'/scripts/'+myscriptsdir)
         output_run  = open(PTCLMdir+'/scripts/'+myscriptsdir+'/ensemble_run_'+casename+'.pbs','w')
         timestr=str(int(float(options.walltime)))+':'+str(int((float(options.walltime)- \
                                      int(float(options.walltime)))*60))+':00'
