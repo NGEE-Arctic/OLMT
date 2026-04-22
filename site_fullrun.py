@@ -10,6 +10,7 @@ import numpy
 import re
 import json
 import inspect
+import subprocess
 
 
 ### Run options
@@ -582,21 +583,35 @@ def _parse_cmd(cmd_i):
     return result
 
 
-def runcmd(cmd, echo=True, check=True, tag=os.path.basename(__file__)):
+def runcmd(
+    cmd,
+    echo=True,
+    check=True,
+    tag=os.path.basename(__file__),
+):
     lineno = inspect.stack()[1].lineno
     cmd_log = cmd
-    if ".py" in cmd_log:
-        cmd_log = _parse_cmd(cmd_log)
+    if any([x in cmd.split(" ")[0] for x in [".py", "newcase"]]):
+        cmd_log = _parse_cmd(cmd)
     _write_cmd(cmd_log, tag, lineno)
 
     if echo:
         print(cmd)
-    result = os.system(cmd)
-    if check and result != 0:
-        print("Error: command failed with exit status "
-              + str(result) + ": " + cmd)
-        sys.exit(1)
-    return result
+
+    result = subprocess.run(
+        cmd,
+        shell=True,
+        check=check,
+        text=True,
+        capture_output=True,
+    )
+
+    # CIME changes an execution error in case.submit to a warning and continues,
+    # so we need to check stderr for the error message and abort if it is present
+    # See: https://github.com/ESMCI/cime/blob/cime6.1.176/CIME/XML/env_batch.py#L1027-L1029
+    if check==True and "Exception from " in result.stderr:
+        sys.exit(f"Error in run command {cmd}")
+    return result.returncode
 
 
 # ----------------------------------------------------------
