@@ -3153,22 +3153,7 @@ if (
     and int(options.mc_ensemble) < 0
     and options.ensemble_file == ""
 ):
-    # Ming, 01/22/16, use a csh script instead of the perl script to submit the job.
-    #    runcmd("qsub "+casename+".run")
-    if "mesabi" in options.machine:
-        runcmd("cp /home/reichpb/shared/Scripts/Ming/shell/qsub1.csh ./")
-        runcmd("cp /home/reichpb/shared/Scripts/Ming/shell/st_archive.sh ./")
-        f = open("qsub.csh", "r+")
-        filedata = f.read()
-        newdata0 = filedata.replace("newdir", casedir)
-        newdata = newdata0.replace("archivedir", options.archiveroot)
-        f.seek(0)
-        f.write(newdata)
-        f.truncate()
-        f.close()
-        runcmd("qsub qsub.csh")
-    else:
-        runcmd("./case.submit")
+    runcmd("./case.submit")
 
 
 # ------------------------- Code to generate and run parameter ensembles --------------------------------------
