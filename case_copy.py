@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import netcdf4_functions as nffun
-import os, sys, csv, time, math, numpy
+import os
+import sys
 from optparse import OptionParser
 
 #Create, run and process a CLM/ELM model ensemble member
@@ -66,7 +66,7 @@ os.system('rm  '+new_dir+'/*.nc')
 os.system('rm -f '+new_dir+'/*.nc.orig')
 os.system('cp  '+orig_dir+'/*_in* '+new_dir)
 os.system('cp  '+orig_dir+'/*nml '+new_dir)
-if (not ('ICB' in casename)):
+if ('ICB' not in casename):
     os.system('cp  '+orig_dir+'/*stream* '+new_dir)
 os.system('cp  '+orig_dir+'/*.rc '+new_dir)
 os.system('cp  '+orig_dir+'/*para*.nc '+new_dir)
@@ -85,7 +85,7 @@ for f in os.listdir(new_dir):
                 s_out = s
             elif ('drv_in' in f and 'restart_n' in s and int(options.nyears) > 0):
                 s_out = ' restart_n = '+str(options.nyears)+'\n'
-            elif ('lnd_in' in f and 'finidat =' in s and not ("finidat = ' '" in s) and int(options.finyr) > 0):
+            elif ('lnd_in' in f and 'finidat =' in s and "finidat = ' '" not in s and int(options.finyr) > 0):
                 print(s)
                 year_orig = str((s.split('.')[-2:-1])[0])[0:4]
                 year_new = str(10000+int(options.finyr))[1:]

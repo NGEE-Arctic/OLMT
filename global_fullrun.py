@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
-import getpass, os, sys, csv, math
+import getpass
+import os
+import sys
+import math
 from optparse import OptionParser
-import subprocess
 import numpy
 import re
 
-parser = OptionParser();
+parser = OptionParser()
 
 parser.add_option("--caseidprefix", dest="mycaseid", default="", \
                   help="Unique identifier to include as a prefix to the case name")
@@ -180,6 +182,18 @@ parser.add_option("--walltime", dest="walltime", default=24, \
                   help = "desired walltime for each job (hours)")
 parser.add_option("--no_submit",dest="no_submit",default=False,action="store_true",
                     help='Do not submit jobs')
+#Add topounits (R Fiorella, NGEE-Arctic):
+parser.add_option("--topounits", dest="topounits", default=False,
+                  help="Turn on topounits > 1", action='store_true')
+parser.add_option("--topounits_atmdownscale", dest = "topounits_atmdownscale", default=False,
+                  help="Use atmospheric downscaling in topounits", action='store_true')
+# snow options:
+parser.add_option("--dust_snow_mixing", dest="dust_snow_mixing", default=False, \
+                  help = "Use Hao et al. dust/snow mixing albedo parameterization", action="store_true")
+parser.add_option("--no_snicar_ad", dest="no_snicar_ad", default=False, \
+                  help = "Turn off SNICAR-AD snow microphysics model", action = "store_true")
+parser.add_option("--use_extra_snow_layers", dest = "use_extra_snow_layers", default=False, \
+                  help = "Turn on extra snow layers", action="store_true")
 
 (options, args) = parser.parse_args()
 
@@ -267,7 +281,7 @@ elif (options.machine == 'titan' or options.machine == 'eos'):
     ccsm_input = '/lustre/atlas/world-shared/cli900/cesm/inputdata'
 elif (options.machine == 'cades' or options.machine == 'metis'):
     ccsm_input = '/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/'
-elif (options.machine == 'edison' or 'cori' in options.machine):
+elif (options.machine == 'edison'):
     ccsm_input = '/project/projectdirs/acme/inputdata'
 elif ('anvil' in options.machine):
     ccsm_input = '/home/ccsm-data/inputdata'
@@ -285,16 +299,18 @@ print(options.machine)
 if (options.compiler == ''):
     if (options.machine == 'titan' or options.machine == 'metis'):
         options.compiler = 'pgi'
-    if (options.machine == 'eos' or options.machine == 'edison' or 'cori' in options.machine):
+    if (options.machine == 'eos' or options.machine == 'edison'):
         options.compiler = 'intel'
     if (options.machine == 'cades'):
         options.compiler = 'gnu'
     if (options.machine == 'compy'): 
         options.compiler = 'intel'
+    if (options.machine == 'docker'):
+        options.compiler = 'gnu'
 
 #default MPIlibs
 if (options.mpilib == ''):    
-    if ('cori' in options.machine or 'edison' in options.machine):
+    if ('edison' in options.machine):
         options.mpilib = 'mpt'  
     elif ('cades' in options.machine):
         options.mpilib = 'openmpi'
@@ -302,6 +318,8 @@ if (options.mpilib == ''):
         options.mpilib = 'mvapich'
     elif ('compy' in options.machine):
         options.mpilib = 'impi'
+    elif ('docker' in options.machine):
+        options.mpilib = 'openmpi'
 
 #create ensemble file if requested (so that all cases use the same)
 if (int(options.mc_ensemble) != -1):
@@ -376,7 +394,7 @@ if (options.runroot == ''):
         runroot = csmdir+'/run'
 else:
     runroot = os.path.abspath(options.runroot)
-if (options.caseroot == '' or (os.path.exists(options.caseroot) == False)):
+if (options.caseroot == '' or (not os.path.exists(options.caseroot))):
     caseroot = os.path.abspath(csmdir+'/cime/scripts')
 else:
     caseroot = os.path.abspath(options.caseroot)
@@ -435,6 +453,7 @@ fsplen = int(ny_fin)
 #    fsplen = site_endyear-startyear+1
  
 #get align_year
+print(endyear)
 year_align = (endyear-1850+1) % ncycle
 
 #get regional information
@@ -446,8 +465,8 @@ if (options.region != ''):
 else:
     lat_bounds = options.lat_bounds.split(',')
     lon_bounds = options.lon_bounds.split(',')
-lat_bounds = [float(l) for l in lat_bounds]
-lon_bounds = [float(l) for l in lon_bounds]
+lat_bounds = [float(val) for val in lat_bounds]
+lon_bounds = [float(val) for val in lon_bounds]
 if (lon_bounds[0] > -180 or lon_bounds[1] < 180 or lat_bounds[0] > -90 or \
         lat_bounds[1] < 90):
     isregional=True
@@ -458,9 +477,9 @@ basecmd = 'python runcase.py --surfdata_grid --ccsm_input '+ \
 if (options.point_list != ''):
     basecmd = basecmd+' --point_list '+options.point_list
     # changing resolution of extracted grid point area
-    if(options.point_area_kmxkm!=None):# area in a square measured by kmxkm
+    if(options.point_area_kmxkm is not None):# area in a square measured by kmxkm
         basecmd = basecmd+' --point_area_kmxkm '+options.point_area_kmxkm
-    elif(options.point_area_degxdeg!=None):# area in a square measured by degreexdegree
+    elif(options.point_area_degxdeg is not None):# area in a square measured by degreexdegree
         basecmd = basecmd+' --point_area_degxdeg '+options.point_area_degxdeg
     lat_bounds = [-999,-999]
     lon_bounds = [-999,-999]
@@ -528,7 +547,8 @@ if (options.daymet):
     basecmd = basecmd+' --daymet'
 if (options.daymet4): # gswp3 v2 spatially-downscaled by daymet v4, usually together with user-defined domain and surface data
     basecmd = basecmd+' --daymet4'
-    if (not options.gswp3): basecmd = basecmd+' --gswp3'
+    if (not options.gswp3): 
+        basecmd = basecmd+' --gswp3'
 if (options.cplhist):
     basecmd = basecmd+' --cplhist'
 if (options.mymask != ''):
@@ -549,6 +569,16 @@ if (options.domainfile != ''):
     basecmd = basecmd+' --domainfile '+options.domainfile
 if (options.pftdynfile != ''):
     basecmd = basecmd + ' --landusefile '+options.pftdynfile
+if (options.topounits):
+    basecmd = basecmd+' --topounits'
+if (options.topounits_atmdownscale):
+    basecmd = basecmd+' --topounits_atmdownscale'
+if (options.dust_snow_mixing):
+    basecmd = basecmd+' --dust_snow_mixing'
+if (options.no_snicar_ad):
+    basecmd = basecmd+' --no_snicar_ad'
+if (options.use_extra_snow_layers):
+    basecmd = basecmd+' --use_extra_snow_layers'
 basecmd = basecmd + ' --np '+str(options.np)
 basecmd = basecmd + ' --tstep '+str(options.tstep)
 basecmd = basecmd + ' --co2_file '+options.co2_file
@@ -562,21 +592,29 @@ basecmd = basecmd+' --walltime '+str(options.walltime)
 basecmd = basecmd+' --lat_bounds '+str(lat_bounds[0])+','+str(lat_bounds[1])
 basecmd = basecmd+' --lon_bounds '+str(lon_bounds[0])+','+str(lon_bounds[1])
 
+print(basecmd)
+
 #----------------------- build commands for runCLM.py -----------------------------
 
+# define compsets
 #ECA or CTC
 if (options.cn_only):
     nutrients = 'CN'
 else:
     nutrients = 'CNP'
+
+# CENTURY or CTC
 if (options.centbgc):
     decomp_model = 'CNT'
 else:
     decomp_model = 'CTC'
+
+# ECA or RD
 if (options.eca):
     mymodel = nutrients+'ECA'+decomp_model
 else:
     mymodel = nutrients+'RD'+decomp_model
+#note - RD / ECA in FATES handled with namelist options, not compsets
 if (options.cpl_bypass):
     compset_type = 'ICB'
 else:
@@ -584,6 +622,7 @@ else:
 mymodel_fnsp = compset_type+'1850'+mymodel+'BC'
 mymodel_adsp = mymodel_fnsp.replace('CNP','CN')
 mymodel_trns = mymodel_fnsp.replace('1850','20TR')
+
 if (options.sp):
     mymodel_fnsp = compset_type+'ELMBC'
     options.noad = True
@@ -680,8 +719,11 @@ if (options.dailyvars):
 if (options.dailyrunoff):
     cmd_trns = cmd_trns+' --dailyrunoff'
 
+print(cmd_trns)
+
 #transient phase 2 (CRU-NCEP only, without coupler bypass)
-if ((options.cruncep or options.gswp3 or options.cruncepv8) and not options.cpl_bypass):
+if ((options.cruncep or options.cruncepv8) \
+        and not options.cpl_bypass and not options.notrans):
     basecase=basecase.replace('1850','20TR')+'_phase1'
     thistranslen = site_endyear - 1921 + 1
     cmd_trns2 = basecmd+' --trans2 --finidat_case '+basecase+ \
@@ -697,22 +739,25 @@ if ((options.cruncep or options.gswp3 or options.cruncepv8) and not options.cpl_
 os.system('mkdir -p temp')
 
 #build cases
-if (options.noad == False):
+if (not options.noad):
     print('\nSetting up ad_spinup case\n')
     ierror = os.system(cmd_adsp)
-    if ierror != 0: sys.exit(-1)
-if (options.nofn == False):
+    if ierror != 0: 
+        sys.exit(-1)
+if (not options.nofn):
     print('\nSetting up final spinup case\n')
     ierror = os.system(cmd_fnsp)
-    if ierror != 0: sys.exit(-1)
-if (options.notrans == False):
+    if ierror != 0: 
+        sys.exit(-1)
+if (not options.notrans):
     print('\nSetting up transient case\n')
     ierror = os.system(cmd_trns)
     if ierror != 0: sys.exit(-1)
-if ((options.cruncep or options.gswp3 or options.cruncepv8) and not options.cpl_bypass):
+if ((options.cruncep or options.cruncepv8) and not options.cpl_bypass and not options.notrans):
     print('\nSetting up transient case phase 2\n')
     ierror = os.system(cmd_trns2)
-    if ierror != 0: sys.exit(-1)
+    if ierror != 0: 
+        sys.exit(-1)
         
 
 cases=[]
@@ -722,11 +767,11 @@ if mycaseid !='':
 else:
     basecase=res
 
-if (options.noad == False):
+if (not options.noad):
     cases.append(basecase+'_'+mymodel_adsp+'_ad_spinup')
-if (options.nofn == False):
+if (not options.nofn):
     cases.append(basecase+'_'+mymodel_fnsp)
-if (options.notrans == False):
+if (options.notrans):
     cases.append(basecase+'_'+mymodel_trns)
 
 if (options.mc_ensemble <= 0):
@@ -849,12 +894,12 @@ if (options.mc_ensemble <= 0):
 
         
         output.write("cd "+caseroot+'/'+c+"/\n")
-        output.write("./xmlchange -id STOP_N -val "+str(this_run_n)+'\n')
+        output.write("./xmlchange --id STOP_N --val "+str(this_run_n)+'\n')
         if (options.cplhist):
-          output.write("./xmlchange -id REST_N -val 25\n")
+          output.write("./xmlchange --id REST_N --val 25\n")
         else:
-          output.write("./xmlchange -id REST_N -val 20\n")   #Restart every 20 years in global mode
-        output.write("./xmlchange -id RUN_STARTDATE -val "+(str(10000+model_startdate))[1:]+ \
+          output.write("./xmlchange --id REST_N --val 20\n")   #Restart every 20 years in global mode
+        output.write("./xmlchange --id RUN_STARTDATE --val "+(str(10000+model_startdate))[1:]+ \
                          '-01-01\n')                           
         if (n > 0):
             #change finidat 

@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-import os, sys, csv, time, math
+import os
+import sys
+import csv
+import math
 from optparse import OptionParser
 import numpy
 import netcdf4_functions as nffun
@@ -70,8 +73,8 @@ os.system('find ./temp/ -name "*.nc*" -exec rm {} \; ')
 
 lat_bounds = options.lat_bounds.split(',')
 lon_bounds = options.lon_bounds.split(',')
-lat_bounds = [float(l) for l in lat_bounds]
-lon_bounds = [float(l) for l in lon_bounds]
+lat_bounds = [float(val) for val in lat_bounds]
+lon_bounds = [float(val) for val in lon_bounds]
 
 mysimyr=int(options.mysimyr)
 
@@ -143,7 +146,8 @@ elif (options.point_list != ''):
         mysurf_lat = numpy.asarray(mysurfnc['LATIXY'])
         mysurf_lon = numpy.asarray(mysurfnc['LONGXY'])
         ix=numpy.where(mysurf_lon<0.0)
-        if(ix[0].size>0): mysurf_lon[ix]=mysurf_lon[ix]+360.0
+        if(ix[0].size>0): 
+            mysurf_lon[ix]=mysurf_lon[ix]+360.0
         point_mysurf = {}
         point_ij = []
         for isurfvar in mysurfvar:
@@ -184,7 +188,8 @@ elif (options.point_list != ''):
                         point_ij=numpy.vstack((point_ij,[ixy[0],ixy[1]]))
         
         n_grids=n_grids+1
-        if(divmod(n_grids, 100)[1]==0): print("grid counting: \n",n_grids)
+        if(divmod(n_grids, 100)[1]==0): 
+            print("grid counting: \n",n_grids)
     
     #overrides data from a PCT_PFT nc input file, after all index are assembled
     if(options.usersurfnc!='none' and options.usersurfvar!='none'):
@@ -372,20 +377,22 @@ for n in range(0,n_grids):
               ','+str(ygrid_max[n])+' '+domainfile_orig+' '+domainfile_new)
 
     # scaling x/y length for original grid
-    if (options.point_area_km2 != None):
+    if (options.point_area_km2 is not None):
         area_n = area_orig[ygrid_min[n],xgrid_min[n]]
         if(float(area_n)>0.0):
             # asssuming a square of area (km2) in projected flat surface system
             # its longitude/latitude range not square anymore
             # (note: this is very coarse estimation)
             side_km = math.sqrt(float(options.point_area_km2))
-            if(lat[n]==90.0): lat[n]=lat[n]-0.00001
-            if(lat[n]==-90.0): lat[n]=lat[n]+0.00001
+            if(lat[n]==90.0): 
+                lat[n]=lat[n]-0.00001
+            if(lat[n]==-90.0): 
+                lat[n]=lat[n]+0.00001
             kmratio_lon2lat = math.cos(math.radians(lat[n]))
             re_km = 6371.22
             yscalar = side_km/(math.pi*re_km/180.0*resy)
             xscalar = side_km/(math.pi*re_km/180.0*resx*kmratio_lon2lat)
-    if (options.point_area_deg2 != None):
+    if (options.point_area_deg2 is not None):
         area_n = area_orig[ygrid_min[n],xgrid_min[n]]
         if(float(area_n)>0.0):
             side_deg = math.sqrt(float(options.point_area_deg2)) # degx X degy, NOT square radians
@@ -421,7 +428,7 @@ for n in range(0,n_grids):
             ierr = nffun.putvar(domainfile_new, 'yv', yv)
             ierr = nffun.putvar(domainfile_new, 'area', area)
             
-        elif (options.point_area_km2 != None or options.point_area_deg2 != None):
+        elif (options.point_area_km2 is not None or options.point_area_deg2 is not None):
             xc[0] = lon[n]
             yc[0] = lat[n]
             xv[0][0][0] = lon[n]-resx*xscalar
@@ -433,7 +440,7 @@ for n in range(0,n_grids):
             yv[0][0][2] = lat[n]+resy*yscalar
             yv[0][0][3] = lat[n]+resy*yscalar
             area[0] = area[0]*xscalar*yscalar
-            if(options.point_area_km2 != None):
+            if(options.point_area_km2 is not None):
                 area[0] = float(options.point_area_km2)/re_km/re_km # there is about 0.3% error with calculation above
             ierr = nffun.putvar(domainfile_new, 'xc', xc)
             ierr = nffun.putvar(domainfile_new, 'yc', yc)
@@ -459,17 +466,23 @@ if (n_grids > 1):
     #ierr = os.system('ncrcat -h '+domainfile_list+' '+domainfile_new) # OS error if '_list' too long
     ierr = os.system('find ./temp/ -name "'+domainfile_tmp+ \
                      '" | xargs ls | sort | ncrcat -O -h -o'+domainfile_new)
-    if(ierr!=0): raise RuntimeError('Error: ncrcat -', ierr); #os.sys.exit()
+    if(ierr!=0): 
+        raise RuntimeError('Error: ncrcat -', ierr) #os.sys.exit()
     ierr = os.system('nccopy -6 -u '+domainfile_new+' '+domainfile_new+'.tmp') #NC-3  with large dataset support due to 64bit offset
-    if(ierr!=0): raise RuntimeError('Error: nccopy -6 -u ', ierr); #os.sys.exit()
+    if(ierr!=0): 
+        raise RuntimeError('Error: nccopy -6 -u ', ierr) #os.sys.exit()
     ierr = os.system('ncpdq -h -O -a ni,nj '+domainfile_new+'.tmp '+domainfile_new)
-    if(ierr!=0): raise RuntimeError('Error: ncpdq', ierr); #os.sys.exit()
+    if(ierr!=0): 
+        raise RuntimeError('Error: ncpdq', ierr) #os.sys.exit()
     ierr = os.system('ncrename -h -O -d ni,ni_temp '+domainfile_new+' '+domainfile_new+' ')
-    if(ierr!=0): raise RuntimeError('Error: ncrename', ierr); #os.sys.exit()
+    if(ierr!=0): 
+        raise RuntimeError('Error: ncrename', ierr) #os.sys.exit()
     ierr = os.system('ncrename -h -O -d nj,ni '+domainfile_new+' '+domainfile_new+' ')
-    if(ierr!=0): raise RuntimeError('Error: ncrename', ierr); #os.sys.exit()
+    if(ierr!=0): 
+        raise RuntimeError('Error: ncrename', ierr) #os.sys.exit()
     ierr = os.system('ncrename -h -O -d ni_temp,nj '+domainfile_new+' '+domainfile_new+' ')
-    if(ierr!=0): raise RuntimeError('Error: ncrename', ierr); #os.sys.exit()
+    if(ierr!=0): 
+        raise RuntimeError('Error: ncrename', ierr) #os.sys.exit()
     os.system('find ./temp/ -name '+domainfile_tmp+' -exec rm {} \;')
     os.system('rm '+domainfile_new+'.tmp*')
 else:
@@ -482,7 +495,7 @@ if(ierr==0):
     ierr = os.system('nccopy -7 -u '+domainfile_new+' '+domainfile_new+'.tmp')
     if(ierr!=0):
         print('nccopy -7 -u '+domainfile_new+' '+domainfile_new+'.tmp')
-        raise RuntimeError('Error: nccopy -7 -u ');# os.sys.exit()
+        raise RuntimeError('Error: nccopy -7 -u ')# os.sys.exit()
     else:
         ierr = os.system('mv '+domainfile_new+'.tmp '+domainfile_new)
 
@@ -567,7 +580,7 @@ for n in range(0,n_grids):
         mypct_sand = 0.0 
         mypct_clay = 0.0
  
-        if (options.surfdata_grid == False and options.site != ''):
+        if (not options.surfdata_grid and options.site != ''):
             #read file for site-specific PFT information
             AFdatareader = csv.reader(open(ccsm_input+'/lnd/clm2/PTCLM/'+options.sitegroup+'_pftdata.txt','r'))
             for row in AFdatareader:
@@ -631,11 +644,11 @@ for n in range(0,n_grids):
             longxy[0][0] = lon[n]
             latixy[0][0] = lat[n]
             area[0] = 111.2*resy*111.321*math.cos((lat[n]*resx)*math.pi/180)*resx
-        elif (options.point_area_km2 != None):
+        elif (options.point_area_km2 is not None):
             longxy[0][0] = lon[n]
             latixy[0][0] = lat[n]
             area[0] = float(options.point_area_km2)
-        elif (options.point_area_deg2 != None): # degx X degy (NOT square radians of area)
+        elif (options.point_area_deg2 is not None): # degx X degy (NOT square radians of area)
             longxy[0][0] = lon[n]
             latixy[0][0] = lat[n]
             side_deg = math.sqrt(float(options.point_area_deg2)) # a square of lat/lon degrees assummed
@@ -758,21 +771,27 @@ if (n_grids > 1):
   #os.system('ncecat '+surffile_list+' '+surffile_new) # not works with too long '_list'
   ierr = os.system('find ./temp/ -name "'+surffile_tmp+ \
                  '" | xargs ls | sort | ncecat -O -h -o'+surffile_new)
-  if(ierr!=0): raise RuntimeError('Error: ncecat '); #os.sys.exit()
+  if(ierr!=0): 
+      raise RuntimeError('Error: ncecat ') #os.sys.exit()
   #os.system('rm ./temp/surfdata?????.nc*') # not works with too many files
   os.system('find ./temp/ -name "'+surffile_tmp+'" -exec rm {} \;')
 
   #remove ni dimension
   ierr = os.system('ncwa -h -O -a lsmlat -d lsmlat,0,0 '+surffile_new+' '+surffile_new+'.tmp')
-  if(ierr!=0): raise RuntimeError('Error: ncwa '); #os.sys.exit()
+  if(ierr!=0): 
+    raise RuntimeError('Error: ncwa ') #os.sys.exit()
   ierr = os.system('nccopy -6 -u '+surffile_new+'.tmp'+' '+surffile_new+'.tmp2') #NC-3 with large dataset support (64bit offset)
-  if(ierr!=0): raise RuntimeError('Error: nccopy -6 -u '); #os.sys.exit()
+  if(ierr!=0): 
+    raise RuntimeError('Error: nccopy -6 -u ') #os.sys.exit()
   ierr = os.system('ncpdq -h -a lsmlon,record '+surffile_new+'.tmp2 '+surffile_new+'.tmp3')
-  if(ierr!=0): raise RuntimeError('Error: ncpdq '); #os.sys.exit()
+  if(ierr!=0): 
+    raise RuntimeError('Error: ncpdq ') #os.sys.exit()
   ierr = os.system('ncwa -h -O -a lsmlon -d lsmlon,0,0 '+surffile_new+'.tmp3 '+surffile_new+'.tmp4')
-  if(ierr!=0): raise RuntimeError('Error: ncwa '); #os.sys.exit()
+  if(ierr!=0): 
+    raise RuntimeError('Error: ncwa ') #os.sys.exit()
   ierr = os.system('ncrename -h -O -d record,gridcell '+surffile_new+'.tmp4 '+surffile_new+'.tmp5')
-  if(ierr!=0): raise RuntimeError('Error: ncrename '); #os.sys.exit()
+  if(ierr!=0): 
+    raise RuntimeError('Error: ncrename ') #os.sys.exit()
 
   os.system('mv '+surffile_new+'.tmp5 '+surffile_new)
   os.system('rm '+surffile_new+'.tmp*')
@@ -783,7 +802,7 @@ else:
 # but 'ncrename' used above may not works with NC-4
 ierr = os.system('nccopy -7 -u '+surffile_new+' '+surffile_new+'.tmp')
 if(ierr!=0): 
-    raise RuntimeError('Error: nccopy -7 -u ');# os.sys.exit()
+    raise RuntimeError('Error: nccopy -7 -u ')# os.sys.exit()
 else:
     ierr = os.system('mv '+surffile_new+'.tmp '+surffile_new)
 
@@ -791,7 +810,7 @@ print("INFO: Extracted and Compiled '"+ surffile_new + "' FROM: '" + surffile_or
 
 #-------------------- create pftdyn surface data ----------------------------------
 
-if (options.nopftdyn == False):
+if (not options.nopftdyn):
 
   print('Creating dynpft data')
   pftdyn_tmp = 'surfdata.pftdyn??????.nc' # filename pattern of 'pftdyn_new'
@@ -835,7 +854,7 @@ if (options.nopftdyn == False):
         #read file for site-specific PFT information
         dynexist = False
         mypft_frac=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-        if (options.surfdata_grid == False and options.site != ''):
+        if (not options.surfdata_grid and options.site != ''):
             AFdatareader = csv.reader(open(ccsm_input+'/lnd/clm2/PTCLM/'+options.sitegroup+'_pftdata.txt','r'))
             for row in AFdatareader:
                 #print(row[0], row[1], options.site)
@@ -867,11 +886,11 @@ if (options.nopftdyn == False):
             longxy[0][0] = lon[n]
             latixy[0][0] = lat[n]
             area[0][0] = 111.2*resy*111.321*math.cos((lat[n]*resx)*math.pi/180)*resx
-        elif (options.point_area_km2 != None):
+        elif (options.point_area_km2 is not None):
             longxy[0][0] = lon[n]
             latixy[0][0] = lat[n]
             area[0] = float(options.point_area_km2)
-        elif (options.point_area_deg2 != None): # degx X degy (NOT square radians of area)
+        elif (options.point_area_deg2 is not None): # degx X degy (NOT square radians of area)
             longxy[0][0] = lon[n]
             latixy[0][0] = lat[n]
             side_deg = math.sqrt(float(options.point_area_deg2)) # a square of lat/lon degrees assummed
@@ -879,7 +898,7 @@ if (options.nopftdyn == False):
 
         thisrow = 0
         for t in range(0,nyears_landuse):     
-            if (options.surfdata_grid == False):
+            if (not options.surfdata_grid):
                 if (dynexist):
                     for p in range(0,npft):
                         pct_pft[t][p][0][0] = 0.
@@ -994,22 +1013,28 @@ if (options.nopftdyn == False):
       #ios.system('ncecat -h '+pftdyn_list+' '+pftdyn_new) # not works with too long '_list'
       ierr = os.system('find ./temp/ -name "'+pftdyn_tmp+ \
                     '" | xargs ls | sort | ncecat -O -h -o'+pftdyn_new)
-      if(ierr!=0): raise RuntimeError('Error: ncecat '); #os.sys.exit()
+      if(ierr!=0): 
+            raise RuntimeError('Error: ncecat ') #os.sys.exit()
 
       #os.system('rm ./temp/surfdata.pftdyn?????.nc*') # 'rm' not works for too long file list
       os.system('find ./temp/ -name "'+pftdyn_tmp+'" -exec rm {} \;')
 
       #remove ni dimension
       ierr = os.system('ncwa -h -O -a lsmlat -d lsmlat,0,0 '+pftdyn_new+' '+pftdyn_new+'.tmp')
-      if(ierr!=0): raise RuntimeError('Error: ncwa '); #os.sys.exit()
+      if(ierr!=0): 
+            raise RuntimeError('Error: ncwa ') #os.sys.exit()
       ierr = os.system('nccopy -6 -u '+pftdyn_new+'.tmp'+' '+pftdyn_new+'.tmp2') # NC-3 with large dataset support due to 64bit offset
-      if(ierr!=0): raise RuntimeError('Error: nccopy -6 -u '); #os.sys.exit()
+      if(ierr!=0): 
+            raise RuntimeError('Error: nccopy -6 -u ') #os.sys.exit()
       ierr = os.system('ncpdq -h -a lsmlon,record '+pftdyn_new+'.tmp2 '+pftdyn_new+'.tmp3')
-      if(ierr!=0): raise RuntimeError('Error: ncpdq '); #os.sys.exit()
+      if(ierr!=0): 
+            raise RuntimeError('Error: ncpdq ') #os.sys.exit()
       ierr = os.system('ncwa -h -O -a lsmlon -d lsmlon,0,0 '+pftdyn_new+'.tmp3 '+pftdyn_new+'.tmp4')
-      if(ierr!=0): raise RuntimeError('Error: ncwa '); #os.sys.exit()
+      if(ierr!=0): 
+            raise RuntimeError('Error: ncwa ') #os.sys.exit()
       ierr = os.system('ncrename -h -O -d record,gridcell '+pftdyn_new+'.tmp4 '+pftdyn_new+'.tmp5')
-      if(ierr!=0): raise RuntimeError('Error: ncrename '); #os.sys.exit()
+      if(ierr!=0): 
+            raise RuntimeError('Error: ncrename ') #os.sys.exit()
 
       os.system('mv '+pftdyn_new+'.tmp5 '+pftdyn_new)
       os.system('rm '+pftdyn_new+'.tmp*')
@@ -1021,7 +1046,7 @@ if (options.nopftdyn == False):
   # but 'ncrename' used above may not works with NC-4
   ierr = os.system('nccopy -7 -u '+pftdyn_new+' '+pftdyn_new+'.tmp')
   if(ierr!=0):    
-      raise RuntimeError('Error: nccopy -7 -u '); #os.sys.exit()
+      raise RuntimeError('Error: nccopy -7 -u ') #os.sys.exit()
   else:
       ierr = os.system('mv '+pftdyn_new+'.tmp '+pftdyn_new)
 

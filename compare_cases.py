@@ -22,9 +22,9 @@ def comparencfiles(f1,f2,vars_compare=[]):
   hasdiff=False
   data2 = Dataset(f2,'r')
   for key in data1.variables:
-    if (not key in excluded_vars):
+    if (key not in excluded_vars):
       if (vars_compare == [] or key in vars_compare):
-        if (not key in data2.variables):
+        if (key not in data2.variables):
          print('    Error: '+key+' not in '+f2)
          hasdiff=True
         else:

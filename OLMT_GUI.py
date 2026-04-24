@@ -1,7 +1,10 @@
-import wx, wx.html
-import os, sys, csv, glob
-from wx.lib.expando import ExpandoTextCtrl
-import getpass, socket
+import wx
+import wx.html
+import os
+import sys
+import csv
+import getpass
+import socket
 
 
 aboutText = """<p>ACME land model (ALM) version 1 point model,  

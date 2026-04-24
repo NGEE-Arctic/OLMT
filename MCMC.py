@@ -1,10 +1,9 @@
 import numpy as np
-from scipy.stats import norm
 import model_surrogate as models
-import os, math, random
+import os
+import random
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 from optparse import OptionParser
 
