@@ -2,6 +2,7 @@
 
 import os
 import sys
+import time
 from optparse import OptionParser
 
 #Create, run and process a CLM/ELM model ensemble member
@@ -45,7 +46,15 @@ parser.add_option('--machine', dest='machine', default='cades', \
                   help = 'machine')
 parser.add_option('--warming', dest='warming', default='0.0', \
                   help = 'warming level to apply')
+parser.add_option('--tempdir', dest='tempdir', default='', \
+                  help = 'Per-invocation staging directory; defaults to ./temp/run_<pid>_<ms>')
 (options, args) = parser.parse_args()
+
+if options.tempdir:
+    tempdir = os.path.abspath(options.tempdir)
+else:
+    tempdir = os.path.abspath('./temp/run_%d_%d' % (os.getpid(), int(time.time() * 1000)))
+os.makedirs(tempdir, exist_ok=True)
 
 
 casename = options.casename
@@ -133,22 +142,22 @@ for f in os.listdir(new_dir):
 if (options.site_orig == options.site_new and os.path.exists(orig_dir+'/surfdata.nc')):
   os.system('cp '+orig_dir+'/surfdata.nc '+new_dir)
 else:
-  os.system('cp temp/surfdata.nc '+new_dir)
+  os.system('cp '+tempdir+'/surfdata.nc '+new_dir)
 if (options.site_orig == options.site_new and os.path.exists(orig_dir+'/domain.nc')):
   os.system('cp '+orig_dir+'/domain.nc '+new_dir)
 else:
-  os.system('cp temp/domain.nc '+new_dir)
+  os.system('cp '+tempdir+'/domain.nc '+new_dir)
 
 
 os.system('pwd')
 if ('20TR' in options.casename and not options.nolanduse):
-   os.system('cp temp/*pftdyn*.nc '+new_dir)
+   os.system('cp '+tempdir+'/*pftdyn*.nc '+new_dir)
 
 
 #if a global file exists, modify
-if (os.path.exists('temp/global_'+options.casename+'_0.pbs') and options.suffix != ''):
-  file_in = open('temp/global_'+options.casename+'_0.pbs','r')
-  file_out =open('temp/global_'+options.casename+'_'+options.suffix+'.pbs','w')
+if (os.path.exists(tempdir+'/global_'+options.casename+'_0.pbs') and options.suffix != ''):
+  file_in = open(tempdir+'/global_'+options.casename+'_0.pbs','r')
+  file_out =open(tempdir+'/global_'+options.casename+'_'+options.suffix+'.pbs','w')
   mpicmd = 'mpirun -np '+str(np)
   if ('cades' in options.machine):
     mpicmd = '/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/openmpi/1.10.3/centos7.2_gnu5.3.0/bin/mpirun'+ \
@@ -168,9 +177,9 @@ if (os.path.exists('temp/global_'+options.casename+'_0.pbs') and options.suffix 
   file_out.close()
   print("Submitting the job:")
   if ('cades' in options.machine or 'cori' in options.machine or 'edison' in options.machine):
-    os.system('sbatch temp/global_'+options.casename+'_'+options.suffix+'.pbs')
+    os.system('sbatch '+tempdir+'/global_'+options.casename+'_'+options.suffix+'.pbs')
   else:
-    os.system('qsub temp/global_'+options.casename+'_'+options.suffix+'.pbs')
+    os.system('qsub '+tempdir+'/global_'+options.casename+'_'+options.suffix+'.pbs')
 
 #if an ensemble script exists, make a copy for this site
 if (options.site_orig != ''):

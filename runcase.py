@@ -9,6 +9,7 @@ import json
 import numpy
 import inspect
 import subprocess
+import time
 from optparse import OptionParser
 
 
@@ -116,6 +117,12 @@ parser.add_option(
     dest="runroot",
     default="",
     help="Directory where the run would be created",
+)
+parser.add_option(
+    "--tempdir",
+    dest="tempdir",
+    default="",
+    help="Per-invocation staging directory; defaults to ./temp/run_<pid>_<ms>",
 )
 parser.add_option(
     "--model_root", dest="csmdir", default="", help="base model directory"
@@ -1063,6 +1070,16 @@ if (options.ensemble_file == ''):
 
 PTCLMdir = os.getcwd()
 
+# Resolve per-invocation tempdir up front so child shell-outs (e.g. makepointdata.py)
+# share it. Default to ./temp/run_<pid>_<ms> so concurrent invocations cannot collide.
+if options.tempdir:
+    tmpdir = os.path.abspath(options.tempdir)
+else:
+    tmpdir = os.path.abspath(
+        PTCLMdir + "/temp/run_%d_%d" % (os.getpid(), int(time.time() * 1000))
+    )
+os.makedirs(tmpdir, exist_ok=True)
+
 # if (options.hist_vars != ''):
 #    hist_vars = os.path.abspath(options.hist_vars)
 
@@ -1371,6 +1388,8 @@ if options.nopointdata == False:
         + str(mysimyr)
         + " --model "
         + options.mymodel
+        + " --tempdir "
+        + tmpdir
     )
     if options.metdir != "none":
         ptcmd = ptcmd + " --metdir " + options.metdir
@@ -1426,7 +1445,7 @@ if options.nopointdata == False:
             "PointCLM:  Successfully creating point data ONLY, i.e. no further config/build/run CLM/ELM"
         )
         print(
-            "PointCLM:  Files are in ./temp/*.nc, which you may save/rename properly for later use"
+            "PointCLM:  Files are in " + tmpdir + "/*.nc, which you may save/rename properly for later use"
         )
         sys.exit(0)
 
@@ -1496,9 +1515,7 @@ if isglobal == False:
     ptstr = str(numxpts) + "x" + str(numypts) + "pt"
 chdir(csmdir + "/cime/scripts")
 
-# parameter (pft-phys) modifications if desired
-tmpdir = PTCLMdir + "/temp"
-
+# parameter (pft-phys) modifications if desired (tmpdir already resolved at top of script)
 if options.mycaseid == "":
     myscriptsdir = "none"
 else:
@@ -1675,7 +1692,6 @@ if options.mymodel == "ELM":
             # assume in pointclm directory
             input = open(PTCLMdir + "/" + options.parm_file_P)
         else:  # assume full path given
-            input = open(os.path.abspath(options.parm_file_P))
             input = open(os.path.abspath(options.parm_file_P))
         for s in input:
             if s[0:1] != "#":
@@ -3142,16 +3158,16 @@ if not cpl_bypass and not isglobal:
 
 
 # copy site data to run directory
-runcmd("cp " + PTCLMdir + "/temp/*param*.nc " + runroot + "/" + casename + "/run/")
+runcmd("cp " + tmpdir + "/*param*.nc " + runroot + "/" + casename + "/run/")
 if options.domainfile == "":
-    runcmd("cp " + PTCLMdir + "/temp/domain.nc " + runroot + "/" + casename + "/run/")
+    runcmd("cp " + tmpdir + "/domain.nc " + runroot + "/" + casename + "/run/")
 if options.surffile == "":
-    runcmd("cp " + PTCLMdir + "/temp/surfdata.nc " + runroot + "/" + casename + "/run/")
+    runcmd("cp " + tmpdir + "/surfdata.nc " + runroot + "/" + casename + "/run/")
 if "20TR" in compset and options.nopftdyn == False and options.pftdynfile == "":
     runcmd(
         "cp "
-        + PTCLMdir
-        + "/temp/surfdata.pftdyn.nc "
+        + tmpdir
+        + "/surfdata.pftdyn.nc "
         + runroot
         + "/"
         + casename
