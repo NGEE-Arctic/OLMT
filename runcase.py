@@ -339,6 +339,13 @@ parser.add_option(
     help="use crujra data",
     action="store_true",
 )
+parser.add_option(                                                                                                                  
+    "--trendy25",
+    dest="trendy25",
+    default=False,
+    help="use trendy2025 data",
+    action="store_true",                                                                                                            
+)
 parser.add_option(
     "--cplhist",
     dest="cplhist",
