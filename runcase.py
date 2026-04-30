@@ -481,7 +481,7 @@ parser.add_option(
 )
 parser.add_option("--run_n", dest="run_n", default=50, help="run length (in run units)")
 parser.add_option(
-    "--rest_n", dest="rest_n", default=-1, help="restart interval (in run units)"
+    "--rest_n", dest="rest_n", default=-1, help="restart interval (in run units)", type="int"
 )
 parser.add_option(
     "--run_startyear",
