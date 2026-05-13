@@ -4,6 +4,7 @@ import getpass
 import os
 import sys
 import math
+import time
 from optparse import OptionParser
 import numpy
 import re
@@ -89,6 +90,8 @@ parser.add_option('--runblock', dest="runblock", default=9999, \
                   help="Number of years to run for each submission")
 parser.add_option("--runroot", dest="runroot", default="", \
                   help="Directory where the run would be created")
+parser.add_option("--tempdir", dest="tempdir", default="", \
+                  help="Per-invocation staging directory; defaults to ./temp/run_<pid>_<ms>")
 parser.add_option("--run_startyear", dest="run_startyear",default=-1, \
                       help='Starting year for model output (SP only)')
 parser.add_option("--srcmods_loc", dest="srcmods_loc", default='', \
@@ -197,22 +200,30 @@ parser.add_option("--use_extra_snow_layers", dest = "use_extra_snow_layers", def
 
 (options, args) = parser.parse_args()
 
+# Resolve per-invocation tempdir up front; defaults to ./temp/run_<pid>_<ms>.
+if options.tempdir:
+    tempdir = os.path.abspath(options.tempdir)
+else:
+    tempdir = os.path.abspath('./temp/run_%d_%d' % (os.getpid(), int(time.time() * 1000)))
+os.makedirs(tempdir, exist_ok=True)
+
 #------------ define function for pbs submission
 def submit(fname, submit_type='qsub', job_depend=''):
+    jobinfo = tempdir + '/jobinfo'
     if (job_depend != ''):
         if (submit_type == 'qsub'):
-            os.system(submit_type+' -W depend=afterok:'+job_depend+' '+fname+' > temp/jobinfo')
+            os.system(submit_type+' -W depend=afterok:'+job_depend+' '+fname+' > '+jobinfo)
         elif (submit_type == 'sbatch'):
-            os.system(submit_type+' -d afterok:'+job_depend+' '+fname+' > temp/jobinfo')
+            os.system(submit_type+' -d afterok:'+job_depend+' '+fname+' > '+jobinfo)
     else:
-        os.system(submit_type+' '+fname+' > temp/jobinfo')
-    myinput = open('temp/jobinfo')
+        os.system(submit_type+' '+fname+' > '+jobinfo)
+    myinput = open(jobinfo)
     thisjob=''
     if (submit_type != ''):
       for s in myinput:
           thisjob = re.search('[0-9]+', s).group(0)
     myinput.close()
-    os.system('rm temp/jobinfo')
+    os.system('rm '+jobinfo)
     return thisjob
 
 def get_regional_bounds(myregion):
@@ -588,6 +599,7 @@ if (options.mpilib != ''):
     basecmd = basecmd + ' --mpilib '+options.mpilib
 basecmd = basecmd+' --caseroot '+caseroot
 basecmd = basecmd+' --runroot '+runroot
+basecmd = basecmd+' --tempdir '+tempdir
 basecmd = basecmd+' --walltime '+str(options.walltime)
 basecmd = basecmd+' --lat_bounds '+str(lat_bounds[0])+','+str(lat_bounds[1])
 basecmd = basecmd+' --lon_bounds '+str(lon_bounds[0])+','+str(lon_bounds[1])
@@ -808,7 +820,7 @@ if (options.mc_ensemble <= 0):
     #Create a .PBS site fullrun script to launch the full job 
 
     for n in range(0,n_submits):
-        output = open('./temp/global_'+c+'_'+str(n)+'.pbs','w')
+        output = open(tempdir+'/global_'+c+'_'+str(n)+'.pbs','w')
         if (os.path.isfile(caseroot+'/'+c+'/case.run')):
             input = open(caseroot+'/'+c+'/case.run')
         elif (os.path.isfile(caseroot+'/'+c+'/.case.run')):
@@ -929,7 +941,7 @@ if (options.mc_ensemble <= 0):
         output.close()
 
         if not options.no_submit:
-            os.system('chmod u+x temp/global_'+c+'_'+str(n)+'.pbs') 
-            job_depend_run = submit('temp/global_'+c+'_'+str(n)+'.pbs',job_depend=job_depend_run, \
+            os.system('chmod u+x '+tempdir+'/global_'+c+'_'+str(n)+'.pbs')
+            job_depend_run = submit(tempdir+'/global_'+c+'_'+str(n)+'.pbs',job_depend=job_depend_run, \
                                     submit_type=mysubmit_type)
         
