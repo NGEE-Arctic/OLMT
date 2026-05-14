@@ -307,7 +307,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Write per-timestep forcing years into an ELM output NetCDF file "
-            "using CPL_BYPASS mapping logic from lnd_import_export.F90."
+            "using CPL_BYPASS mapping logic from lnd_import_export.F90. "
+            "Provide either --lnd-in (preferred) or --metdata-type."
         )
     )
 
@@ -315,25 +316,39 @@ def parse_args() -> argparse.Namespace:
     src_group.add_argument(
         "--metdata-type",
         type=str,
-        help="metdata_type (for example: gswp3, era5_daymet4, site)",
+        help=(
+            "Force metdata type directly (for example: gswp3, era5_daymet4, site). "
+            "Use this when lnd_in is unavailable. If --lnd-in is also provided, "
+            "--metdata-type takes precedence over value parsed from lnd_in."
+        ),
     )
     src_group.add_argument(
         "--lnd-in",
         type=str,
-        help="Path to lnd_in; metdata_type/metdata_bypass are read from it",
+        help=(
+            "Path to lnd_in from the run/case directory (preferred source). "
+            "Used to read metdata_type automatically."
+        ),
     )
 
     parser.add_argument(
         "--site-metadata-file",
         type=str,
         default=None,
-        help="Path to all_hourly.nc containing start_year/end_year (site forcing)",
+        help=(
+            "Path to all_hourly.nc containing start_year/end_year. "
+            "Required when effective metdata_type is site."
+        ),
     )
     parser.add_argument(
         "--era5-metadata-file",
         type=str,
         default=None,
-        help="Path to ERA5 file containing start_year/end_year (optional)",
+        help=(
+            "Optional path to an ERA5 forcing file containing start_year/end_year. "
+            "Used only when effective metdata_type is era5-like and file metadata "
+            "should override built-in defaults."
+        ),
     )
 
     parser.add_argument(
@@ -363,7 +378,7 @@ def main() -> int:
 
     if not metdata_type:
         print(
-            "ERROR: metdata_type not provided and not found in --lnd-in.",
+            "ERROR: Could not determine metdata_type. Provide --metdata-type or a valid --lnd-in.",
             file=sys.stderr,
         )
         return 2
