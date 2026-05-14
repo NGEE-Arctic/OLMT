@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Plot forcing meteorology against corresponding ELM history output fields.
 
-This script compares input forcing variables from GSWP3 forcing NetCDF files
+This script compares input forcing variables from met forcing NetCDF files
 against the corresponding ELM history variables for each land gridcell.
 
 If expected output variables are missing, the script prints explicit OLMT
@@ -14,6 +14,7 @@ must be generated first with `calc_met_forcing_year.py`.
 from __future__ import annotations
 
 import argparse
+import glob
 import os
 from dataclasses import dataclass
 from typing import Callable
@@ -35,24 +36,28 @@ class MappingRule:
 
 
 def build_precip_output(ds_out: xr.Dataset, candidates: tuple[str, ...]) -> xr.DataArray:
-    """Build precipitation output signal from RAIN + SNOW when available."""
+    """Build precipitation output signal from required RAIN + SNOW fields."""
     rain_name = candidates[0] if len(candidates) > 0 else "RAIN"
     snow_name = candidates[1] if len(candidates) > 1 else "SNOW"
 
     has_rain = rain_name in ds_out
     has_snow = snow_name in ds_out
 
-    if has_rain and has_snow:
-        arr = ds_out[rain_name] + ds_out[snow_name]
-        arr.attrs["units"] = ds_out[rain_name].attrs.get("units", "")
-        arr.attrs["long_name"] = "RAIN + SNOW"
-        return arr
-    if has_rain:
-        return ds_out[rain_name]
-    if has_snow:
-        return ds_out[snow_name]
+    if not (has_rain and has_snow):
+        missing = []
+        if not has_rain:
+            missing.append(rain_name)
+        if not has_snow:
+            missing.append(snow_name)
+        raise KeyError(
+            "PRECTmms mapping requires both RAIN and SNOW in output dataset; "
+            f"missing: {', '.join(missing)}."
+        )
 
-    raise KeyError("Neither RAIN nor SNOW exists in output dataset.")
+    arr = ds_out[rain_name] + ds_out[snow_name]
+    arr.attrs["units"] = ds_out[rain_name].attrs.get("units", "")
+    arr.attrs["long_name"] = "RAIN + SNOW"
+    return arr
 
 
 def build_single_output(ds_out: xr.Dataset, candidates: tuple[str, ...]) -> xr.DataArray:
@@ -68,48 +73,73 @@ MAPPING_RULES: tuple[MappingRule, ...] = (
     MappingRule("QBOT", ("QBOT",), "Specific humidity", build_single_output),
     MappingRule("FSDS", ("FSDS",), "Downward shortwave radiation", build_single_output),
     MappingRule("FLDS", ("FLDS",), "Downward longwave radiation", build_single_output),
+    # PSRF forcing corresponds to surface pressure, but output naming can vary by config.
+    # Use PBOT first when present; otherwise fall back to PSRF.
     MappingRule("PSRF", ("PBOT", "PSRF"), "Surface pressure", build_single_output),
     MappingRule("WIND", ("WIND",), "Wind speed", build_single_output),
+    # PRECTmms in forcing is total precipitation rate; build output as RAIN + SNOW.
     MappingRule("PRECTmms", ("RAIN", "SNOW"), "Precipitation (RAIN+SNOW)", build_precip_output),
 )
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument(
         "--forcing-dir",
-        default="/Users/mhoffman/Documents/PROJECTS/NGEE-Arctic/repos/field-to-model-inputdata/E3SM/atm/datm7/gswp3/kg",
-        help="Directory containing GSWP3 forcing NetCDF files.",
+        help=(
+            "Required. Directory containing forcing NetCDF files. "
+            "No default is applied."
+        ),
     )
     parser.add_argument(
         "--output-file",
-        default="/Users/mhoffman/Documents/PROJECTS/NGEE-Arctic/output/AK-SP-K64G_ICB1850CNPRDCTCBC/run/AK-SP-K64G_ICB1850CNPRDCTCBC.elm.h0.0001-01-01-00000.nc",
-        help="ELM history output NetCDF file.",
+        help=(
+            "Required. ELM history output NetCDF file to compare against forcing. "
+            "No default is applied."
+        ),
     )
     parser.add_argument(
         "--start-date",
         default="",
-        help="Start date (inclusive), format YYYY-MM-DD.",
+        help=(
+            "Optional. Start date (inclusive), format YYYY-MM-DD. "
+            "If omitted (empty string), the script uses the first timestamp in --output-file."
+        ),
     )
     parser.add_argument(
         "--end-date",
         default="",
-        help="End date (inclusive), format YYYY-MM-DD.",
+        help=(
+            "Optional. End date (inclusive), format YYYY-MM-DD. "
+            "If omitted, the script uses the last timestamp in --output-file."
+        ),
     )
     parser.add_argument(
         "--fig-dir",
-        default=os.path.join(os.path.dirname(__file__), "forcing_vs_output_figures"),
-        help="Directory to save generated PNG figures.",
+        default="forcing_vs_output_figures",
+        help=(
+            "Optional. Directory for generated PNG figures and report CSV. "
+            "Default is './forcing_vs_output_figures' relative to the current "
+            "invocation working directory."
+        ),
     )
     parser.add_argument(
         "--vars",
         default="",
-        help="Optional comma-separated forcing variable subset (e.g., TBOT,QBOT,PRECTmms).",
+        help=(
+            "Optional comma-separated forcing variable subset "
+            "(for example: TBOT,QBOT,PRECTmms). "
+            "If omitted, the script processes all supported variables: "
+            "TBOT, QBOT, FSDS, FLDS, PSRF, WIND, PRECTmms."
+        ),
     )
     return parser.parse_args()
 
 
-def standardize_time_dimension(ds: xr.Dataset) -> xr.Dataset:
+def standardize_time_dimension_name(ds: xr.Dataset) -> xr.Dataset:
     """Normalize dataset time dimension to `time` when possible."""
     if "time" in ds.dims or "time" in ds.coords:
         return ds
@@ -128,7 +158,7 @@ def standardize_time_dimension(ds: xr.Dataset) -> xr.Dataset:
 
 def decode_time_and_slice(ds: xr.Dataset, start_date: str, end_date: str) -> xr.Dataset:
     """Decode times and select a date window if possible."""
-    ds = standardize_time_dimension(ds)
+    ds = standardize_time_dimension_name(ds)
     ds = xr.decode_cf(ds)
     if "time" not in ds.coords:
         return ds
@@ -145,8 +175,19 @@ def decode_time_and_slice(ds: xr.Dataset, start_date: str, end_date: str) -> xr.
         return ds
 
 
-def forcing_file_path(forcing_dir: str, forcing_var: str) -> str:
-    return os.path.join(forcing_dir, f"GSWP3_{forcing_var}_1901-2014_z14.nc")
+def forcing_file_path(forcing_dir: str, forcing_var: str) -> str | None:
+    pattern = os.path.join(forcing_dir, f"*_{forcing_var}_*.nc")
+    matches = sorted(glob.glob(pattern))
+
+    if len(matches) > 1:
+        found = ", ".join(matches)
+        raise RuntimeError(
+            f"Expected exactly one forcing file for '{forcing_var}' with pattern '{pattern}', "
+            f"but found {len(matches)}: {found}"
+        )
+    if not matches:
+        return None
+    return matches[0]
 
 
 def normalize_units(unit_str: str) -> str:
@@ -174,22 +215,30 @@ def units_compatible(forcing_units: str, output_units: str) -> bool:
 
 
 def prepare_forcing_series(ds_force: xr.Dataset, forcing_var: str) -> xr.DataArray:
-    """Collapse forcing variable to a 1D time series by averaging spatial dimensions."""
-    arr = ds_force[forcing_var]
-    if "time" not in arr.dims:
-        for dim in arr.dims:
-            if "time" in dim.lower():
-                arr = arr.rename({dim: "time"})
-                break
+    """Return forcing variable as-is; cell selection is handled later per gridcell."""
+    return ds_force[forcing_var]
 
-    for dim in list(arr.dims):
-        if dim != "time":
-            arr = arr.mean(dim=dim)
 
-    if "time" not in arr.dims and len(arr.dims) == 1:
-        arr = arr.rename({arr.dims[0]: "time"})
+def forcing_series_for_gridcell(arr: xr.DataArray, grid_index: int) -> xr.DataArray:
+    """Return 1D forcing series for one gridcell without spatial averaging."""
+    non_time_dims = [dim for dim in arr.dims if dim != "time"]
+    if not non_time_dims:
+        return arr
 
-    return arr
+    stacked = arr.stack(forcing_cell=non_time_dims)
+    return stacked.isel(forcing_cell=grid_index)
+
+
+def count_forcing_cells(arr: xr.DataArray) -> int:
+    """Count forcing gridcells implied by all non-time dimensions."""
+    non_time_dims = [dim for dim in arr.dims if dim != "time"]
+    if not non_time_dims:
+        return 1
+
+    n = 1
+    for dim in non_time_dims:
+        n *= int(arr.sizes[dim])
+    return n
 
 
 def time_to_decimal_year(time_values: np.ndarray) -> np.ndarray:
@@ -239,28 +288,22 @@ def overlap_interval(x1: np.ndarray, x2: np.ndarray) -> tuple[float, float] | No
 
 def series_for_plot(
     arr: xr.DataArray,
-    x_values: np.ndarray | None = None,
-) -> tuple[np.ndarray, np.ndarray, str]:
-    """Return unmodified 1D values with time x-axis when available.
-
-    x_values can be supplied to override the computed x-axis for time values.
-    """
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return unmodified 1D values with required time-coordinate x-axis."""
     if "time" not in arr.dims and len(arr.dims) == 1:
         arr = arr.rename({arr.dims[0]: "time"})
 
     vals = np.atleast_1d(np.asarray(arr.values).squeeze())
     vals = pd.to_numeric(pd.Series(vals), errors="coerce").to_numpy(dtype=float)
 
-    if x_values is not None:
-        xvals = np.atleast_1d(np.asarray(x_values).squeeze())
-        axis_mode = "explicit_mapped_decimal_year"
-    elif "time" in arr.coords:
+    if "time" in arr.coords:
         tvals = np.atleast_1d(np.asarray(arr["time"].values).squeeze())
         xvals = time_to_decimal_year(tvals)
-        axis_mode = "native_time_decimal_year"
     else:
-        xvals = np.arange(vals.size)
-        axis_mode = "native_index"
+        raise ValueError(
+            "Time coordinate is required for plotting. "
+            f"Available coords: {tuple(arr.coords)}"
+        )
 
     if xvals.size != vals.size:
         n = min(xvals.size, vals.size)
@@ -268,7 +311,7 @@ def series_for_plot(
         vals = vals[:n]
 
     mask = np.isfinite(vals)
-    return xvals[mask], vals[mask], axis_mode
+    return xvals[mask], vals[mask]
 
 
 def print_missing_guidance(missing_output: set[str]) -> None:
@@ -359,7 +402,7 @@ def main() -> None:
         selected_vars = {v.strip() for v in args.vars.split(",") if v.strip()}
 
     ds_out = xr.open_dataset(args.output_file, decode_times=False)
-    ds_out = standardize_time_dimension(ds_out)
+    ds_out = standardize_time_dimension_name(ds_out)
     ds_out = xr.decode_cf(ds_out)
 
     start_date = args.start_date
@@ -395,7 +438,7 @@ def main() -> None:
             continue
 
         fpath = forcing_file_path(args.forcing_dir, rule.forcing_var)
-        if not os.path.exists(fpath):
+        if fpath is None:
             report_rows.append(
                 {
                     "forcing_var": rule.forcing_var,
@@ -405,7 +448,10 @@ def main() -> None:
                     "output_units": "",
                     "units_match": False,
                     "alignment": "",
-                    "note": f"Missing forcing file: {fpath}",
+                    "note": (
+                        f"No forcing file found matching pattern: "
+                        f"*_{rule.forcing_var}_*.nc"
+                    ),
                 }
             )
             continue
@@ -414,6 +460,20 @@ def main() -> None:
         ds_force = decode_time_and_slice(ds_force, start_date, end_date)
 
         forcing_arr = prepare_forcing_series(ds_force, rule.forcing_var)
+        if "time" not in forcing_arr.dims:
+            report_rows.append(
+                {
+                    "forcing_var": rule.forcing_var,
+                    "output_var": "",
+                    "status": "invalid_forcing_dims",
+                    "forcing_units": forcing_arr.attrs.get("units", ""),
+                    "output_units": "",
+                    "units_match": False,
+                    "alignment": "",
+                    "note": f"Expected forcing variable to include 'time' dim, found {forcing_arr.dims}",
+                }
+            )
+            continue
 
         try:
             output_arr = rule.output_builder(ds_out, rule.output_candidates)
@@ -454,31 +514,55 @@ def main() -> None:
             continue
 
         ngrid = output_arr.sizes["lndgrid"]
-        plotted = 0
-        forcing_x, forcing_y, forcing_axis_mode = series_for_plot(forcing_arr)
-        forcing_x = forcing_x + forcing_time_shift
-        forcing_axis_mode = f"{forcing_axis_mode}_shifted"
-        if forcing_y.size == 0:
+        forcing_cells = count_forcing_cells(forcing_arr)
+        if forcing_cells not in (1, ngrid):
             report_rows.append(
                 {
                     "forcing_var": rule.forcing_var,
                     "output_var": output_name,
-                    "status": "no_valid_forcing_data",
+                    "status": "forcing_grid_mismatch",
                     "forcing_units": forcing_units,
                     "output_units": output_units,
                     "units_match": match,
                     "alignment": "",
-                    "note": "No finite forcing samples after filtering.",
+                    "note": (
+                        f"Forcing has {forcing_cells} cell(s) across non-time dims {tuple(d for d in forcing_arr.dims if d != 'time')}, "
+                        f"but output has {ngrid} lndgrid cell(s)."
+                    ),
                 }
             )
             continue
 
+        plotted = 0
+        forcing_time_error = False
         for ig in range(ngrid):
             out_g = output_arr.isel(lndgrid=ig)
-            output_x, output_y, output_axis_mode = series_for_plot(
-                out_g,
-                x_values=output_native_x,
-            )
+            force_g = forcing_series_for_gridcell(forcing_arr, 0 if forcing_cells == 1 else ig)
+
+            try:
+                forcing_x, forcing_y = series_for_plot(force_g)
+            except ValueError as exc:
+                report_rows.append(
+                    {
+                        "forcing_var": rule.forcing_var,
+                        "output_var": output_name,
+                        "status": "invalid_forcing_time_coordinate",
+                        "forcing_units": forcing_units,
+                        "output_units": output_units,
+                        "units_match": match,
+                        "alignment": "",
+                        "note": str(exc),
+                    }
+                )
+                plotted = 0
+                forcing_time_error = True
+                break
+
+            forcing_x = forcing_x + forcing_time_shift
+            if forcing_y.size == 0:
+                continue
+
+            output_x, output_y = series_for_plot(out_g)
             if output_y.size == 0:
                 continue
 
@@ -504,8 +588,13 @@ def main() -> None:
             plt.close(fig)
             plotted += 1
 
+        if forcing_time_error:
+            continue
+
         status = "plotted" if plotted > 0 else "no_overlap_after_alignment"
-        alignment_mode = f"forcing:{forcing_axis_mode}|output:{output_axis_mode}"
+        if plotted == 0:
+            status = "no_valid_forcing_data"
+        alignment_mode = "forcing:time_shifted_to_output|output:native_time"
         note = (
             "No downsampling or truncation. Output is shown on native output-file "
             "time range, and forcing time is shifted using met_forcing_year-derived "
