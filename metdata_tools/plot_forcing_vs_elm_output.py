@@ -136,6 +136,16 @@ def parse_args() -> argparse.Namespace:
             "TBOT, QBOT, FSDS, FLDS, PSRF, WIND, PRECTmms."
         ),
     )
+    parser.add_argument(
+        "--forcing-time-mode",
+        choices=("native", "average_to_output"),
+        default="native",
+        help=(
+            "How to represent forcing in time. 'native' plots forcing at its native "
+            "timestep (after year-shift alignment). 'average_to_output' averages forcing "
+            "within each output-time interval and plots at output timestamps."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -290,6 +300,54 @@ def series_for_plot(
     return xvals[mask], vals[mask]
 
 
+def average_series_to_target_intervals(
+    source_x: np.ndarray,
+    source_y: np.ndarray,
+    target_x: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Average source series into trailing intervals ending at target timestamps.
+
+    This assumes target timestamps represent end-of-interval output writes.
+    """
+    if source_x.size == 0 or source_y.size == 0 or target_x.size == 0:
+        return np.array([], dtype=float), np.array([], dtype=float)
+
+    sx = np.asarray(source_x, dtype=float)
+    sy = np.asarray(source_y, dtype=float)
+    tx = np.asarray(target_x, dtype=float)
+
+    finite = np.isfinite(sx) & np.isfinite(sy)
+    sx = sx[finite]
+    sy = sy[finite]
+    if sx.size == 0:
+        return np.array([], dtype=float), np.array([], dtype=float)
+
+    order = np.argsort(sx)
+    sx = sx[order]
+    sy = sy[order]
+
+    if tx.size == 1:
+        return np.array([tx[0]], dtype=float), np.array([float(np.mean(sy))], dtype=float)
+
+    # Build trailing bin edges so bin i is (edge_i, target_i], matching
+    # end-stamped output convention and avoiding half-step centering lag.
+    edges = np.empty(tx.size + 1, dtype=float)
+    edges[1:] = tx
+    edges[0] = tx[0] - (tx[1] - tx[0])
+
+    out_y = np.full(tx.shape, np.nan, dtype=float)
+    for i in range(tx.size):
+        if i == 0:
+            in_bin = (sx >= edges[i]) & (sx <= edges[i + 1])
+        else:
+            in_bin = (sx > edges[i]) & (sx <= edges[i + 1])
+        if np.any(in_bin):
+            out_y[i] = float(np.mean(sy[in_bin]))
+
+    keep = np.isfinite(out_y)
+    return tx[keep], out_y[keep]
+
+
 def print_missing_guidance(missing_output: set[str]) -> None:
     if not missing_output:
         return
@@ -368,6 +426,21 @@ def derive_forcing_time_shift(
     return float(np.median(delta))
 
 
+def derive_output_interval(output_native_x: np.ndarray) -> float:
+    """Estimate one output interval in decimal-year units from output timestamps."""
+    if output_native_x.size < 2:
+        return 0.0
+    x = np.asarray(output_native_x, dtype=float)
+    x = x[np.isfinite(x)]
+    if x.size < 2:
+        return 0.0
+    dx = np.diff(x)
+    dx = dx[np.isfinite(dx) & (dx > 0.0)]
+    if dx.size == 0:
+        return 0.0
+    return float(np.median(dx))
+
+
 def main() -> None:
     args = parse_args()
     os.makedirs(args.fig_dir, exist_ok=True)
@@ -400,6 +473,8 @@ def main() -> None:
     output_mapped_x = build_output_mapped_decimal_year(ds_out, forcing_year_var)
     output_native_x = build_output_native_decimal_year(ds_out)
     forcing_time_shift = derive_forcing_time_shift(output_native_x, output_mapped_x)
+    output_interval_shift = derive_output_interval(output_native_x) * 1.5
+    output_interval_shift_days = output_interval_shift * 365.25
 
     output_window = overlap_interval(output_native_x, output_native_x)
     output_left, output_right = (None, None)
@@ -468,6 +543,10 @@ def main() -> None:
             out_g = output_arr.isel(lndgrid=ig)
             force_g = forcing_series_for_gridcell(forcing_arr, 0 if forcing_cells == 1 else ig)
 
+            output_x, output_y = series_for_plot(out_g)
+            if output_y.size == 0:
+                continue
+
             try:
                 forcing_x, forcing_y = series_for_plot(force_g)
             except ValueError as exc:
@@ -480,9 +559,16 @@ def main() -> None:
             if forcing_y.size == 0:
                 continue
 
-            output_x, output_y = series_for_plot(out_g)
-            if output_y.size == 0:
-                continue
+            if args.forcing_time_mode == "average_to_output":
+                forcing_x, forcing_y = average_series_to_target_intervals(
+                    forcing_x,
+                    forcing_y,
+                    output_x,
+                )
+                if forcing_y.size == 0:
+                    continue
+
+            forcing_x = forcing_x + output_interval_shift
 
             fig, ax = plt.subplots(figsize=(12, 4))
             ax.plot(forcing_x, forcing_y, label=f"forcing:{rule.forcing_var}", lw=1.6, color="k")
@@ -514,7 +600,8 @@ def main() -> None:
         else:
             print(
                 f"Plotted {plotted} gridcell(s) for {rule.forcing_var} vs {output_name} "
-                f"(forcing shifted by {forcing_time_shift:+.6f} years)."
+                f"(forcing mode: {args.forcing_time_mode}; shifted by {forcing_time_shift:+.6f} years "
+                f"+ 1.5x output interval {output_interval_shift_days:+.3f} days)."
             )
 
     print_missing_guidance(missing_output)
