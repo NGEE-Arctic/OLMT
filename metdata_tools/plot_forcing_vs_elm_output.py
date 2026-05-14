@@ -121,7 +121,7 @@ def parse_args() -> argparse.Namespace:
         "--fig-dir",
         default="forcing_vs_output_figures",
         help=(
-            "Optional. Directory for generated PNG figures and report CSV. "
+            "Optional. Directory for generated PNG figures. "
             "Default is './forcing_vs_output_figures' relative to the current "
             "invocation working directory."
         ),
@@ -188,30 +188,6 @@ def forcing_file_path(forcing_dir: str, forcing_var: str) -> str | None:
     if not matches:
         return None
     return matches[0]
-
-
-def normalize_units(unit_str: str) -> str:
-    cleaned = (unit_str or "").strip()
-    return cleaned.replace("^", "")
-
-
-def units_compatible(forcing_units: str, output_units: str) -> bool:
-    fu = normalize_units(forcing_units)
-    ou = normalize_units(output_units)
-    compatible_pairs = {
-        ("W/m2", "W/m2"),
-        ("W/m2", "W/m2"),
-        ("W/m2", "W/m^2"),
-        ("W/m^2", "W/m2"),
-        ("Pa", "Pa"),
-        ("K", "K"),
-        ("kg/kg", "kg/kg"),
-        ("m/s", "m/s"),
-        ("mm/s", "mm/s"),
-    }
-    if fu == ou:
-        return True
-    return (fu, ou) in compatible_pairs
 
 
 def prepare_forcing_series(ds_force: xr.Dataset, forcing_var: str) -> xr.DataArray:
@@ -430,7 +406,6 @@ def main() -> None:
     if output_window is not None:
         output_left, output_right = output_window
 
-    report_rows: list[dict[str, object]] = []
     missing_output: set[str] = set()
 
     for rule in MAPPING_RULES:
@@ -439,20 +414,9 @@ def main() -> None:
 
         fpath = forcing_file_path(args.forcing_dir, rule.forcing_var)
         if fpath is None:
-            report_rows.append(
-                {
-                    "forcing_var": rule.forcing_var,
-                    "output_var": "",
-                    "status": "forcing_file_missing",
-                    "forcing_units": "",
-                    "output_units": "",
-                    "units_match": False,
-                    "alignment": "",
-                    "note": (
-                        f"No forcing file found matching pattern: "
-                        f"*_{rule.forcing_var}_*.nc"
-                    ),
-                }
+            print(
+                f"Skipping {rule.forcing_var}: no forcing file found matching pattern "
+                f"*_{rule.forcing_var}_*.nc"
             )
             continue
 
@@ -461,17 +425,9 @@ def main() -> None:
 
         forcing_arr = prepare_forcing_series(ds_force, rule.forcing_var)
         if "time" not in forcing_arr.dims:
-            report_rows.append(
-                {
-                    "forcing_var": rule.forcing_var,
-                    "output_var": "",
-                    "status": "invalid_forcing_dims",
-                    "forcing_units": forcing_arr.attrs.get("units", ""),
-                    "output_units": "",
-                    "units_match": False,
-                    "alignment": "",
-                    "note": f"Expected forcing variable to include 'time' dim, found {forcing_arr.dims}",
-                }
+            print(
+                f"Skipping {rule.forcing_var}: expected forcing variable to include "
+                f"'time' dim, found {forcing_arr.dims}"
             )
             continue
 
@@ -480,56 +436,29 @@ def main() -> None:
             output_name = output_arr.name if output_arr.name else "+".join(rule.output_candidates)
         except KeyError:
             missing_output.update(rule.output_candidates)
-            report_rows.append(
-                {
-                    "forcing_var": rule.forcing_var,
-                    "output_var": ",".join(rule.output_candidates),
-                    "status": "missing_output_variable",
-                    "forcing_units": forcing_arr.attrs.get("units", ""),
-                    "output_units": "",
-                    "units_match": False,
-                    "alignment": "",
-                    "note": "No candidate output variable found.",
-                }
+            print(
+                f"Skipping {rule.forcing_var}: missing output variable(s) "
+                f"{','.join(rule.output_candidates)}"
             )
             continue
 
         forcing_units = forcing_arr.attrs.get("units", "")
         output_units = output_arr.attrs.get("units", "")
-        match = units_compatible(forcing_units, output_units)
 
         if "lndgrid" not in output_arr.dims:
-            report_rows.append(
-                {
-                    "forcing_var": rule.forcing_var,
-                    "output_var": output_name,
-                    "status": "invalid_output_dims",
-                    "forcing_units": forcing_units,
-                    "output_units": output_units,
-                    "units_match": match,
-                    "alignment": "",
-                    "note": f"Expected lndgrid dim, found {output_arr.dims}",
-                }
+            print(
+                f"Skipping {rule.forcing_var}: expected output variable {output_name} "
+                f"to include lndgrid dim, found {output_arr.dims}"
             )
             continue
 
         ngrid = output_arr.sizes["lndgrid"]
         forcing_cells = count_forcing_cells(forcing_arr)
         if forcing_cells not in (1, ngrid):
-            report_rows.append(
-                {
-                    "forcing_var": rule.forcing_var,
-                    "output_var": output_name,
-                    "status": "forcing_grid_mismatch",
-                    "forcing_units": forcing_units,
-                    "output_units": output_units,
-                    "units_match": match,
-                    "alignment": "",
-                    "note": (
-                        f"Forcing has {forcing_cells} cell(s) across non-time dims {tuple(d for d in forcing_arr.dims if d != 'time')}, "
-                        f"but output has {ngrid} lndgrid cell(s)."
-                    ),
-                }
+            print(
+                f"Skipping {rule.forcing_var}: forcing has {forcing_cells} cell(s) "
+                f"across non-time dims {tuple(d for d in forcing_arr.dims if d != 'time')}, "
+                f"but output has {ngrid} lndgrid cell(s)."
             )
             continue
 
@@ -542,18 +471,7 @@ def main() -> None:
             try:
                 forcing_x, forcing_y = series_for_plot(force_g)
             except ValueError as exc:
-                report_rows.append(
-                    {
-                        "forcing_var": rule.forcing_var,
-                        "output_var": output_name,
-                        "status": "invalid_forcing_time_coordinate",
-                        "forcing_units": forcing_units,
-                        "output_units": output_units,
-                        "units_match": match,
-                        "alignment": "",
-                        "note": str(exc),
-                    }
-                )
+                print(f"Skipping {rule.forcing_var}: {exc}")
                 plotted = 0
                 forcing_time_error = True
                 break
@@ -591,37 +509,13 @@ def main() -> None:
         if forcing_time_error:
             continue
 
-        status = "plotted" if plotted > 0 else "no_overlap_after_alignment"
         if plotted == 0:
-            status = "no_valid_forcing_data"
-        alignment_mode = "forcing:time_shifted_to_output|output:native_time"
-        note = (
-            "No downsampling or truncation. Output is shown on native output-file "
-            "time range, and forcing time is shifted using met_forcing_year-derived "
-            f"offset ({forcing_time_shift:+.6f} years)."
-        )
-
-        report_rows.append(
-            {
-                "forcing_var": rule.forcing_var,
-                "output_var": output_name,
-                "status": status,
-                "forcing_units": forcing_units,
-                "output_units": output_units,
-                "units_match": match,
-                "alignment": alignment_mode,
-                "note": note,
-                "n_gridcells_plotted": plotted,
-            }
-        )
-
-    report_path = os.path.join(args.fig_dir, "forcing_output_mapping_report.csv")
-    report = pd.DataFrame(report_rows)
-    report.to_csv(report_path, index=False)
-
-    print(f"Saved report: {report_path}")
-    if not report.empty:
-        print(report[["forcing_var", "output_var", "status", "units_match", "alignment", "note"]].to_string(index=False))
+            print(f"No valid overlapping samples to plot for {rule.forcing_var} vs {output_name}.")
+        else:
+            print(
+                f"Plotted {plotted} gridcell(s) for {rule.forcing_var} vs {output_name} "
+                f"(forcing shifted by {forcing_time_shift:+.6f} years)."
+            )
 
     print_missing_guidance(missing_output)
 
