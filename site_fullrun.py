@@ -610,25 +610,39 @@ def runcmd(
     cmd_log = cmd
     if any([x in cmd.split(" ")[0] for x in [".py", "newcase"]]):
         cmd_log = _parse_cmd(cmd)
+
     _write_cmd(cmd_log, tag, lineno)
 
     if echo:
-        print(cmd)
+        print(cmd, flush=True)
 
-    result = subprocess.run(
+    proc = subprocess.Popen(
         cmd,
         shell=True,
-        check=check,
         text=True,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
     )
+
+    output_lines = []
+    for line in proc.stdout:
+        print(line, end="", flush=True)
+        output_lines.append(line)
+
+    returncode = proc.wait()
+    output_text = "".join(output_lines)
 
     # CIME changes an execution error in case.submit to a warning and continues,
     # so we need to check stderr for the error message and abort if it is present
     # See: https://github.com/ESMCI/cime/blob/cime6.1.176/CIME/XML/env_batch.py#L1027-L1029
-    if check==True and "Exception from " in result.stderr:
+    if check and "Exception from " in output_text:
         sys.exit(f"Error in run command {cmd}")
-    return result.returncode
+
+    if check and returncode != 0:
+        raise subprocess.CalledProcessError(returncode, cmd, output=output_text)
+    
+    return returncode
 
 
 # ----------------------------------------------------------
