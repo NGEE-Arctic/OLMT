@@ -2806,6 +2806,11 @@ for i in range(1, int(options.ninst) + 1):
                 output.write(" metdata_type = 'gswp3'\n")
             elif options.era5:
                 output.write(" metdata_type = 'era5'\n")
+            elif options.trendy25:
+                # for some reason, 'reanalysis = true' didn't pick up the following namelist option
+                output.write(" metdata_type = 'crujra_trendy2025'\n")
+            elif options.crujra:
+                output.write(" metdata_type = 'crujra'\n")
             #else:
             #   # This needs to be updated for other types (TODO)
             output.write(" metdata_bypass = '%s'\n"%options.metdir)

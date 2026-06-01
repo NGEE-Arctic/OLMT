@@ -848,7 +848,7 @@ for row in AFdatareader:
           elif (options.crujra):
             endyear_trans=2024
           elif options.trendy25:
-            endyear_trans=2021
+            endyear_trans=2024
           else:
             endyear_trans=2010
         else:
@@ -995,6 +995,10 @@ for row in AFdatareader:
             basecmd = basecmd + " --princeton"
         if options.era5:
             basecmd = basecmd + " --era5"
+        if options.trendy25:
+            basecmd = basecmd + " --trendy25"
+        if options.crujra:
+            basecmd = basecmd + " --crujra"
         if options.daymet:
             basecmd = basecmd + " --daymet"
         if options.daymet4:  # gswp3 v2 spatially-downscaled by daymet v4, usually together with user-defined domain and surface data
