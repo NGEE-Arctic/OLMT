@@ -855,6 +855,13 @@ parser.add_option(
     help="Run SPRUCE treatment simulations (ensemble mode)",
     action="store_true",
 )
+parser.add_option(
+    "--balland_and_arp",
+    dest="balland_and_arp",
+    default=False,
+    help="Use Balland and Arp (2005) soil thermal conductivity model",
+    action="store_true"
+)
 
 # Changed by Ming for mesabi
 parser.add_option(
@@ -2537,6 +2544,9 @@ for i in range(1, int(options.ninst) + 1):
         output.write(" use_top_solar_rad = .true.\n")
     if options.no_budgets:
         output.write(" do_budgets = .false.\n")
+    # soil thermal conductivity 
+    if options.balland_and_arp:
+        output.write(" use_balland_and_arp = .true.")
     # snow options
     if options.dust_snow_mixing:
         output.write(" use_dust_snow_internal_mixing = .true.\n")

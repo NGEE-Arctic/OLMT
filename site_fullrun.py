@@ -378,6 +378,8 @@ parser.add_option("--use_hydrstress", dest="use_hydrstress", default=False, \
                   help = 'Turn on hydraulic stress', action='store_true')
 parser.add_option("--spruce_treatments", dest="spruce_treatments", default=False, \
                   help = 'Run SPRUCE treatment simulations (ensemble mode)', action='store_true')
+parser.add_option("--balland_and_arp", dest="balland_and_arp", default=False,
+                  help="Use Balland and Arp (2005) soil thermal conductivity model", action="store_true")
 
 # model output options
 parser.add_option(
@@ -1059,6 +1061,8 @@ for row in AFdatareader:
             basecmd = basecmd + " --use_hydrstress"
         if options.spruce_treatments:
             basecmd = basecmd + " --spruce_treatments"
+        if options.balland_and_arp:
+            basecmd = basecmd + " --balland_and_arp"
         if myproject != "":
             basecmd = basecmd + " --project " + myproject
         if options.domainfile != "":
