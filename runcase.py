@@ -1920,7 +1920,7 @@ if int(options.ninst) > 1:
 runcmd("./xmlchange STOP_OPTION=" + options.run_units)
 runcmd("./xmlchange STOP_N=" + str(options.run_n))
 
-if options.rest_n > 0:
+if int(options.rest_n) > 0:
     print("Setting REST_N to " + str(options.rest_n))
     runcmd("./xmlchange REST_N=" + str(options.rest_n))
 
