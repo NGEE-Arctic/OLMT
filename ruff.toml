@@ -1,2 +1,9 @@
+extend-exclude = [
+    "OLMT_GUI.py",
+    "MCMC.py"
+]
+
+
 [lint]
 ignore = ["E712"]
+

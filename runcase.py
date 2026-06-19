@@ -2573,7 +2573,7 @@ for i in range(1, int(options.ninst) + 1):
         myline = myline + "\n"
         output.write(myline + "\n")
 
-    if options.spinup_vars and (not "20TR" in compset) and (not options.istrans):
+    if options.spinup_vars and ("20TR" not in compset) and (not options.istrans):
         output.write(" hist_empty_htapes = .true.\n")
         h0varst = " hist_fincl1 = "
         for v in var_list_spinup:
@@ -2621,7 +2621,7 @@ for i in range(1, int(options.ninst) + 1):
 
     if options.ad_spinup:
         # Write long-term average pool values
-        if not "ED" in compset and not "FATES" in compset:
+        if "ED" not in compset and "FATES" not in compset:
             output.write(" hist_dov2xy = .true., .false.\n")
             h1_advars = [
                 "CWDX_vr",
@@ -3347,7 +3347,7 @@ if (
 chdir(PTCLMdir)
 
 if (options.ensemble_file != "" or int(options.mc_ensemble) != -1) and (
-    options.constraints == "" or (options.constraints != "" and not "1850" in casename)
+    options.constraints == "" or (options.constraints != "" and "1850" not in casename)
 ):
     if not (os.path.isfile(options.parm_list)):
         print("parm_list file does not exist")

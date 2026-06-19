@@ -151,7 +151,6 @@ def postproc(
             rundir = rundir + mytreatment[index] + "/"
         ndays_total = 0
         output = []
-        n_years = myyear_end[index] - myyear_start[index] + 1
         npy = 1
         for y in range(myyear_start[index], myyear_end[index] + 1):
             if mypft[index] <= 0 or "PFT" in v:
@@ -240,7 +239,7 @@ def postproc(
                             output.append(
                                 mydata[0, myindex] * myfactor[index] + myoffset[index]
                             )
-                        except:
+                        except (IndexError, ValueError, TypeError):
                             output.append(np.NaN)
         for i in range(0, int(ndays_total / myavg[index])):
             data[thiscol] = (
@@ -313,12 +312,12 @@ def postproc(
                     elif int(ppfts[pnum]) == 0:
                         try:
                             parms[pnum] = mydata[int(ppfts[pnum])]
-                        except:
+                        except (IndexError, TypeError):
                             parms[pnum] = mydata
                 else:
                     try:
                         parms[pnum] = mydata[0]
-                    except:
+                    except (IndexError, TypeError):
                         parms[pnum] = mydata
             else:  # Regular parameter file
                 mydata = nffun.getvar(pfname, p)
@@ -330,7 +329,7 @@ def postproc(
                 elif int(ppfts[pnum]) <= 0:
                     try:
                         parms[pnum] = mydata[0]
-                    except:
+                    except (IndexError, TypeError):
                         parms[pnum] = mydata
             pnum = pnum + 1
 

@@ -150,6 +150,8 @@ gst = str(100000 + int(options.ensnum))
 # create ensemble directories from original case(s)
 isfirstcase = True
 workdir = os.path.abspath(".")
+casename_last = None
+ens_dir_last = None
 for casename in casenames:
     orig_dir = str(os.path.abspath(options.runroot) + "/" + casename + "/run")
     ens_dir = os.path.abspath(options.runroot) + "/UQ/" + casename + "/g" + gst[1:]
@@ -357,12 +359,12 @@ for filename in os.listdir(UQdir + "/" + options.constraints):
                     isfirstfile = True
                     for f in file_list:
                         if isfirstfile:
-                            myvals = getvar(myfile, myvarname) / (
+                            myvals = getvar(f, myvarname) / (
                                 year_last - year_first + 1
                             )
                             isfirstfile = False
                         else:
-                            myvals = myvals + getvar(myfile, myvarname) / (
+                            myvals = myvals + getvar(f, myvarname) / (
                                 year_last - year_first + 1
                             )
 
