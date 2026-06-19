@@ -3,6 +3,7 @@ import os
 import sys
 import csv
 import math
+import time
 from optparse import OptionParser
 import numpy
 import netcdf4_functions as nffun
@@ -61,15 +62,23 @@ parser.add_option("--usersurfnc", dest="usersurfnc", default="none", \
                   help = 'User-provided surface data nc file, with one or more variable(s) as defined')
 parser.add_option("--usersurfvar", dest="usersurfvar", default="none", \
                   help = 'variable name(s) in User-provided surface data nc file, separated by ","')
+parser.add_option("--tempdir", dest="tempdir", default="", \
+                  help = 'Per-invocation staging directory; defaults to ./temp/run_<pid>_<ms>')
 (options, args) = parser.parse_args()
 
 
 ccsm_input = os.path.abspath(options.ccsm_input)
 
+if options.tempdir:
+    tempdir = os.path.abspath(options.tempdir)
+else:
+    tempdir = os.path.abspath('./temp/run_%d_%d' % (os.getpid(), int(time.time() * 1000)))
+os.makedirs(tempdir, exist_ok=True)
+
 #------------------- get site information ----------------------------------
 
-#Remove existing temp files
-os.system('find ./temp/ -name "*.nc*" -exec rm {} \; ')
+#Remove existing temp files in this invocation's tempdir
+os.system('find ' + tempdir + ' -name "*.nc*" -exec rm {} \; ')
 
 lat_bounds = options.lat_bounds.split(',')
 lon_bounds = options.lon_bounds.split(',')
@@ -365,7 +374,7 @@ os.environ["PATH"] += ':/Users/f9y/ATS_ROOT/amanzi_tpls-install-master-Debug/bin
 domainfile_tmp = 'domain??????.nc' # filename pattern of 'domainfile_new'
 for n in range(0,n_grids):
     nst = str(1000000+n)[1:]
-    domainfile_new = './temp/domain'+nst+'.nc'
+    domainfile_new = tempdir+'/domain'+nst+'.nc'
     if (not os.path.exists(domainfile_orig)):
         print('Error:  '+domainfile_orig+' does not exist.  Aborting')
         sys.exit(1)
@@ -461,10 +470,10 @@ for n in range(0,n_grids):
 
     domainfile_old = domainfile_new
 
-domainfile_new = './temp/domain.nc'
+domainfile_new = tempdir+'/domain.nc'
 if (n_grids > 1):
     #ierr = os.system('ncrcat -h '+domainfile_list+' '+domainfile_new) # OS error if '_list' too long
-    ierr = os.system('find ./temp/ -name "'+domainfile_tmp+ \
+    ierr = os.system('find '+tempdir+' -name "'+domainfile_tmp+ \
                      '" | xargs ls | sort | ncrcat -O -h -o'+domainfile_new)
     if(ierr!=0): 
         raise RuntimeError('Error: ncrcat -', ierr) #os.sys.exit()
@@ -483,7 +492,7 @@ if (n_grids > 1):
     ierr = os.system('ncrename -h -O -d ni_temp,nj '+domainfile_new+' '+domainfile_new+' ')
     if(ierr!=0): 
         raise RuntimeError('Error: ncrename', ierr) #os.sys.exit()
-    os.system('find ./temp/ -name '+domainfile_tmp+' -exec rm {} \;')
+    os.system('find '+tempdir+' -name '+domainfile_tmp+' -exec rm {} \;')
     os.system('rm '+domainfile_new+'.tmp*')
 else:
     ierr = os.system('mv '+domainfile_old+' '+domainfile_new)
@@ -511,7 +520,7 @@ print('Creating surface data')
 surffile_tmp = 'surfdata??????.nc' # filename pattern of 'surffile_new'
 for n in range(0,n_grids):
     nst = str(1000000+n)[1:]
-    surffile_new =  './temp/surfdata'+nst+'.nc'
+    surffile_new =  tempdir+'/surfdata'+nst+'.nc'
     if (not os.path.exists(surffile_orig)):
         print('Error:  '+surffile_orig+' does not exist.  Aborting')
         sys.exit(1)
@@ -765,16 +774,16 @@ for n in range(0,n_grids):
 
     surffile_old = surffile_new
 
-surffile_new = './temp/surfdata.nc'
+surffile_new = tempdir+'/surfdata.nc'
 
 if (n_grids > 1):
   #os.system('ncecat '+surffile_list+' '+surffile_new) # not works with too long '_list'
-  ierr = os.system('find ./temp/ -name "'+surffile_tmp+ \
+  ierr = os.system('find '+tempdir+' -name "'+surffile_tmp+ \
                  '" | xargs ls | sort | ncecat -O -h -o'+surffile_new)
-  if(ierr!=0): 
+  if(ierr!=0):
       raise RuntimeError('Error: ncecat ') #os.sys.exit()
-  #os.system('rm ./temp/surfdata?????.nc*') # not works with too many files
-  os.system('find ./temp/ -name "'+surffile_tmp+'" -exec rm {} \;')
+  #os.system('rm <tempdir>/surfdata?????.nc*') # not works with too many files
+  os.system('find '+tempdir+' -name "'+surffile_tmp+'" -exec rm {} \;')
 
   #remove ni dimension
   ierr = os.system('ncwa -h -O -a lsmlat -d lsmlat,0,0 '+surffile_new+' '+surffile_new+'.tmp')
@@ -816,7 +825,7 @@ if (not options.nopftdyn):
   pftdyn_tmp = 'surfdata.pftdyn??????.nc' # filename pattern of 'pftdyn_new'
   for n in range(0,n_grids):
     nst = str(1000000+n)[1:]
-    pftdyn_new = './temp/surfdata.pftdyn'+nst+'.nc'
+    pftdyn_new = tempdir+'/surfdata.pftdyn'+nst+'.nc'
     
     if (not os.path.exists(pftdyn_orig)):
         print('Error: '+pftdyn_orig+' does not exist.  Aborting')
@@ -1004,20 +1013,20 @@ if (not options.nopftdyn):
         ierr = nffun.putvar(pftdyn_new, 'HARVEST_VH2', harvest_vh2)
     pftdyn_old = pftdyn_new
 
-  pftdyn_new = './temp/surfdata.pftdyn.nc'
+  pftdyn_new = tempdir+'/surfdata.pftdyn.nc'
   if (os.path.isfile(pftdyn_new)):
       print('Warning:  Removing existing pftdyn data file')
       os.system('rm -rf '+pftdyn_new)
 
   if (n_grids > 1):
       #ios.system('ncecat -h '+pftdyn_list+' '+pftdyn_new) # not works with too long '_list'
-      ierr = os.system('find ./temp/ -name "'+pftdyn_tmp+ \
+      ierr = os.system('find '+tempdir+' -name "'+pftdyn_tmp+ \
                     '" | xargs ls | sort | ncecat -O -h -o'+pftdyn_new)
-      if(ierr!=0): 
+      if(ierr!=0):
             raise RuntimeError('Error: ncecat ') #os.sys.exit()
 
-      #os.system('rm ./temp/surfdata.pftdyn?????.nc*') # 'rm' not works for too long file list
-      os.system('find ./temp/ -name "'+pftdyn_tmp+'" -exec rm {} \;')
+      #os.system('rm <tempdir>/surfdata.pftdyn?????.nc*') # 'rm' not works for too long file list
+      os.system('find '+tempdir+' -name "'+pftdyn_tmp+'" -exec rm {} \;')
 
       #remove ni dimension
       ierr = os.system('ncwa -h -O -a lsmlat -d lsmlat,0,0 '+pftdyn_new+' '+pftdyn_new+'.tmp')

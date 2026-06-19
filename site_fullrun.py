@@ -5,6 +5,7 @@ import getpass
 import os
 import sys
 import csv
+import time
 from optparse import OptionParser
 import numpy
 import re
@@ -40,6 +41,12 @@ parser.add_option(
     dest="runroot",
     default="",
     help="Directory where the run would be created",
+)
+parser.add_option(
+    "--tempdir",
+    dest="tempdir",
+    default="",
+    help="Per-invocation staging directory; defaults to ./temp/run_<pid>_<ms>",
 )
 parser.add_option(
     "--exeroot", dest="exeroot", default="", help="Location of executable"
@@ -371,6 +378,8 @@ parser.add_option("--use_hydrstress", dest="use_hydrstress", default=False, \
                   help = 'Turn on hydraulic stress', action='store_true')
 parser.add_option("--spruce_treatments", dest="spruce_treatments", default=False, \
                   help = 'Run SPRUCE treatment simulations (ensemble mode)', action='store_true')
+parser.add_option("--balland_and_arp", dest="balland_and_arp", default=False,
+                  help="Use Balland and Arp (2005) soil thermal conductivity model", action="store_true")
 
 # model output options
 parser.add_option(
@@ -557,6 +566,16 @@ parser.add_option(
 (options, args) = parser.parse_args()
 
 
+# Resolve per-invocation tempdir up front so submit()/runcmd helpers and every child
+# shell-out share the same staging dir. Defaults to ./temp/run_<pid>_<ms> so two
+# concurrent site_fullrun.py invocations cannot collide on shared filenames.
+if options.tempdir:
+    tempdir = os.path.abspath(options.tempdir)
+else:
+    tempdir = os.path.abspath('./temp/run_%d_%d' % (os.getpid(), int(time.time() * 1000)))
+os.makedirs(tempdir, exist_ok=True)
+
+
 def _write_cmd(cmd, tag, lineno):
     if options.options_log_json == 'None':
         return
@@ -624,27 +643,28 @@ def runcmd(
 # ----------------------------------------------------------
 # define function for pbs submission
 def submit(fname, submit_type="qsub", job_depend=""):
+    jobinfo = tempdir + "/jobinfo"
     job_depend_flag = " -W depend=afterok:"
     if "sbatch" in submit_type:
         job_depend_flag = " --dependency=afterok:"
     if job_depend != "" and submit_type != "":
         runcmd(
-            submit_type + job_depend_flag + job_depend + " " + fname + " > temp/jobinfo"
+            submit_type + job_depend_flag + job_depend + " " + fname + " > " + jobinfo
         )
     else:
         if submit_type == "":
             runcmd("chmod a+x " + fname)
-            runcmd("./" + fname + " > temp/jobinfo")
+            runcmd("./" + fname + " > " + jobinfo)
         else:
-            runcmd(submit_type + " " + fname + " > temp/jobinfo")
+            runcmd(submit_type + " " + fname + " > " + jobinfo)
     if submit_type != "" and not options.dryrun:
-        myinput = open("temp/jobinfo")
+        myinput = open(jobinfo)
         for s in myinput:
             thisjob = re.search("[0-9]+", s).group(0)
         myinput.close()
     else:
         thisjob = "0"
-        runcmd("rm temp/jobinfo", check=False)
+        runcmd("rm " + jobinfo, check=False)
     return thisjob
 
 
@@ -901,6 +921,8 @@ for row in AFdatareader:
             + options.sitegroup
             + " --options_log_json "
             + options.options_log_json
+            + " --tempdir "
+            + tempdir
         )
         if options.machine != "":
             basecmd = basecmd + " --machine " + options.machine
@@ -1046,6 +1068,8 @@ for row in AFdatareader:
             basecmd = basecmd + " --use_hydrstress"
         if options.spruce_treatments:
             basecmd = basecmd + " --spruce_treatments"
+        if options.balland_and_arp:
+            basecmd = basecmd + " --balland_and_arp"
         if myproject != "":
             basecmd = basecmd + " --project " + myproject
         if options.domainfile != "":
@@ -1499,6 +1523,8 @@ for row in AFdatareader:
                 + ccsm_input
                 + " --model "
                 + mymodel
+                + " --tempdir "
+                + tempdir
             )
             if options.nopftdyn:
                 ptcmd = ptcmd + " --nopftdyn"
@@ -1533,6 +1559,8 @@ for row in AFdatareader:
                     + str(ny_ad)
                     + " --spin_cycle "
                     + str(endyear - startyear + 1)
+                    + " --tempdir "
+                    + tempdir
                 )
                 result = runcmd(ptcmd)
             if result > 0:
@@ -1562,6 +1590,8 @@ for row in AFdatareader:
                     + site
                     + " --nyears "
                     + str(ny_fin)
+                    + " --tempdir "
+                    + tempdir
                 )
                 if not options.sp:
                     ptcmd = (
@@ -1603,6 +1633,8 @@ for row in AFdatareader:
                     + str(int(ny_fin) + 1)
                     + " --nyears "
                     + str(translen)
+                    + " --tempdir "
+                    + tempdir
                 )
                 result = runcmd(ptcmd)
             if (
