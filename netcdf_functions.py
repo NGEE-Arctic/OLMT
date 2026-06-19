@@ -1,5 +1,6 @@
-#Python utilities for reading and writing variables to a netcdf file
+# Python utilities for reading and writing variables to a netcdf file
 #  using Scientific Python OR scipy, whichever available
+
 
 def getvar(fname, varname):
     usescipy = False
@@ -7,18 +8,20 @@ def getvar(fname, varname):
         import Scientific.IO.NetCDF as netcdf
     except ImportError:
         from scipy.io import netcdf
+
         usescipy = True
-    if (usescipy):
-        nffile = netcdf.netcdf_file(fname,"r",mmap=False)
+    if usescipy:
+        nffile = netcdf.netcdf_file(fname, "r", mmap=False)
         var = nffile.variables[varname]
-        varvals = var[:].copy()    #works for vector only?
+        varvals = var[:].copy()  # works for vector only?
         nffile.close()
     else:
-        nffile = netcdf.NetCDFFile(fname,"r")
+        nffile = netcdf.NetCDFFile(fname, "r")
         var = nffile.variables[varname]
         varvals = var.getValue()
         nffile.close()
     return varvals
+
 
 def putvar(fname, varname, varvals):
     usescipy = False
@@ -26,16 +29,17 @@ def putvar(fname, varname, varvals):
         import Scientific.IO.NetCDF as netcdf
     except ImportError:
         from scipy.io import netcdf
+
         usescipy = True
-    if (usescipy):
-        nffile = netcdf.netcdf_file(fname,"a",mmap=False)
+    if usescipy:
+        nffile = netcdf.netcdf_file(fname, "a", mmap=False)
         var = nffile.variables[varname]
-        if (len(varvals) > 1):
-          var[:] = varvals
+        if len(varvals) > 1:
+            var[:] = varvals
         else:
             nffile.close()
     else:
-        nffile = netcdf.NetCDFFile(fname,"a")
+        nffile = netcdf.NetCDFFile(fname, "a")
         var = nffile.variables[varname]
         var.assignValue(varvals)
         nffile.close()
