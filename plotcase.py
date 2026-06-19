@@ -9,778 +9,1120 @@ from optparse import OptionParser
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+
 def getvar(fname, varname, npf, index, scale_factor):
-    nffile = Dataset(fname,"r")
+    nffile = Dataset(fname, "r")
     var = nffile.variables[varname]
-    if (index < 0):  #average over all sites/PFTs (not weighted) 
-         varvals = numpy.nanmean(var[0:npf,:], axis=1) * scale_factor
+    if index < 0:  # average over all sites/PFTs (not weighted)
+        varvals = numpy.nanmean(var[0:npf, :], axis=1) * scale_factor
     else:
-         varvals = var[0:npf,index] * scale_factor
+        varvals = var[0:npf, index] * scale_factor
     nffile.close()
     return varvals
 
 
 parser = OptionParser()
-parser.add_option("--csmdir", dest="mycsmdir", default='', \
-                  help = 'Base CESM directory (default = ..)')
-parser.add_option("--runnames",dest="runnames",default='', \
-                 help = "full case names (overrides prefix, site and compsets)")
-parser.add_option("--cases", dest="mycase", default='', \
-                  help = "name of case id prefixs to plot (comma delmited)")
-parser.add_option("--compset", dest="compset", default="I20TRCLM45CN", \
-                  help = "Compset to plot")
-parser.add_option("--titles", dest="titles", default='', \
-                  help = "titles of case to plot (for legend)")
-parser.add_option("--sites", dest="site", default="none", \
-                  help = 'site (to plot observations)')
-parser.add_option("--obs", action="store_true", default=False, \
-                  help = "plot observations", dest="myobs")
-parser.add_option("--varfile", dest="myvarfile", default='varfile', \
-                  help = 'file containing list of variables to plot')
-parser.add_option("--vars", dest="myvar", default='', \
-                  help="variable to plot (overrides varfile, " \
-                  +"sends plot to screen")
-parser.add_option("--model_name", dest="model_name", default='elm', \
-                  help = 'model name in model output nc files')
+parser.add_option(
+    "--csmdir", dest="mycsmdir", default="", help="Base CESM directory (default = ..)"
+)
+parser.add_option(
+    "--runnames",
+    dest="runnames",
+    default="",
+    help="full case names (overrides prefix, site and compsets)",
+)
+parser.add_option(
+    "--cases",
+    dest="mycase",
+    default="",
+    help="name of case id prefixs to plot (comma delmited)",
+)
+parser.add_option(
+    "--compset", dest="compset", default="I20TRCLM45CN", help="Compset to plot"
+)
+parser.add_option(
+    "--titles", dest="titles", default="", help="titles of case to plot (for legend)"
+)
+parser.add_option(
+    "--sites", dest="site", default="none", help="site (to plot observations)"
+)
+parser.add_option(
+    "--obs", action="store_true", default=False, help="plot observations", dest="myobs"
+)
+parser.add_option(
+    "--varfile",
+    dest="myvarfile",
+    default="varfile",
+    help="file containing list of variables to plot",
+)
+parser.add_option(
+    "--vars",
+    dest="myvar",
+    default="",
+    help="variable to plot (overrides varfile, " + "sends plot to screen",
+)
+parser.add_option(
+    "--model_name",
+    dest="model_name",
+    default="elm",
+    help="model name in model output nc files",
+)
 
 # output timing
-parser.add_option("--timezone", dest="timezone", default=0, \
-                  help = 'time zone (relative to UTC')
-parser.add_option("--avpd", dest="myavpd", default=1, \
-                  help = 'averaging period in # of output timesteps' \
-                  +' (default = 1)')
-parser.add_option("--hist_mfilt", dest="myhist_mfilt", default=-999, \
-                  help = 'beginning model year to plot')
-parser.add_option("--hist_nhtfrq", dest="myhist_nhtfrq", default=-999, \
-                  help = 'beginning model year to plot')
-parser.add_option("--ystart", dest="myystart", default=1, \
-                  help = 'beginning model year to plot')
-parser.add_option("--yend", dest="myyend", default=9999, \
-                  help = 'final model year to plot')
-parser.add_option("--ystart_obs", dest="ystart_obs", default=0, \
-                  help = 'beginning model year to plot')
-parser.add_option("--yend_obs", dest="yend_obs", default=0, \
-                  help = 'final model year to plot')
-parser.add_option("--diurnal", dest="mydiurnal", default=False, \
-                  action="store_true", help = 'plot diurnal cycle')
-parser.add_option("--dstart", dest="dstart", default=1, \
-                  help = 'beginning model DOY to plot (for diruanl average)')
-parser.add_option("--dend", dest="dend", default=365, \
-                  help = 'final model DOY to plot (for diurnal average)')
-parser.add_option("--seasonal", dest="myseasonal", default=False, \
-                  action="store_true", help = 'plot seasonal cycle')
-parser.add_option("--h1", dest="h1", default=False, \
-                  action="store_true", help = 'Use h1 history files')
-parser.add_option("--h2", dest="h2", default=False, \
-                  action="store_true", help = 'Use h2 history files')
-parser.add_option("--h3", dest="h3", default=False, \
-                  action="store_true", help = 'Use h3 history files')
-parser.add_option("--h4", dest="h4", default=False, \
-                  action="store_true", help = 'Use h4 history files')
-parser.add_option("--index", dest="index", help = 'index (site or pft)', \
-                   default=0)
+parser.add_option(
+    "--timezone", dest="timezone", default=0, help="time zone (relative to UTC"
+)
+parser.add_option(
+    "--avpd",
+    dest="myavpd",
+    default=1,
+    help="averaging period in # of output timesteps" + " (default = 1)",
+)
+parser.add_option(
+    "--hist_mfilt",
+    dest="myhist_mfilt",
+    default=-999,
+    help="beginning model year to plot",
+)
+parser.add_option(
+    "--hist_nhtfrq",
+    dest="myhist_nhtfrq",
+    default=-999,
+    help="beginning model year to plot",
+)
+parser.add_option(
+    "--ystart", dest="myystart", default=1, help="beginning model year to plot"
+)
+parser.add_option(
+    "--yend", dest="myyend", default=9999, help="final model year to plot"
+)
+parser.add_option(
+    "--ystart_obs", dest="ystart_obs", default=0, help="beginning model year to plot"
+)
+parser.add_option(
+    "--yend_obs", dest="yend_obs", default=0, help="final model year to plot"
+)
+parser.add_option(
+    "--diurnal",
+    dest="mydiurnal",
+    default=False,
+    action="store_true",
+    help="plot diurnal cycle",
+)
+parser.add_option(
+    "--dstart",
+    dest="dstart",
+    default=1,
+    help="beginning model DOY to plot (for diruanl average)",
+)
+parser.add_option(
+    "--dend",
+    dest="dend",
+    default=365,
+    help="final model DOY to plot (for diurnal average)",
+)
+parser.add_option(
+    "--seasonal",
+    dest="myseasonal",
+    default=False,
+    action="store_true",
+    help="plot seasonal cycle",
+)
+parser.add_option(
+    "--h1", dest="h1", default=False, action="store_true", help="Use h1 history files"
+)
+parser.add_option(
+    "--h2", dest="h2", default=False, action="store_true", help="Use h2 history files"
+)
+parser.add_option(
+    "--h3", dest="h3", default=False, action="store_true", help="Use h3 history files"
+)
+parser.add_option(
+    "--h4", dest="h4", default=False, action="store_true", help="Use h4 history files"
+)
+parser.add_option("--index", dest="index", help="index (site or pft)", default=0)
 
 # plot configuration
-parser.add_option("--spinup", dest="spinup", help = 'plot Ad and final spinup', \
-                   default=False, action="store_true")
-parser.add_option("--ad_Pinit", dest="ad_Pinit", default=False, action="store_true",\
-                  help="AD spinup initialized with P pools (CN) but other cases use CNP mode")
-parser.add_option("--scale_factor", dest="scale_factor", help = 'scale factor', \
-                   default=-999)
-parser.add_option("--ylog", dest="ylog", help="log scale for Y axis", \
-                  action="store_true", default=False)
-parser.add_option("--pdf", dest="pdf", help="save plot to pdf", \
-                  action="store_true", default=False)
-parser.add_option("--png", dest="png", help="save plot to png", \
-                  action="store_true", default=False)
-parser.add_option("--noplot", dest="noplot", help="Do not make plots", \
-                  action="store_true", default=False)
-parser.add_option("--nperpage", dest="nperpage", default=1, \
-                  help = 'number of plots per page')
-parser.add_option("--outputdir", dest="outputdir", default='', \
-                  help = 'location for plots directory')
-(options,args) = parser.parse_args()
-               
+parser.add_option(
+    "--spinup",
+    dest="spinup",
+    help="plot Ad and final spinup",
+    default=False,
+    action="store_true",
+)
+parser.add_option(
+    "--ad_Pinit",
+    dest="ad_Pinit",
+    default=False,
+    action="store_true",
+    help="AD spinup initialized with P pools (CN) but other cases use CNP mode",
+)
+parser.add_option(
+    "--scale_factor", dest="scale_factor", help="scale factor", default=-999
+)
+parser.add_option(
+    "--ylog",
+    dest="ylog",
+    help="log scale for Y axis",
+    action="store_true",
+    default=False,
+)
+parser.add_option(
+    "--pdf", dest="pdf", help="save plot to pdf", action="store_true", default=False
+)
+parser.add_option(
+    "--png", dest="png", help="save plot to png", action="store_true", default=False
+)
+parser.add_option(
+    "--noplot",
+    dest="noplot",
+    help="Do not make plots",
+    action="store_true",
+    default=False,
+)
+parser.add_option(
+    "--nperpage", dest="nperpage", default=1, help="number of plots per page"
+)
+parser.add_option(
+    "--outputdir", dest="outputdir", default="", help="location for plots directory"
+)
+(options, args) = parser.parse_args()
 
-cesmdir=os.path.abspath(options.mycsmdir)                 
 
-if (options.pdf or options.png):
-    mpl.use('Agg')
+cesmdir = os.path.abspath(options.mycsmdir)
+
+if options.pdf or options.png:
+    mpl.use("Agg")
 
 
-if (options.runnames != ''):
-    #User provides full case names
-    myrunnames = options.runnames.split(',')
-    mycases=[]
-    mysites=[]
-    mycompsets=[]
+if options.runnames != "":
+    # User provides full case names
+    myrunnames = options.runnames.split(",")
+    mycases = []
+    mysites = []
+    mycompsets = []
     for i in myrunnames:
-        mycases.append(i.split('_')[0])
-        mysites.append('_'.join(i.split('_')[1:len(i.split('_'))-1]))
-        mycompsets.append(i.split('_')[-1])
+        mycases.append(i.split("_")[0])
+        mysites.append("_".join(i.split("_")[1 : len(i.split("_")) - 1]))
+        mycompsets.append(i.split("_")[-1])
 else:
-  #User provides case prefix(es), site(s) and compset(s)
-  #Set up a factorial across these
-  mycases = options.mycase.split(',')
-  mysites = options.site.split(',')
-  mycompsets = options.compset.split(',')
+    # User provides case prefix(es), site(s) and compset(s)
+    # Set up a factorial across these
+    mycases = options.mycase.split(",")
+    mysites = options.site.split(",")
+    mycompsets = options.compset.split(",")
 
-mysites1 = numpy.char.add(mysites,'_')
+mysites1 = numpy.char.add(mysites, "_")
 mysites2 = mysites1
-if (len(mycompsets) > 1):
-  for c in range(1,len(mycompsets)):
-    mysites2 = numpy.concatenate((mysites2,mysites1))
-mycompsets1 = numpy.repeat(mycompsets, len(mysites) )
-runnames = numpy.char.add(mysites2,mycompsets1)
+if len(mycompsets) > 1:
+    for c in range(1, len(mycompsets)):
+        mysites2 = numpy.concatenate((mysites2, mysites1))
+mycompsets1 = numpy.repeat(mycompsets, len(mysites))
+runnames = numpy.char.add(mysites2, mycompsets1)
 mysites1 = mysites2
 
-if (len(mycases) == 0):
-  if (mycases[0] != ''):
-    mycases1 = numpy.char.add(mycases,'_') 
-    mycases2 = mycases1
-    for c in range(1,len(runnames)):
-      mycases2 = numpy.concatenate((mycases2,mycases1))
-    runnames = numpy.concatenate((mycases2,runnames))
-    mycases1 = mycases2
-  else:
-    mycases1 = mycases
-    for c in range(1,len(runnames)):
-      mycases1 = numpy.concatenate((mycases1,mycases))
+if len(mycases) == 0:
+    if mycases[0] != "":
+        mycases1 = numpy.char.add(mycases, "_")
+        mycases2 = mycases1
+        for c in range(1, len(runnames)):
+            mycases2 = numpy.concatenate((mycases2, mycases1))
+        runnames = numpy.concatenate((mycases2, runnames))
+        mycases1 = mycases2
+    else:
+        mycases1 = mycases
+        for c in range(1, len(runnames)):
+            mycases1 = numpy.concatenate((mycases1, mycases))
 
 else:
-  runnames1 = runnames 
-  mysites3  = mysites2
-  mycompsets2 = mycompsets1
-  for c in range(1,len(mycases)):
-    runnames1   = numpy.concatenate((runnames1,runnames))
-    mysites3    = numpy.concatenate((mysites3,mysites2))
-    mycompsets2 = numpy.concatenate((mycompsets2,mycompsets1))
-  mysites1  = mysites3
-  mycompsets1 = mycompsets2
-  mycases1 = mycases.copy()
-  for c in range(0,len(mycases1)):
-    if (mycases1[c] != ''):
-        mycases1[c] = mycases1[c]+'_'
-  mycases1 = numpy.repeat(mycases1, len(runnames) )
-  runnames = numpy.char.add(mycases1,runnames1) 
+    runnames1 = runnames
+    mysites3 = mysites2
+    mycompsets2 = mycompsets1
+    for c in range(1, len(mycases)):
+        runnames1 = numpy.concatenate((runnames1, runnames))
+        mysites3 = numpy.concatenate((mysites3, mysites2))
+        mycompsets2 = numpy.concatenate((mycompsets2, mycompsets1))
+    mysites1 = mysites3
+    mycompsets1 = mycompsets2
+    mycases1 = mycases.copy()
+    for c in range(0, len(mycases1)):
+        if mycases1[c] != "":
+            mycases1[c] = mycases1[c] + "_"
+    mycases1 = numpy.repeat(mycases1, len(runnames))
+    runnames = numpy.char.add(mycases1, runnames1)
 
 ncases = len(runnames)
 
-if (options.titles != ''):
-  mytitles = options.titles.split(',')
+if options.titles != "":
+    mytitles = options.titles.split(",")
 else:
-  mytitles = runnames
+    mytitles = runnames
 
-print('')
-print('')
-print('Simulations that will be plotted:')
+print("")
+print("")
+print("Simulations that will be plotted:")
 print(runnames)
-print('')
+print("")
 
-obs     = options.myobs
-myobsdir = '/home/ac.ricciuto/fluxnet'
+obs = options.myobs
+myobsdir = "/home/ac.ricciuto/fluxnet"
 
-#get list of variables from varfile
-myvars=[]
+# get list of variables from varfile
+myvars = []
 
-if (options.myvar == ''):
-    if os.path.isfile('./'+options.myvarfile):
-        input = open('./'+options.myvarfile)
+if options.myvar == "":
+    if os.path.isfile("./" + options.myvarfile):
+        input = open("./" + options.myvarfile)
         for s in input:
             myvars.append(s.strip())
     else:
-        print('Error:  invalid varfile')
+        print("Error:  invalid varfile")
         sys.exit()
-    terminal = 'postscript'
+    terminal = "postscript"
 else:
-    terminal=''
-    myvars = options.myvar.split(',')
-    
+    terminal = ""
+    myvars = options.myvar.split(",")
 
-avpd      = int(options.myavpd)        # desired averaging period in output timestep
-ystart    = int(options.myystart)      # beginning year to plot/average
-yend      = int(options.myyend)        # final year to plot/average 
-yend_all  = yend                       # keep track of last year for which datasets exist
-mylat_vals =[]
-mylon_vals= []
 
-avtype = 'default'
-if (options.mydiurnal):
-    avtype = 'diurnal'
-    avpd=1
-if (options.myseasonal):
-    avtype = 'seasonal'
+avpd = int(options.myavpd)  # desired averaging period in output timestep
+ystart = int(options.myystart)  # beginning year to plot/average
+yend = int(options.myyend)  # final year to plot/average
+yend_all = yend  # keep track of last year for which datasets exist
+mylat_vals = []
+mylon_vals = []
 
-#------------------------------------------------------------------------------
+avtype = "default"
+if options.mydiurnal:
+    avtype = "diurnal"
+    avpd = 1
+if options.myseasonal:
+    avtype = "seasonal"
 
-#site = options.site
-#compset = options.compset
+# ------------------------------------------------------------------------------
 
-#dirs=[]
-nvar = len(myvars)    
-x_toplot    = numpy.zeros([ncases, 2000000], float)
+# site = options.site
+# compset = options.compset
+
+# dirs=[]
+nvar = len(myvars)
+x_toplot = numpy.zeros([ncases, 2000000], float)
 data_toplot = numpy.zeros([ncases, nvar, 2000000], float)
-obs_toplot  = numpy.zeros([ncases, nvar, 2000000], float)+numpy.NaN
-err_toplot  = numpy.zeros([ncases, nvar, 2000000], float)+numpy.NaN
-snum        = numpy.zeros([ncases], int)
+obs_toplot = numpy.zeros([ncases, nvar, 2000000], float) + numpy.NaN
+err_toplot = numpy.zeros([ncases, nvar, 2000000], float) + numpy.NaN
+snum = numpy.zeros([ncases], int)
 
-for c in range(0,ncases):
-    mydir = cesmdir+'/'+runnames[c]+'/run/'
-#    if (mycases[c] == ''):
-#        mydir = cesmdir+'/'+mysites[c]+'_'+mycompsets[c]+'/run/'
-#    else:
-#        mydir = cesmdir+'/'+mycases[c]+'_'+mysites[c]+'_'+mycompsets[c]+'/run/'
-    print('')
-    print('Processing '+mydir)
-    #if (os.path.exists(mydir)):
-    #else:
-    #query lnd_in file for output file information
-    if ((options.myhist_mfilt == -999 or options.myhist_nhtfrq == -999)):
-        #print('Obtaining output resolution information from lnd_in')
-        input = open(mydir+"/lnd_in")
-        npf=-999
-        tstep=-999
-        input = open(mydir+"/lnd_in")
+for c in range(0, ncases):
+    mydir = cesmdir + "/" + runnames[c] + "/run/"
+    #    if (mycases[c] == ''):
+    #        mydir = cesmdir+'/'+mysites[c]+'_'+mycompsets[c]+'/run/'
+    #    else:
+    #        mydir = cesmdir+'/'+mycases[c]+'_'+mysites[c]+'_'+mycompsets[c]+'/run/'
+    print("")
+    print("Processing " + mydir)
+    # if (os.path.exists(mydir)):
+    # else:
+    # query lnd_in file for output file information
+    if options.myhist_mfilt == -999 or options.myhist_nhtfrq == -999:
+        # print('Obtaining output resolution information from lnd_in')
+        input = open(mydir + "/lnd_in")
+        npf = -999
+        tstep = -999
+        input = open(mydir + "/lnd_in")
         for s in input:
-            if ('hist_mfilt' in s):
+            if "hist_mfilt" in s:
                 mfiltinfo = s.split()[2]
-                npf = int(mfiltinfo.split(',')[0])
-                if (options.h1): 
-                    npf = int(mfiltinfo.split(',')[1])
-                if (options.h2):
-                    npf = int(mfiltinfo.split(',')[2])
-                if (options.h3):
-                    npf = int(mfiltinfo.split(',')[3])
-                if (options.h4):
-                    npf = int(mfiltinfo.split(',')[4])
-            if ('hist_nhtfrq' in s):
+                npf = int(mfiltinfo.split(",")[0])
+                if options.h1:
+                    npf = int(mfiltinfo.split(",")[1])
+                if options.h2:
+                    npf = int(mfiltinfo.split(",")[2])
+                if options.h3:
+                    npf = int(mfiltinfo.split(",")[3])
+                if options.h4:
+                    npf = int(mfiltinfo.split(",")[4])
+            if "hist_nhtfrq" in s:
                 nhtfrqinfo = s.split()[2]
-                tstep = int(nhtfrqinfo.split(',')[0])
-                if (options.h1):
-                    tstep = int(nhtfrqinfo.split(',')[1])
-                if (options.h2):
-                    tstep = int(nhtfrqinfo.split(',')[2])
-                if (options.h3):
-                    tstep = int(nhtfrqinfo.split(',')[3])
-                if (options.h4):
-                    tstep = int(nhtfrqinfo.split(',')[4])
+                tstep = int(nhtfrqinfo.split(",")[0])
+                if options.h1:
+                    tstep = int(nhtfrqinfo.split(",")[1])
+                if options.h2:
+                    tstep = int(nhtfrqinfo.split(",")[2])
+                if options.h3:
+                    tstep = int(nhtfrqinfo.split(",")[3])
+                if options.h4:
+                    tstep = int(nhtfrqinfo.split(",")[4])
         input.close()
     else:
-        npf   = int(options.myhist_mfilt)
+        npf = int(options.myhist_mfilt)
         tstep = int(options.myhist_nhtfrq)
-   
-    if (npf == -999 or tstep == -999):
-        print('Unable to obtain output file information from lnd_in.  Exiting')
+
+    if npf == -999 or tstep == -999:
+        print("Unable to obtain output file information from lnd_in.  Exiting")
         sys.exit()
 
-    yststr=str(100000+ystart)
-    #determine type of file to plot
-    if (options.h4):
-        hst = 'h4'
-    elif (options.h3):
-        hst = 'h3'
-    elif (options.h2):
-        hst = 'h2'
-    elif (options.h1):
-        hst = 'h1'
+    yststr = str(100000 + ystart)
+    # determine type of file to plot
+    if options.h4:
+        hst = "h4"
+    elif options.h3:
+        hst = "h3"
+    elif options.h2:
+        hst = "h2"
+    elif options.h1:
+        hst = "h1"
     else:
-        hst = 'h0'
+        hst = "h0"
 
-    if (tstep == 0):
-        ftype = 'default'
-        mytstep = 'monthly'
-        npy=12
+    if tstep == 0:
+        ftype = "default"
+        mytstep = "monthly"
+        npy = 12
     else:
-        ftype = 'custom'
-        if (abs(npf) == 8760):
-            mytstep = 'halfhourly'
-            npy=8760
-        elif (abs(npf) == 365):
-            mytstep = 'daily'
-            npy=365
-        elif (abs(npf) == 1):
-            mytstep = 'annual'
-            npy=1
-        nhtot=-1*tstep*npf
-        nypf = max(1, nhtot/8760)
+        ftype = "custom"
+        if abs(npf) == 8760:
+            mytstep = "halfhourly"
+            npy = 8760
+        elif abs(npf) == 365:
+            mytstep = "daily"
+            npy = 365
+        elif abs(npf) == 1:
+            mytstep = "annual"
+            npy = 1
+        nhtot = -1 * tstep * npf
+        nypf = max(1, nhtot / 8760)
 
-    #initialize data arrays
-    mydata      = numpy.zeros([nvar,2000000], float)
-    myobs       = numpy.zeros([nvar,2000000], float)+numpy.NaN
-    myerr       = numpy.zeros([nvar,2000000], float)+numpy.NaN
-    x           = numpy.zeros([2000000], float)
-    nsteps=0
- 
-    if (c == 0):   
-        var_units=[]
-        var_long_names=[]
-        myscalefactors=[]
+    # initialize data arrays
+    mydata = numpy.zeros([nvar, 2000000], float)
+    myobs = numpy.zeros([nvar, 2000000], float) + numpy.NaN
+    myerr = numpy.zeros([nvar, 2000000], float) + numpy.NaN
+    x = numpy.zeros([2000000], float)
+    nsteps = 0
 
-    #Get observations
-    if (obs):
-        myobsfiles = os.listdir(myobsdir+'/'+mytstep+'/')
+    if c == 0:
+        var_units = []
+        var_long_names = []
+        myscalefactors = []
+
+    # Get observations
+    if obs:
+        myobsfiles = os.listdir(myobsdir + "/" + mytstep + "/")
         for f in myobsfiles:
-            if mysites[0] in f and '.csv' in f:
-                myobsfile = myobsdir+'/'+mytstep+'/'+f
+            if mysites[0] in f and ".csv" in f:
+                myobsfile = myobsdir + "/" + mytstep + "/" + f
         avpd_obs = 1
-        if (mytstep == 'halfhourly' and '_HH_' in myobsfile):
-            avpd_obs = 2 
-        if (os.path.exists(myobsfile) and ystart < 1900):
-            print ('Getting start and end year information from observation file')
-            thisrow=0
+        if mytstep == "halfhourly" and "_HH_" in myobsfile:
+            avpd_obs = 2
+        if os.path.exists(myobsfile) and ystart < 1900:
+            print("Getting start and end year information from observation file")
+            thisrow = 0
             myobs_input = open(myobsfile)
             for s in myobs_input:
                 if thisrow == 1:
                     ystart = int(s[0:4])
-                elif (thisrow > 1):
-                    if (int(options.myyend) > 9000):
+                elif thisrow > 1:
+                    if int(options.myyend) > 9000:
                         yend = min(int(s[0:4]), int(options.myyend))
-                thisrow=thisrow+1
+                thisrow = thisrow + 1
             myobs_input.close
-        for v in range(0,nvar):
-            if (os.path.exists(myobsfile)):
+        for v in range(0, nvar):
+            if os.path.exists(myobsfile):
                 myobs_in = open(myobsfile)
-                thisrow=0
-                thisob=0
+                thisrow = 0
+                thisob = 0
                 for s in myobs_in:
-                    if (thisrow == 0):
-                        header = s.split(',')
+                    if thisrow == 0:
+                        header = s.split(",")
                     else:
-                        myvals = s.split(',')
-                        thiscol=0
-                        if int(myvals[0][0:4]) >= ystart and int(myvals[0][0:4]) <= yend:
-                            if (thisob == 0):
-                                thisob = (int(myvals[0][0:4])-ystart)*npy*avpd_obs
-                            if (thisob % avpd_obs ==  0):
-                                myobs[v,int(thisob/avpd_obs)] = 0.0
-                                myerr[v,int(thisob/avpd_obs)] = 0.0
+                        myvals = s.split(",")
+                        thiscol = 0
+                        if (
+                            int(myvals[0][0:4]) >= ystart
+                            and int(myvals[0][0:4]) <= yend
+                        ):
+                            if thisob == 0:
+                                thisob = (int(myvals[0][0:4]) - ystart) * npy * avpd_obs
+                            if thisob % avpd_obs == 0:
+                                myobs[v, int(thisob / avpd_obs)] = 0.0
+                                myerr[v, int(thisob / avpd_obs)] = 0.0
                             for h in header:
-                                if (h.strip() == 'NEE_CUT_REF' and 'NEE' in myvars[v]):
-                                    myobs[v,thisob/avpd_obs] = myobs[v,thisob/avpd_obs] + float(myvals[thiscol])/avpd_obs
-                                elif (h.strip () == 'NEE_CUT_REF_JOINTUNC' and \
-                                      'NEE' in myvars[v]):
-                                    myerr[v,thisob/avpd_obs] = myerr[v,thisob/avpd_obs] +float(myvals[thiscol])/avpd_obs
-                                elif (h.strip() == 'GPP_NT_CUT_REF' and ('GPP' in myvars[v] or 'FPSN' in myvars[v])):
-                                    myobs[v,int(thisob/avpd_obs)] = myobs[v,int(thisob/avpd_obs)] +float(myvals[thiscol])/avpd_obs
-                                elif (h.strip() == 'GPP_NT_CUT_SE' and ('GPP' in myvars[v] or 'FPSN' in myvars[v])):
-                                    myerr[v,int(thisob/avpd_obs)] = myerr[v,int(thisob/avpd_obs)] +float(myvals[thiscol])/avpd_obs
-                                elif (h.strip() == 'RECO_NT_CUT_REF' and 'ER' in myvars[v]):
-                                    myobs[v,thisob/avpd_obs] = myobs[v,thisob/avpd_obs] +float(myvals[thiscol])/avpd_obs
-                                elif (h.strip() == 'RECO_NET_CUT_SE' and 'ER' in myvars[v]):
-                                    myerr[v,thisob/avpd_obs] = myerr[v,thisob/avpd_obs] +float(myvals[thiscol])/avpd_obs
-                                elif (h.strip() == 'LE_F_MDS' and 'EFLX_LH_TOT' in myvars[v]):
-                                    myobs[v,int(thisob/avpd_obs)] = myobs[v,int(thisob/avpd_obs)] +float(myvals[thiscol])/avpd_obs
-                                elif (h.strip() == 'LE_RANDUNC' and 'EFLX_LH_TOT' in myvars[v]):
-                                    myerr[v,int(thisob/avpd_obs)] = myerr[v,int(thisob/avpd_obs)] +float(myvals[thiscol])/avpd_obs
-                                elif (h.strip() == 'H_F_MDS' and 'FSH' in myvars[v]):
-                                    myobs[v,thisob/avpd_obs] = myobs[v,thisob/avpd_obs] +float(myvals[thiscol])/avpd_obs
-                                elif (h.strip() == 'H_RANDUNC' and 'FSH' in myvars[v]):
-                                    myerr[v,thisob/avpd_obs] = myerr[v,thisob/avpd_obs] +float(myvals[thiscol])/avpd_obs
-                                elif (h.strip() == 'TA_F_MDS' and 'TBOT' in myvars[v]):
-                                    myobs[v,int(thisob/avpd_obs)] = myobs[v,thisob/avpd_obs] +float(myvals[thiscol])/avpd_obs
-                                elif (h.strip() == 'SWIN_F_MDS' and 'FSDS' in myvars[v]):
-                                    myobs[v,thisob/avpd_obs] = myobs[v,thisob/avpd_obs] +float(myvals[thiscol])/avpd_obs
-                                elif (h.strip() == 'WS_F' and 'WIND' in myvars[v]):
-                                    myobs[v,thisob/avpd_obs] = myobs[v,thisob/avpd_obs] +float(myvals[thiscol])/avpd_obs
-                                elif (h.strip() == 'P_F' and 'RAIN' in myvars[v]):
-                                    myobs[v,thisob/avpd_obs] = myobs[v,thisob/avpd_obs] +float(myvals[thiscol])/avpd_obs
-                                if myobs[v,int(thisob/avpd_obs)] < -4000:
-                                    myobs[v,int(thisob/avpd_obs)] = numpy.NaN
-                                thiscol=thiscol+1
-                            thisob=thisob+1
-                    thisrow = thisrow+1
+                                if h.strip() == "NEE_CUT_REF" and "NEE" in myvars[v]:
+                                    myobs[v, thisob / avpd_obs] = (
+                                        myobs[v, thisob / avpd_obs]
+                                        + float(myvals[thiscol]) / avpd_obs
+                                    )
+                                elif (
+                                    h.strip() == "NEE_CUT_REF_JOINTUNC"
+                                    and "NEE" in myvars[v]
+                                ):
+                                    myerr[v, thisob / avpd_obs] = (
+                                        myerr[v, thisob / avpd_obs]
+                                        + float(myvals[thiscol]) / avpd_obs
+                                    )
+                                elif h.strip() == "GPP_NT_CUT_REF" and (
+                                    "GPP" in myvars[v] or "FPSN" in myvars[v]
+                                ):
+                                    myobs[v, int(thisob / avpd_obs)] = (
+                                        myobs[v, int(thisob / avpd_obs)]
+                                        + float(myvals[thiscol]) / avpd_obs
+                                    )
+                                elif h.strip() == "GPP_NT_CUT_SE" and (
+                                    "GPP" in myvars[v] or "FPSN" in myvars[v]
+                                ):
+                                    myerr[v, int(thisob / avpd_obs)] = (
+                                        myerr[v, int(thisob / avpd_obs)]
+                                        + float(myvals[thiscol]) / avpd_obs
+                                    )
+                                elif (
+                                    h.strip() == "RECO_NT_CUT_REF" and "ER" in myvars[v]
+                                ):
+                                    myobs[v, thisob / avpd_obs] = (
+                                        myobs[v, thisob / avpd_obs]
+                                        + float(myvals[thiscol]) / avpd_obs
+                                    )
+                                elif (
+                                    h.strip() == "RECO_NET_CUT_SE" and "ER" in myvars[v]
+                                ):
+                                    myerr[v, thisob / avpd_obs] = (
+                                        myerr[v, thisob / avpd_obs]
+                                        + float(myvals[thiscol]) / avpd_obs
+                                    )
+                                elif (
+                                    h.strip() == "LE_F_MDS"
+                                    and "EFLX_LH_TOT" in myvars[v]
+                                ):
+                                    myobs[v, int(thisob / avpd_obs)] = (
+                                        myobs[v, int(thisob / avpd_obs)]
+                                        + float(myvals[thiscol]) / avpd_obs
+                                    )
+                                elif (
+                                    h.strip() == "LE_RANDUNC"
+                                    and "EFLX_LH_TOT" in myvars[v]
+                                ):
+                                    myerr[v, int(thisob / avpd_obs)] = (
+                                        myerr[v, int(thisob / avpd_obs)]
+                                        + float(myvals[thiscol]) / avpd_obs
+                                    )
+                                elif h.strip() == "H_F_MDS" and "FSH" in myvars[v]:
+                                    myobs[v, thisob / avpd_obs] = (
+                                        myobs[v, thisob / avpd_obs]
+                                        + float(myvals[thiscol]) / avpd_obs
+                                    )
+                                elif h.strip() == "H_RANDUNC" and "FSH" in myvars[v]:
+                                    myerr[v, thisob / avpd_obs] = (
+                                        myerr[v, thisob / avpd_obs]
+                                        + float(myvals[thiscol]) / avpd_obs
+                                    )
+                                elif h.strip() == "TA_F_MDS" and "TBOT" in myvars[v]:
+                                    myobs[v, int(thisob / avpd_obs)] = (
+                                        myobs[v, thisob / avpd_obs]
+                                        + float(myvals[thiscol]) / avpd_obs
+                                    )
+                                elif h.strip() == "SWIN_F_MDS" and "FSDS" in myvars[v]:
+                                    myobs[v, thisob / avpd_obs] = (
+                                        myobs[v, thisob / avpd_obs]
+                                        + float(myvals[thiscol]) / avpd_obs
+                                    )
+                                elif h.strip() == "WS_F" and "WIND" in myvars[v]:
+                                    myobs[v, thisob / avpd_obs] = (
+                                        myobs[v, thisob / avpd_obs]
+                                        + float(myvals[thiscol]) / avpd_obs
+                                    )
+                                elif h.strip() == "P_F" and "RAIN" in myvars[v]:
+                                    myobs[v, thisob / avpd_obs] = (
+                                        myobs[v, thisob / avpd_obs]
+                                        + float(myvals[thiscol]) / avpd_obs
+                                    )
+                                if myobs[v, int(thisob / avpd_obs)] < -4000:
+                                    myobs[v, int(thisob / avpd_obs)] = numpy.NaN
+                                thiscol = thiscol + 1
+                            thisob = thisob + 1
+                    thisrow = thisrow + 1
                 myobs_in.close()
             else:
-                print('Error reading observations for '+mysites[c])
+                print("Error reading observations for " + mysites[c])
 
-    #read monthly .nc files (default output)
-    if (ftype == 'default'):
-        for v in range(0,nvar):
+    # read monthly .nc files (default output)
+    if ftype == "default":
+        for v in range(0, nvar):
             nsteps = 0
-            for y in range(ystart,yend+1):
-                yst=str(10000+y)[1:5]
-                for m in range(0,12):
-                    mst=str(101+m)[1:3]
-                    #myfile = os.path.abspath(mydir+'/'+mycases[c]+'_'+mysites[c]+'_'+mycompsets[c]+ \
+            for y in range(ystart, yend + 1):
+                yst = str(10000 + y)[1:5]
+                for m in range(0, 12):
+                    mst = str(101 + m)[1:3]
+                    # myfile = os.path.abspath(mydir+'/'+mycases[c]+'_'+mysites[c]+'_'+mycompsets[c]+ \
                     #                         ".clm2."+hst+"."+yst+"-"+mst+".nc")
-                    #myfile = os.path.abspath(mydir+'/'+runnames[c]+".clm2."+hst+"."+yst+"-"+mst+".nc")
-                    myfile = os.path.abspath(mydir+'/'+runnames[c]+"."+options.model_name+"."+hst+"."+yst+"-"+mst+".nc")
-                    #get units/long names from first file
-                    if (os.path.exists(myfile)):
-                        if (y == ystart and m == 0 and c == 0):
-                            nffile = Dataset(myfile,"r")
-                            varout=nffile.variables[myvars[v]]
-                            var_long_names.append(varout.long_name) #.decode('utf_8'))
-                            if (float(options.scale_factor) < -900):
-                                if ('gC/m^2/s' in str(varout.units)):
-                                    myscalefactors.append(3600*24)
-                                    var_units.append('g.C/m2/day')
-                                elif ('mm/s' in str(varout.units)):
-                                    myscalefactors.append(3600*24)
-                                    var_units.append('mm/day')
+                    # myfile = os.path.abspath(mydir+'/'+runnames[c]+".clm2."+hst+"."+yst+"-"+mst+".nc")
+                    myfile = os.path.abspath(
+                        mydir
+                        + "/"
+                        + runnames[c]
+                        + "."
+                        + options.model_name
+                        + "."
+                        + hst
+                        + "."
+                        + yst
+                        + "-"
+                        + mst
+                        + ".nc"
+                    )
+                    # get units/long names from first file
+                    if os.path.exists(myfile):
+                        if y == ystart and m == 0 and c == 0:
+                            nffile = Dataset(myfile, "r")
+                            varout = nffile.variables[myvars[v]]
+                            var_long_names.append(varout.long_name)  # .decode('utf_8'))
+                            if float(options.scale_factor) < -900:
+                                if "gC/m^2/s" in str(varout.units):
+                                    myscalefactors.append(3600 * 24)
+                                    var_units.append("g.C/m2/day")
+                                elif "mm/s" in str(varout.units):
+                                    myscalefactors.append(3600 * 24)
+                                    var_units.append("mm/day")
                                 else:
                                     myscalefactors.append(1.0)
-                                    var_units.append(varout.units.replace('^',''))
+                                    var_units.append(varout.units.replace("^", ""))
                             else:
                                 myscalefactors.append(float(options.scale_factor))
-                                var_units.append(varout.units.replace('^',''))
+                                var_units.append(varout.units.replace("^", ""))
                             nffile.close()
 
-                        if (y == ystart and m == 0 and v == 0):      # get lat/lon info
-                            nffile = Dataset(myfile,"r")
-                            mylat_vals.append(nffile.variables['lat'][0])
-                            mylon_vals.append(nffile.variables['lon'][0])
+                        if y == ystart and m == 0 and v == 0:  # get lat/lon info
+                            nffile = Dataset(myfile, "r")
+                            mylat_vals.append(nffile.variables["lat"][0])
+                            mylon_vals.append(nffile.variables["lon"][0])
                             nffile.close()
-                        x[nsteps] = y+m/12.0
-                        myvar_temp = getvar(myfile, myvars[v],npf,int(options.index), \
-                                            myscalefactors[v])
-                        mydata[v,nsteps] = myvar_temp
-                        if (myvars[v] == 'RAIN'):
-                            myvar_temp2 = getvar(myfile,'SNOW',npf,int(options.index), \
-                                            myscalefactors[v])
-                            mydata[v,nsteps] = mydata[v,nsteps]+myvar_temp2
+                        x[nsteps] = y + m / 12.0
+                        myvar_temp = getvar(
+                            myfile,
+                            myvars[v],
+                            npf,
+                            int(options.index),
+                            myscalefactors[v],
+                        )
+                        mydata[v, nsteps] = myvar_temp
+                        if myvars[v] == "RAIN":
+                            myvar_temp2 = getvar(
+                                myfile,
+                                "SNOW",
+                                npf,
+                                int(options.index),
+                                myscalefactors[v],
+                            )
+                            mydata[v, nsteps] = mydata[v, nsteps] + myvar_temp2
                     else:
-                        if (v == 0 and m == 0):
-                           print('Warning: '+myfile+' does not exist')
-                        x[nsteps] = y+m/12.0
-                        mydata[v,nsteps] = numpy.NaN
-                        if (y-1 < yend_all):
-                            yend_all = y-1
-                    nsteps = nsteps+1
+                        if v == 0 and m == 0:
+                            print("Warning: " + myfile + " does not exist")
+                        x[nsteps] = y + m / 12.0
+                        mydata[v, nsteps] = numpy.NaN
+                        if y - 1 < yend_all:
+                            yend_all = y - 1
+                    nsteps = nsteps + 1
 
-    #read annual .nc files
-    if (ftype == 'custom'):
-        for v in range(0,nvar):
-            nsteps=0
-            nfiles = int((yend-ystart)/nypf)
-            nc=1
-            starti=0
-            ylast=0
-            if (options.spinup):
-                nc=2
-            if (npf == 1):
+    # read annual .nc files
+    if ftype == "custom":
+        for v in range(0, nvar):
+            nsteps = 0
+            nfiles = int((yend - ystart) / nypf)
+            nc = 1
+            starti = 0
+            ylast = 0
+            if options.spinup:
+                nc = 2
+            if npf == 1:
                 starti = 1
-            for n in range(0,nc):
-                if ((options.spinup) and n== 0):
-#                    if (mycases[c] == ''):
-#                        if (options.ad_Pinit):
-#                            mydir = cesmdir+'/'+mysites[c]+'_'+mycompsets[c]+'_ad_spinup/run/'
-#                        else:
-#                            mydir = cesmdir+'/'+mysites[c]+'_'+mycompsets[c].replace('CNP','CN')+ \
-#	                          '_ad_spinup/run/'
-#                    else:
-#                        if (options.ad_Pinit):
-#                            mydir = cesmdir+'/'+mycases[c]+'_'+mysites[c]+'_'+ \
-#                                    mycompsets[c]+'_ad_spinup/run/'
-#                            thiscompset = mycompsets[c]+'_ad_spinup'
-#                        else:
-#                            mydir = cesmdir+'/'+mycases[c]+'_'+mysites[c]+'_'+ \
-#                                    mycompsets[c].replace('CNP','CN')+'_ad_spinup/run/'
-#                            thiscompset = mycompsets[c].replace('CNP','CN')+'_ad_spinup'
-                    if (options.ad_Pinit):
-                        mydir = cesmdir+'/'+mycases1[c]+mysites1[c]+mycompsets1[c]+'_ad_spinup/run/'
-                        thiscompset = mycompsets1[c]+'_ad_spinup'
+            for n in range(0, nc):
+                if (options.spinup) and n == 0:
+                    #                    if (mycases[c] == ''):
+                    #                        if (options.ad_Pinit):
+                    #                            mydir = cesmdir+'/'+mysites[c]+'_'+mycompsets[c]+'_ad_spinup/run/'
+                    #                        else:
+                    #                            mydir = cesmdir+'/'+mysites[c]+'_'+mycompsets[c].replace('CNP','CN')+ \
+                    # '_ad_spinup/run/'
+                    #                    else:
+                    #                        if (options.ad_Pinit):
+                    #                            mydir = cesmdir+'/'+mycases[c]+'_'+mysites[c]+'_'+ \
+                    #                                    mycompsets[c]+'_ad_spinup/run/'
+                    #                            thiscompset = mycompsets[c]+'_ad_spinup'
+                    #                        else:
+                    #                            mydir = cesmdir+'/'+mycases[c]+'_'+mysites[c]+'_'+ \
+                    #                                    mycompsets[c].replace('CNP','CN')+'_ad_spinup/run/'
+                    #                            thiscompset = mycompsets[c].replace('CNP','CN')+'_ad_spinup'
+                    if options.ad_Pinit:
+                        mydir = (
+                            cesmdir
+                            + "/"
+                            + mycases1[c]
+                            + mysites1[c]
+                            + mycompsets1[c]
+                            + "_ad_spinup/run/"
+                        )
+                        thiscompset = mycompsets1[c] + "_ad_spinup"
                     else:
-                        mydir = cesmdir+'/'+mycases1[c]+mysites1[c]+ \
-                                mycompsets1[c].replace('CNP','CN')+'_ad_spinup/run/'
-                        thiscompset = mycompsets1[c].replace('CNP','CN')+'_ad_spinup'
+                        mydir = (
+                            cesmdir
+                            + "/"
+                            + mycases1[c]
+                            + mysites1[c]
+                            + mycompsets1[c].replace("CNP", "CN")
+                            + "_ad_spinup/run/"
+                        )
+                        thiscompset = mycompsets1[c].replace("CNP", "CN") + "_ad_spinup"
                 else:
-#                    if (mycases[c] == ''):
-#                        mydir = cesmdir+'/'+mysites[c]+'_'+mycompsets[c]+'/run/'
-#                    else:
-#                        mydir = cesmdir+'/'+mycases[c]+'_'+mysites[c]+'_'+ \
-#                                mycompsets[c]+'/run/'
-#                    thiscompset = mycompsets[c]
-                    mydir = cesmdir+'/'+mycases1[c]+mysites1[c]+mycompsets1[c]+'/run/'
+                    #                    if (mycases[c] == ''):
+                    #                        mydir = cesmdir+'/'+mysites[c]+'_'+mycompsets[c]+'/run/'
+                    #                    else:
+                    #                        mydir = cesmdir+'/'+mycases[c]+'_'+mysites[c]+'_'+ \
+                    #                                mycompsets[c]+'/run/'
+                    #                    thiscompset = mycompsets[c]
+                    mydir = (
+                        cesmdir
+                        + "/"
+                        + mycases1[c]
+                        + mysites1[c]
+                        + mycompsets1[c]
+                        + "/run/"
+                    )
                     thiscompset = mycompsets1[c]
-                for y in range(starti,nfiles+1):   #skip first file in spinup
-                    yst=str(10000+ystart+(y*nypf))[1:5]
-#                    if (mycases[c].strip() == ''):
-#                        myfile = os.path.abspath(mydir+'/'+mycases[c]+'_'+thiscompset+".clm2."+hst+ \
-#                                                 "."+yst+"-01-01-00000.nc")
-#                    else:
-#                        myfile = os.path.abspath(mydir+'/'+mycases[c]+"_"+mysites[c]+'_'+thiscompset+ \
-#                                                 ".clm2."+hst+"."+yst+"-01-01-00000.nc")
-                    myfile = os.path.abspath(mydir+'/'+runnames[c]+ \
-                                             "."+options.model_name+"."+hst+"."+yst+"-01-01-00000.nc")
-                    if (os.path.exists(myfile)):
-                        if (n == 0):
+                for y in range(starti, nfiles + 1):  # skip first file in spinup
+                    yst = str(10000 + ystart + (y * nypf))[1:5]
+                    #                    if (mycases[c].strip() == ''):
+                    #                        myfile = os.path.abspath(mydir+'/'+mycases[c]+'_'+thiscompset+".clm2."+hst+ \
+                    #                                                 "."+yst+"-01-01-00000.nc")
+                    #                    else:
+                    #                        myfile = os.path.abspath(mydir+'/'+mycases[c]+"_"+mysites[c]+'_'+thiscompset+ \
+                    #                                                 ".clm2."+hst+"."+yst+"-01-01-00000.nc")
+                    myfile = os.path.abspath(
+                        mydir
+                        + "/"
+                        + runnames[c]
+                        + "."
+                        + options.model_name
+                        + "."
+                        + hst
+                        + "."
+                        + yst
+                        + "-01-01-00000.nc"
+                    )
+                    if os.path.exists(myfile):
+                        if n == 0:
                             ylast = y
-                        if (y == starti and n == 0 and c == 0):
-                            nffile = Dataset(myfile,"r")
-                            varout=nffile.variables[myvars[v]]
-                            var_long_names.append(varout.long_name) #.decode('utf_8'))
-                            if (float(options.scale_factor) < -900):
-                                if ('gC/m^2/s' in varout.units): #.decode('utf_8')):
-                                    if (npf >= 365):
-                                        myscalefactors.append(3600*24)
-                                        var_units.append('g.C/m2/day')
+                        if y == starti and n == 0 and c == 0:
+                            nffile = Dataset(myfile, "r")
+                            varout = nffile.variables[myvars[v]]
+                            var_long_names.append(varout.long_name)  # .decode('utf_8'))
+                            if float(options.scale_factor) < -900:
+                                if "gC/m^2/s" in varout.units:  # .decode('utf_8')):
+                                    if npf >= 365:
+                                        myscalefactors.append(3600 * 24)
+                                        var_units.append("g.C/m2/day")
                                     else:
-                                        myscalefactors.append(3600*24*365)
-                                        var_units.append('g.C/m2/yr')
+                                        myscalefactors.append(3600 * 24 * 365)
+                                        var_units.append("g.C/m2/yr")
                                 else:
                                     myscalefactors.append(1.0)
-                                    var_units.append(varout.units.replace('^',''))
+                                    var_units.append(varout.units.replace("^", ""))
                             else:
-                                 myscalefactors.append(float(options.scale_factor))
-                                 var_units.append(varout.units.replace('^',''))
+                                myscalefactors.append(float(options.scale_factor))
+                                var_units.append(varout.units.replace("^", ""))
                             nffile.close()
-                        if (y == starti and n == 0 and v == 0):      # get lat/lon info
-                            nffile = Dataset(myfile,"r")
-                            mylat_vals.append(nffile.variables['lat'][0])
-                            mylon_vals.append(nffile.variables['lon'][0])
+                        if y == starti and n == 0 and v == 0:  # get lat/lon info
+                            nffile = Dataset(myfile, "r")
+                            mylat_vals.append(nffile.variables["lat"][0])
+                            mylon_vals.append(nffile.variables["lon"][0])
                             nffile.close()
 
-                        myvar_temp = getvar(myfile,myvars[v],npf,int(options.index), \
-                                            myscalefactors[v])
-                        if (myvars[v] == 'RAIN'):
-                            myvar_temp2 = getvar(myfile,'SNOW',npf,int(options.index), \
-                                            myscalefactors[v])
+                        myvar_temp = getvar(
+                            myfile,
+                            myvars[v],
+                            npf,
+                            int(options.index),
+                            myscalefactors[v],
+                        )
+                        if myvars[v] == "RAIN":
+                            myvar_temp2 = getvar(
+                                myfile,
+                                "SNOW",
+                                npf,
+                                int(options.index),
+                                myscalefactors[v],
+                            )
 
                         if len(myvar_temp) == npf:
-                            for i in range(0,npf):
-                                myind = ylast*n*npf+y*npf+i
-                                x[nsteps] = ystart+(ylast*n*nypf+y*nypf) + nypf*(i*1.0-0.5)/npf
-                                mydata[v,nsteps] = myvar_temp[i]
-                                if (myvars[v] == 'RAIN'):    #add snow for total precip
-                                    mydata[v,nsteps] = mydata[v,nsteps]+myvar_temp2[i]
-                                nsteps=nsteps+1
+                            for i in range(0, npf):
+                                myind = ylast * n * npf + y * npf + i
+                                x[nsteps] = (
+                                    ystart
+                                    + (ylast * n * nypf + y * nypf)
+                                    + nypf * (i * 1.0 - 0.5) / npf
+                                )
+                                mydata[v, nsteps] = myvar_temp[i]
+                                if myvars[v] == "RAIN":  # add snow for total precip
+                                    mydata[v, nsteps] = (
+                                        mydata[v, nsteps] + myvar_temp2[i]
+                                    )
+                                nsteps = nsteps + 1
                         else:
-                            for i in range(0,npf):
-                                myind=ylast*n*npf+(y-1)*npf+i
-                                x[myind] = ystart+(ylast*n*nypf+y*nypf) + nypf*(i*1.0-0.5)/npf
-                                mydata[v,myind] = numpy.NaN
-                                nsteps=nsteps+1 
-                    else:	
-                         if (v == 0):
-                             print('Warning: '+myfile+' does not exist')
-                         if (y-1 < yend_all):
-                             yend_all = y-1
-                         for i in range(0,npf):
-                             if (n == nc-1):
-                                 myind=ylast*n*npf+y*npf+i
-                                 x[myind] = ystart+(ylast*n*nypf+y*nypf) + nypf*(i*1.0-0.5)/npf
-                                 mydata[v,myind] = numpy.NaN
-                                 nsteps=nsteps+1
+                            for i in range(0, npf):
+                                myind = ylast * n * npf + (y - 1) * npf + i
+                                x[myind] = (
+                                    ystart
+                                    + (ylast * n * nypf + y * nypf)
+                                    + nypf * (i * 1.0 - 0.5) / npf
+                                )
+                                mydata[v, myind] = numpy.NaN
+                                nsteps = nsteps + 1
+                    else:
+                        if v == 0:
+                            print("Warning: " + myfile + " does not exist")
+                        if y - 1 < yend_all:
+                            yend_all = y - 1
+                        for i in range(0, npf):
+                            if n == nc - 1:
+                                myind = ylast * n * npf + y * npf + i
+                                x[myind] = (
+                                    ystart
+                                    + (ylast * n * nypf + y * nypf)
+                                    + nypf * (i * 1.0 - 0.5) / npf
+                                )
+                                mydata[v, myind] = numpy.NaN
+                                nsteps = nsteps + 1
 
-    #perform averaging and write output files 
-    if (avtype == 'default'):
-        for v in range(0,nvar):
+    # perform averaging and write output files
+    if avtype == "default":
+        for v in range(0, nvar):
             snum[c] = 0
-            for s in range(0,int(nsteps/avpd)): 
-                x_toplot[c, snum[c]]       = sum(x[s*avpd:(s+1)*avpd])/avpd
-                data_toplot[c, v, snum[c]] = sum(mydata[v,s*avpd:(s+1)*avpd])/avpd
-                obs_toplot[c, v, snum[c]]  = sum(myobs[v,s*avpd:(s+1)*avpd])/avpd
-                if (min(myerr[v,s*avpd:(s+1)*avpd]) < -9000):
-                    err_toplot[c,v,snum[c]] = 0
+            for s in range(0, int(nsteps / avpd)):
+                x_toplot[c, snum[c]] = sum(x[s * avpd : (s + 1) * avpd]) / avpd
+                data_toplot[c, v, snum[c]] = (
+                    sum(mydata[v, s * avpd : (s + 1) * avpd]) / avpd
+                )
+                obs_toplot[c, v, snum[c]] = (
+                    sum(myobs[v, s * avpd : (s + 1) * avpd]) / avpd
+                )
+                if min(myerr[v, s * avpd : (s + 1) * avpd]) < -9000:
+                    err_toplot[c, v, snum[c]] = 0
                 else:
-                    err_toplot[c, v, snum[c]]  = sum(myerr[v,s*avpd:(s+1)*avpd])/avpd
-                snum[c] = snum[c]+1
-          
-    #diurnal average (must have hourly output)
-    if (avtype == 'diurnal'):
-        snum[c]=24
-        for v in range(0,nvar):
+                    err_toplot[c, v, snum[c]] = (
+                        sum(myerr[v, s * avpd : (s + 1) * avpd]) / avpd
+                    )
+                snum[c] = snum[c] + 1
+
+    # diurnal average (must have hourly output)
+    if avtype == "diurnal":
+        snum[c] = 24
+        for v in range(0, nvar):
             mysum = numpy.zeros(snum[c], float)
             mysum_obs = numpy.zeros(snum[c], float)
-            myct = numpy.zeros(snum[c],float)
-            myct_obs = numpy.zeros(snum[c],float)
-            for y in range(0,(yend_all-ystart+1)):
-                for d in range (int(options.dstart),int(options.dend)):
-                    for s in range(0,snum[c]):        
-                        h=s
-                        if (h >= 24):
-                            h=h-24
-                        mysum[s] = mysum[s]+mydata[v,y*8760+(d-1)*24+h-int(options.timezone)+1]
-                        myct[s] = myct[s]+1
-                        if (myobs[v,y*8760+(d-1)*24+h] > -900):
-                            mysum_obs[s] = mysum_obs[s]+myobs[v,y*8760+(d-1)*24+h]
-                            myct_obs[s] = myct_obs[s]+1
-            for s in range(0,snum[c]):
-                if (myct_obs[s] > 0):
-                    mysum_obs[s] = mysum_obs[s]/myct_obs[s]
+            myct = numpy.zeros(snum[c], float)
+            myct_obs = numpy.zeros(snum[c], float)
+            for y in range(0, (yend_all - ystart + 1)):
+                for d in range(int(options.dstart), int(options.dend)):
+                    for s in range(0, snum[c]):
+                        h = s
+                        if h >= 24:
+                            h = h - 24
+                        mysum[s] = (
+                            mysum[s]
+                            + mydata[
+                                v,
+                                y * 8760 + (d - 1) * 24 + h - int(options.timezone) + 1,
+                            ]
+                        )
+                        myct[s] = myct[s] + 1
+                        if myobs[v, y * 8760 + (d - 1) * 24 + h] > -900:
+                            mysum_obs[s] = (
+                                mysum_obs[s] + myobs[v, y * 8760 + (d - 1) * 24 + h]
+                            )
+                            myct_obs[s] = myct_obs[s] + 1
+            for s in range(0, snum[c]):
+                if myct_obs[s] > 0:
+                    mysum_obs[s] = mysum_obs[s] / myct_obs[s]
                 else:
                     mysum_obs[s] = numpy.NaN
-                x_toplot[c,s] = s+1
+                x_toplot[c, s] = s + 1
                 obs_toplot[c, v, s] = mysum_obs[s]
-                data_toplot[c, v, s] = mysum[s]/myct[s]
+                data_toplot[c, v, s] = mysum[s] / myct[s]
 
-    #seasonal average (assumes default monthly output)
-    if (avtype == 'seasonal'):
-        for v in range(0,nvar):
+    # seasonal average (assumes default monthly output)
+    if avtype == "seasonal":
+        for v in range(0, nvar):
             snum[c] = 12
-            mysum=numpy.zeros(snum[c], float)
+            mysum = numpy.zeros(snum[c], float)
             mysum_obs = numpy.zeros(snum[c], float)
             mycount_obs = numpy.zeros(snum[c], numpy.int)
-            for y in range(0,(yend_all-ystart+1)):
-                for s in range(0,snum[c]):
-                    mysum[s]=mysum[s]+mydata[v,(y*12+s)]/float(yend_all-ystart+1)
-                    if (myobs[v,(y*12+s)] > -900):
-                        mysum_obs[s]=mysum_obs[s]+myobs[v,(y*12+s)]
-                        mycount_obs[s] = mycount_obs[s]+1
-            for s in range(0,snum[c]):
-                if (mycount_obs[s] > 0):
-                    mysum_obs[s] = mysum_obs[s]/mycount_obs[s]
+            for y in range(0, (yend_all - ystart + 1)):
+                for s in range(0, snum[c]):
+                    mysum[s] = mysum[s] + mydata[v, (y * 12 + s)] / float(
+                        yend_all - ystart + 1
+                    )
+                    if myobs[v, (y * 12 + s)] > -900:
+                        mysum_obs[s] = mysum_obs[s] + myobs[v, (y * 12 + s)]
+                        mycount_obs[s] = mycount_obs[s] + 1
+            for s in range(0, snum[c]):
+                if mycount_obs[s] > 0:
+                    mysum_obs[s] = mysum_obs[s] / mycount_obs[s]
                 else:
                     mysum_obs[s] = numpy.NaN
-                x_toplot[c,s] = s+1.5
-                obs_toplot[c,v,s]  = mysum_obs[s]
-                data_toplot[c,v,s] = mysum[s]
+                x_toplot[c, s] = s + 1.5
+                obs_toplot[c, v, s] = mysum_obs[s]
+                data_toplot[c, v, s] = mysum[s]
 
-                
-#diagnostics, outputs and plots
 
-if (options.spinup):
-    analysis_type = 'spinup'
-elif (options.mydiurnal):
-    analysis_type = 'diurnalcycle_'+str(options.dstart)+'_'+str(options.dend)
-elif (options.myseasonal):
-    analysis_type = 'seasonalcycle'
-elif (mytstep == 'halfhourly'):
-    analysis_type = 'hourly'
+# diagnostics, outputs and plots
+
+if options.spinup:
+    analysis_type = "spinup"
+elif options.mydiurnal:
+    analysis_type = "diurnalcycle_" + str(options.dstart) + "_" + str(options.dend)
+elif options.myseasonal:
+    analysis_type = "seasonalcycle"
+elif mytstep == "halfhourly":
+    analysis_type = "hourly"
 else:
-    analysis_type=mytstep
+    analysis_type = mytstep
 
-rmse = numpy.zeros([len(myvars),ncases],float)
-bias = numpy.zeros([len(myvars),ncases],float)
-corr = numpy.zeros([len(myvars),ncases],float)
+rmse = numpy.zeros([len(myvars), ncases], float)
+bias = numpy.zeros([len(myvars), ncases], float)
+corr = numpy.zeros([len(myvars), ncases], float)
 
-options.nperpage=int(options.nperpage)
-if (options.nperpage > 1):
-  nrow = 2
-  ncol = int(math.ceil(options.nperpage/2))
+options.nperpage = int(options.nperpage)
+if options.nperpage > 1:
+    nrow = 2
+    ncol = int(math.ceil(options.nperpage / 2))
 else:
-  ncol = 1
-  nrow = 1
+    ncol = 1
+    nrow = 1
 
-for v in range(0,len(myvars)):
-    if (not options.noplot):
-        if (v % options.nperpage == 0):
-          fig = plt.figure(figsize=(11,8.5))
-        thisfig = v % options.nperpage+1
-        fignum = int(v/options.nperpage)
-        thiscol = (thisfig -1) % ncol
-        thisrow = (thisfig -1) / ncol
-        ax = plt.subplot(nrow*100+ncol*10+thisfig)
-    colors=['b','g','r','c','m','y','k','b','g','r','c','m','y','k','b','g','r','c','m','y','k']
-    styles=['-','-','-','-','-','-','-','--','--','--','--','--','--','--','-.','-.','-.','-.','-.','-.','-.']
-    for c in range(0,ncases):
-        #Output data in netcdf format
-        if (c == 0):
-            if (v == 0):
-                ftype_suffix=['model','obs']
-                if (options.outputdir == ''):
-                  outputdir = cesmdir+'/'+runnames[0]+'/plots/'+analysis_type
+for v in range(0, len(myvars)):
+    if not options.noplot:
+        if v % options.nperpage == 0:
+            fig = plt.figure(figsize=(11, 8.5))
+        thisfig = v % options.nperpage + 1
+        fignum = int(v / options.nperpage)
+        thiscol = (thisfig - 1) % ncol
+        thisrow = (thisfig - 1) / ncol
+        ax = plt.subplot(nrow * 100 + ncol * 10 + thisfig)
+    colors = [
+        "b",
+        "g",
+        "r",
+        "c",
+        "m",
+        "y",
+        "k",
+        "b",
+        "g",
+        "r",
+        "c",
+        "m",
+        "y",
+        "k",
+        "b",
+        "g",
+        "r",
+        "c",
+        "m",
+        "y",
+        "k",
+    ]
+    styles = [
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "--",
+        "--",
+        "--",
+        "--",
+        "--",
+        "--",
+        "--",
+        "-.",
+        "-.",
+        "-.",
+        "-.",
+        "-.",
+        "-.",
+        "-.",
+    ]
+    for c in range(0, ncases):
+        # Output data in netcdf format
+        if c == 0:
+            if v == 0:
+                ftype_suffix = ["model", "obs"]
+                if options.outputdir == "":
+                    outputdir = cesmdir + "/" + runnames[0] + "/plots/" + analysis_type
                 else:
-                  outputdir = options.outputdir+'/'+runnames[0]+'/'+analysis_type
-                os.system('mkdir -p '+outputdir)
-                print('Creating plots and output in '+outputdir)
-                for ftype in range(0,2):
-                    outdata = Dataset(outputdir+'/'+mycases[0]+"_"+mysites[0]+'_'+mycompsets[0]+'_'+ftype_suffix[ftype]+".nc","w",mmap=False)
-                    outdata.createDimension('time',snum[c])
-                    #outdata.createDimension('lat',ncases)
-                    #outdata.createDimension('lon',ncases)
-                    outdata.createDimension('gridcell',ncases)
-                    outdata.createDimension('strlen',6)
-                    mylat = outdata.createVariable('lat','f',('gridcell',))
-                    mylat.long_name='coordinate latitude'
-                    mylat.units='degrees_north'
-                    mylon = outdata.createVariable('lon','f',('gridcell',))
-                    mylon.long_name='coordinate longitude'
-                    mylon.units='degrees_east'
-                    mytime = outdata.createVariable('time','f',('time',))
-                    mytime.long_name='time'
-                    mytime.units='days since '+str(ystart)+'-01-01 00:00:00'
-                    mytime.calendar='noleap'
-                    mytime[:] = (x_toplot[0,0:snum[c]]-ystart)*365
-                    #myname = outdata.createVariable('site_name','c',('lat','lon','strlen'))
-                    myname = outdata.createVariable('site_name','c',('gridcell','strlen'))
-                    myname[:,:] = ' '   #changed for gridcell
+                    outputdir = (
+                        options.outputdir + "/" + runnames[0] + "/" + analysis_type
+                    )
+                os.system("mkdir -p " + outputdir)
+                print("Creating plots and output in " + outputdir)
+                for ftype in range(0, 2):
+                    outdata = Dataset(
+                        outputdir
+                        + "/"
+                        + mycases[0]
+                        + "_"
+                        + mysites[0]
+                        + "_"
+                        + mycompsets[0]
+                        + "_"
+                        + ftype_suffix[ftype]
+                        + ".nc",
+                        "w",
+                        mmap=False,
+                    )
+                    outdata.createDimension("time", snum[c])
+                    # outdata.createDimension('lat',ncases)
+                    # outdata.createDimension('lon',ncases)
+                    outdata.createDimension("gridcell", ncases)
+                    outdata.createDimension("strlen", 6)
+                    mylat = outdata.createVariable("lat", "f", ("gridcell",))
+                    mylat.long_name = "coordinate latitude"
+                    mylat.units = "degrees_north"
+                    mylon = outdata.createVariable("lon", "f", ("gridcell",))
+                    mylon.long_name = "coordinate longitude"
+                    mylon.units = "degrees_east"
+                    mytime = outdata.createVariable("time", "f", ("time",))
+                    mytime.long_name = "time"
+                    mytime.units = "days since " + str(ystart) + "-01-01 00:00:00"
+                    mytime.calendar = "noleap"
+                    mytime[:] = (x_toplot[0, 0 : snum[c]] - ystart) * 365
+                    # myname = outdata.createVariable('site_name','c',('lat','lon','strlen'))
+                    myname = outdata.createVariable(
+                        "site_name", "c", ("gridcell", "strlen")
+                    )
+                    myname[:, :] = " "  # changed for gridcell
                     outdata.close()
-        for ftype in range(0,2):
-            outdata = Dataset(outputdir+'/'+mycases[0]+"_"+mysites[0]+'_'+mycompsets[0]+'_'+ftype_suffix[ftype]+".nc","a",mmap=False)
-            if (c == 0):
-                #myvar = outdata.createVariable(myvars[v],'f',('time','lat','lon'))
-                myvar = outdata.createVariable(myvars[v],'f',('time','gridcell'))
-                myvar.units=var_units[v]
-                myvar.missing_value=1.0e36
-                myvar[:,:]=myvar.missing_value   #changed for gridcell
+        for ftype in range(0, 2):
+            outdata = Dataset(
+                outputdir
+                + "/"
+                + mycases[0]
+                + "_"
+                + mysites[0]
+                + "_"
+                + mycompsets[0]
+                + "_"
+                + ftype_suffix[ftype]
+                + ".nc",
+                "a",
+                mmap=False,
+            )
+            if c == 0:
+                # myvar = outdata.createVariable(myvars[v],'f',('time','lat','lon'))
+                myvar = outdata.createVariable(myvars[v], "f", ("time", "gridcell"))
+                myvar.units = var_units[v]
+                myvar.missing_value = 1.0e36
+                myvar[:, :] = myvar.missing_value  # changed for gridcell
             else:
-                myvar=outdata.variables[myvars[v]]
+                myvar = outdata.variables[myvars[v]]
             scalefac = 1.0
-            if (var_units[v] == 'g.C/m2/day'):
-                myvar.units = 'kg.C/m2/s'
-                scalefac = 1.0 / (3600*24*1000.0)
-            if (ftype == 0):
-                myvar[:,c] = data_toplot[c,v,0:snum[c]]*scalefac  #changed for gridcell
-            if (ftype == 1):
-                myvar[:,c] = obs_toplot[c,v,0:snum[c]]*scalefac   #changed for gridcell
-            if (v == 0):
-                myname = outdata.variables['site_name']
-                #myname[c,0:6] = str(mysites[c])[0:6]   #changed for gridcell
-                myname[c,0:6] = str(mysites1[c])[0:6]   #changed for gridcell
-                mylat = outdata.variables['lat']
+            if var_units[v] == "g.C/m2/day":
+                myvar.units = "kg.C/m2/s"
+                scalefac = 1.0 / (3600 * 24 * 1000.0)
+            if ftype == 0:
+                myvar[:, c] = (
+                    data_toplot[c, v, 0 : snum[c]] * scalefac
+                )  # changed for gridcell
+            if ftype == 1:
+                myvar[:, c] = (
+                    obs_toplot[c, v, 0 : snum[c]] * scalefac
+                )  # changed for gridcell
+            if v == 0:
+                myname = outdata.variables["site_name"]
+                # myname[c,0:6] = str(mysites[c])[0:6]   #changed for gridcell
+                myname[c, 0:6] = str(mysites1[c])[0:6]  # changed for gridcell
+                mylat = outdata.variables["lat"]
                 mylat[c] = mylat_vals[c]
-                mylon = outdata.variables['lon']
+                mylon = outdata.variables["lon"]
                 mylon[c] = mylon_vals[c]
             outdata.close()
-        
-        #----------------------- plotting ---------------------------------
-        if (options.noplot == False):
-            gind=[]
-            for i in range(0,snum[c]):
-                if (obs_toplot[c,v,i] < -900):
-                    obs_toplot[c,v,i] = numpy.nan
+
+        # ----------------------- plotting ---------------------------------
+        if options.noplot == False:
+            gind = []
+            for i in range(0, snum[c]):
+                if obs_toplot[c, v, i] < -900:
+                    obs_toplot[c, v, i] = numpy.nan
                 else:
                     gind.append(i)
-                    rmse[v,c] = rmse[v,c] + (data_toplot[c,v,i]-obs_toplot[c,v,i])**2.0
-                    bias[v,c] = bias[v,c] + (data_toplot[c,v,i]-obs_toplot[c,v,i])
-            rmse[v,c] = (rmse[v,c]/len(gind))**0.5
-            bias[v,c] = bias[v,c]/len(gind)
-            corr[v,c] = numpy.corrcoef(data_toplot[c,v,gind],obs_toplot[c,v,gind])[1,0]
+                    rmse[v, c] = (
+                        rmse[v, c] + (data_toplot[c, v, i] - obs_toplot[c, v, i]) ** 2.0
+                    )
+                    bias[v, c] = bias[v, c] + (
+                        data_toplot[c, v, i] - obs_toplot[c, v, i]
+                    )
+            rmse[v, c] = (rmse[v, c] / len(gind)) ** 0.5
+            bias[v, c] = bias[v, c] / len(gind)
+            corr[v, c] = numpy.corrcoef(
+                data_toplot[c, v, gind], obs_toplot[c, v, gind]
+            )[1, 0]
 
-            if (options.ylog):
-                ax.plot(x_toplot[c, 0:snum[c]], abs(data_toplot[c,v,0:snum[c]]), label=mytitles[c], color=colors[c], \
-                  linestyle=styles[c], linewidth=3)
+            if options.ylog:
+                ax.plot(
+                    x_toplot[c, 0 : snum[c]],
+                    abs(data_toplot[c, v, 0 : snum[c]]),
+                    label=mytitles[c],
+                    color=colors[c],
+                    linestyle=styles[c],
+                    linewidth=3,
+                )
             else:
-                ax.plot(x_toplot[c, 0:snum[c]], (data_toplot[c,v,0:snum[c]]), label=mytitles[c], color=colors[c], \
-	          linestyle=styles[c], linewidth=3)
-                if (options.myobs and c == 0):
-                    ax.errorbar(x_toplot[c, 0:snum[c]], obs_toplot[c,v,0:snum[c]], yerr = err_toplot[c,v,0:snum[c]], \
-                                color='k', fmt='o')
+                ax.plot(
+                    x_toplot[c, 0 : snum[c]],
+                    (data_toplot[c, v, 0 : snum[c]]),
+                    label=mytitles[c],
+                    color=colors[c],
+                    linestyle=styles[c],
+                    linewidth=3,
+                )
+                if options.myobs and c == 0:
+                    ax.errorbar(
+                        x_toplot[c, 0 : snum[c]],
+                        obs_toplot[c, v, 0 : snum[c]],
+                        yerr=err_toplot[c, v, 0 : snum[c]],
+                        color="k",
+                        fmt="o",
+                    )
 
-    if (options.noplot == False):
-        if (thisrow+1 == nrow):
-          if (avtype == 'seasonal'):
-            plt.xlabel('Model Month')
-          elif (avtype == 'diurnal'):
-            plt.xlabel('Model Hour (LST)')
-          else:
-            plt.xlabel('Model Year')
- 
-        plt.ylabel(myvars[v]+' ('+var_units[v]+')')
+    if options.noplot == False:
+        if thisrow + 1 == nrow:
+            if avtype == "seasonal":
+                plt.xlabel("Model Month")
+            elif avtype == "diurnal":
+                plt.xlabel("Model Hour (LST)")
+            else:
+                plt.xlabel("Model Year")
+
+        plt.ylabel(myvars[v] + " (" + var_units[v] + ")")
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-        if (v % options.nperpage == options.nperpage-1):
-          ax.legend(loc='center left', bbox_to_anchor=(1, 0.5),prop={'size': 10})
-        #if (v % options.nperpage == 0):
+        if v % options.nperpage == options.nperpage - 1:
+            ax.legend(loc="center left", bbox_to_anchor=(1, 0.5), prop={"size": 10})
+        # if (v % options.nperpage == 0):
         #  ax.legend(loc='upper left', bbox_to_anchor=(0, 1.3), prop={'size': 8}, ncol=2)
-        plt.title(var_long_names[v]) #+' at '+mysites[0])
-        if (options.ylog):
-            plt.yscale('log')
+        plt.title(var_long_names[v])  # +' at '+mysites[0])
+        if options.ylog:
+            plt.yscale("log")
 
-        if (options.nperpage == 1):
-          fig_filename = outputdir+'/'+myvars[v]
+        if options.nperpage == 1:
+            fig_filename = outputdir + "/" + myvars[v]
         else:
-          fig_filename = outputdir+'/figure'+str(fignum+1)
-        if (int(options.index) < 0):
-            fig_filename = fig_filename+'_allindices'
-        elif (int(options.index) > 0):
-            fig_filename = fig_filename+'_index'+str(options.index)
-        if (options.pdf):
-            fig.savefig(fig_filename+'.pdf')
-        if (options.png):
-            fig.savefig(fig_filename+'.png')
+            fig_filename = outputdir + "/figure" + str(fignum + 1)
+        if int(options.index) < 0:
+            fig_filename = fig_filename + "_allindices"
+        elif int(options.index) > 0:
+            fig_filename = fig_filename + "_index" + str(options.index)
+        if options.pdf:
+            fig.savefig(fig_filename + ".pdf")
+        if options.png:
+            fig.savefig(fig_filename + ".png")
 
-if (not options.pdf and not options.noplot and not options.png):
+if not options.pdf and not options.noplot and not options.png:
     plt.show()
