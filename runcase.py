@@ -1124,7 +1124,7 @@ else:
     csmdir = options.csmdir
     scriptsdir = csmdir + "/cime/scripts"
 # case directory
-if options.caseroot == "" or (os.path.exists(options.caseroot) == False):
+if options.caseroot == "":
     caseroot = csmdir + "/cime/scripts"
 else:
     caseroot = os.path.abspath(options.caseroot)

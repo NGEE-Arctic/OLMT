@@ -1037,7 +1037,7 @@ else:
 if options.caseroot == options.runroot:
     caseroot = os.path.abspath(options.caseroot) + "/cime_case_dirs"
     runcmd("mkdir -p " + caseroot)
-elif options.caseroot == "" or not os.path.exists(options.caseroot):
+elif options.caseroot == "":
     caseroot = os.path.abspath(csmdir + "/cime/scripts")
 else:
     caseroot = os.path.abspath(options.caseroot)

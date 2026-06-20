@@ -816,7 +816,7 @@ if options.runroot == "":
         runroot = csmdir + "/run"
 else:
     runroot = os.path.abspath(options.runroot)
-if options.caseroot == "" or (not os.path.exists(options.caseroot)):
+if options.caseroot == "":
     caseroot = os.path.abspath(csmdir + "/cime/scripts")
 else:
     caseroot = os.path.abspath(options.caseroot)
