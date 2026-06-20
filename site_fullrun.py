@@ -1041,6 +1041,7 @@ elif options.caseroot == "":
     caseroot = os.path.abspath(csmdir + "/cime/scripts")
 else:
     caseroot = os.path.abspath(options.caseroot)
+    runcmd("mkdir -p " + caseroot)
 
 
 sitenum = 0

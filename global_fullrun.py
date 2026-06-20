@@ -820,6 +820,7 @@ if options.caseroot == "":
     caseroot = os.path.abspath(csmdir + "/cime/scripts")
 else:
     caseroot = os.path.abspath(options.caseroot)
+    os.system("mkdir -p " + caseroot)
 
 if (
     options.cruncep
