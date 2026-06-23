@@ -889,6 +889,81 @@ def runcmd(
     return result.returncode
 
 
+def check_git_status():
+    """Check if local branch is up to date with origin remote."""
+    try:
+        # Get current branch
+        result = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        branch = result.stdout.strip()
+
+        # Get local and remote HEAD SHAs
+        local_sha = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+
+        remote_sha = subprocess.run(
+            ["git", "rev-parse", f"origin/{branch}"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+
+        if local_sha != remote_sha:
+            # Check if local is behind (remote is ancestor of local would mean ahead)
+            behind_check = subprocess.run(
+                ["git", "merge-base", "--is-ancestor", local_sha, remote_sha],
+                capture_output=True,
+            )
+            if behind_check.returncode == 0:
+                return ("behind", branch)
+            else:
+                return ("diverged", branch)
+
+        return ("up-to-date", branch)
+
+    except subprocess.CalledProcessError:
+        # Not in a git repo, or remote doesn't exist, or branch not tracking
+        return (None, None)
+
+
+def handle_outdated_repo(status, branch):
+    """Interactively handle case where repo is behind origin."""
+    print(f"\n{'='*80}")
+    print(f"WARNING: Local branch '{branch}' is {status} relative to origin/{branch}")
+    print(f"{'='*80}\n")
+
+    response = input("Is this intentional? (y/n): ").strip().lower()
+
+    if response == "y":
+        print("Continuing with current local state.\n")
+        return
+
+    has_changes = input("Do you need to keep any local changes? (y/n): ").strip().lower()
+
+    print(f"\n{'='*80}")
+    if has_changes == "y":
+        print("To rebase your local changes on top of origin:")
+        print("  git fetch origin")
+        print(f"  git rebase origin/{branch}")
+        print("\nIf you encounter conflicts, resolve them and run:")
+        print("  git rebase --continue")
+    else:
+        print("To update to match origin (discards local commits):")
+        print("  git fetch origin")
+        print(f"  git reset --hard origin/{branch}")
+    print(f"{'='*80}\n")
+
+    sys.exit(0)
+
+
 # ----------------------------------------------------------
 # define function for pbs submission
 def submit(fname, submit_type="qsub", job_depend=""):
@@ -915,6 +990,13 @@ def submit(fname, submit_type="qsub", job_depend=""):
         thisjob = "0"
         runcmd("rm " + jobinfo, check=False)
     return thisjob
+
+
+# ----------------------------------------------------------
+# Check if local repo is behind origin
+git_status, git_branch = check_git_status()
+if git_status in ("behind", "diverged"):
+    handle_outdated_repo(git_status, git_branch)
 
 
 # ----------------------------------------------------------
