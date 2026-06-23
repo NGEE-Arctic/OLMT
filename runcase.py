@@ -2675,7 +2675,7 @@ for i in range(1, int(options.ninst) + 1):
         output.write(" do_budgets = .false.\n")
     # soil thermal conductivity
     if options.balland_and_arp:
-        output.write(" use_balland_and_arp = .true.")
+        output.write(" use_balland_and_arp = .true.\n")
     # snow options
     if options.dust_snow_mixing:
         output.write(" use_dust_snow_internal_mixing = .true.\n")
