@@ -9,3 +9,5 @@ mpi4py
 cftime
 configparser
 h5py
+sphinx
+sphinx_rtd_theme
