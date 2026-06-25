@@ -2,7 +2,7 @@ name: OLMT+ELM simple site test
 
 on:
     push:
-      branches: [develop]
+      branches: [develop, rich/olmt-ci-fix]
     pull_request:
       branches: [develop]
     schedule:
@@ -55,7 +55,7 @@ jobs:
           uses: actions/checkout@v6
           with:
             repository: NGEE-Arctic/E3SM
-            ref: develop
+            ref: rich/olmt-ci-fix
             path: E3SM
             submodules: recursive
 
