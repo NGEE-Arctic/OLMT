@@ -19,8 +19,8 @@ Getting Started
 
 .. code-block:: bash
 
-   git clone https://github.com/NGEE-Arctic/OLMT-unified.git
-   cd OLMT-unified
+   git clone https://github.com/NGEE-Arctic/OLMT.git
+   cd OLMT
    pip install -r requirements.txt
 
 Three-Phase BGC Workflow
