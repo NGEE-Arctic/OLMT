@@ -46,7 +46,7 @@ jobs:
         - name: Checkout OLMT repo
           uses: actions/checkout@v6
           with:
-            ref: rich/simple-era5-merge  # NOTE: This branch is temporary and will be removed once the changes are merged to develop!  The changes on this branch are needed to get the tests to run.
+            ref: develop
             path: OLMT
 
         # Note that changes in the E3SM repo could break the tests here, but this is intentional
