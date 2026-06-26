@@ -1,0 +1,289 @@
+name: OLMT+ELM NGEE Arctic extended site matrix
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: site-fullrun-matrix-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-site-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ERA5 forcing - 10 sites (excluding bayelva per user requirements)
+          - simulation: era5
+            site: AK-SP-K64
+            site_name: kougarok
+            forcing_flags: --era5
+            metdir: /home/e3smuser/inputdata/atm/datm7/era5/kg
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_kougarok-GRID_navy.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_kougarok-GRID_simyr1850_c360x720_c171002.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_kougarok-GRID_simyr1850-2015_c180423.nc
+            srcmods_loc: /home/e3smuser/OLMT/srcmods_era5cb
+          - simulation: era5
+            site: AK-BEO
+            site_name: beo
+            forcing_flags: --era5
+            metdir: /home/e3smuser/inputdata/atm/datm7/era5/utq
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_beo-GRID_navy.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_beo-GRID_simyr1850_c360x720_c171002.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_beo-GRID_simyr1850-2015_c180423.nc
+            srcmods_loc: /home/e3smuser/OLMT/srcmods_era5cb
+          - simulation: era5
+            site: AK-TL
+            site_name: teller
+            forcing_flags: --era5
+            metdir: /home/e3smuser/inputdata/atm/datm7/era5/tl
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_teller-GRID_navy.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_teller-GRID_simyr1850_c360x720_c171002.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_teller-GRID_simyr1850-2015_c180423.nc
+            srcmods_loc: /home/e3smuser/OLMT/srcmods_era5cb
+          - simulation: era5
+            site: AK-CL
+            site_name: council
+            forcing_flags: --era5
+            metdir: /home/e3smuser/inputdata/atm/datm7/era5/cnl
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_council-GRID_navy.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_council-GRID_simyr1850_c360x720_c171002.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_council-GRID_simyr1850-2015_c180423.nc
+            srcmods_loc: /home/e3smuser/OLMT/srcmods_era5cb
+          - simulation: era5
+            site: AK-TFS
+            site_name: ToolikLake
+            forcing_flags: --era5
+            metdir: /home/e3smuser/inputdata/atm/datm7/era5/tfs
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_ToolikLake-GRID.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_ToolikLake-GRID_simyr1850_c360x720_c250306.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_ToolikLake-GRID_simyr1850-2015_c250306.nc
+            srcmods_loc: /home/e3smuser/OLMT/srcmods_era5cb
+          - simulation: era5
+            site: CA-TVC
+            site_name: TrailValleyCreek
+            forcing_flags: --era5
+            metdir: /home/e3smuser/inputdata/atm/datm7/era5/tvc
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_TrailValleyCreek-GRID.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_TrailValleyCreek-GRID_simyr1850_c360x720_c250306.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_TrailValleyCreek-GRID_simyr1850-2015_c250306.nc
+            srcmods_loc: /home/e3smuser/OLMT/srcmods_era5cb
+          - simulation: era5
+            site: SE-ASRS
+            site_name: Abisko
+            forcing_flags: --era5
+            metdir: /home/e3smuser/inputdata/atm/datm7/era5/abs
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_Abisko-GRID.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_Abisko-GRID_simyr1850_c360x720_c250306.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_Abisko-GRID_simyr1850-2015_c250306.nc
+            srcmods_loc: /home/e3smuser/OLMT/srcmods_era5cb
+          - simulation: era5
+            site: RU-SI
+            site_name: SamoylovIsland
+            forcing_flags: --era5
+            metdir: /home/e3smuser/inputdata/atm/datm7/era5/si
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_SamoylovIsland-GRID.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_SamoylovIsland-GRID_simyr1850_c360x720_c250306.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_SamoylovIsland-GRID_simyr1850-2015_c250306.nc
+            srcmods_loc: /home/e3smuser/OLMT/srcmods_era5cb
+          - simulation: era5
+            site: AK-TFS-IMC
+            site_name: ImnaviatCreek
+            forcing_flags: --era5
+            metdir: /home/e3smuser/inputdata/atm/datm7/era5/ImC_wshed
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_ImnaviatCreek-GRID.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_ImnaviatCreek-GRID_simyr1850_c360x720_c250609_noshrubs.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_ImnaviatCreek-GRID_simyr1850-2015_c250609.nc
+            srcmods_loc: /home/e3smuser/OLMT/srcmods_era5cb
+          - simulation: era5
+            site: AK-TFS-UPK
+            site_name: UpperKuparuk
+            forcing_flags: --era5
+            metdir: /home/e3smuser/inputdata/atm/datm7/era5/UpK_wshed
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_UpperKuparuk-GRID.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_UpperKuparuk-GRID_simyr1850_c360x720_c250609.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_UpperKuparuk-GRID_simyr1850-2015_c250609.nc
+            srcmods_loc: /home/e3smuser/OLMT/srcmods_era5cb
+
+          # GSWP3 forcing - 9 sites (excludes imnaviat_creek and upper_kuparuk due to missing met data, includes bayelva)
+          - simulation: gswp3
+            site: AK-SP-K64
+            site_name: kougarok
+            forcing_flags: --gswp3
+            metdir: /home/e3smuser/inputdata/atm/datm7/gswp3/kg
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_kougarok-GRID_navy.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_kougarok-GRID_simyr1850_c360x720_c171002.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_kougarok-GRID_simyr1850-2015_c180423.nc
+            srcmods_loc: ""
+          - simulation: gswp3
+            site: AK-BEO
+            site_name: beo
+            forcing_flags: --gswp3
+            metdir: /home/e3smuser/inputdata/atm/datm7/gswp3/utq
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_beo-GRID_navy.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_beo-GRID_simyr1850_c360x720_c171002.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_beo-GRID_simyr1850-2015_c180423.nc
+            srcmods_loc: ""
+          - simulation: gswp3
+            site: AK-TL
+            site_name: teller
+            forcing_flags: --gswp3
+            metdir: /home/e3smuser/inputdata/atm/datm7/gswp3/tl
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_teller-GRID_navy.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_teller-GRID_simyr1850_c360x720_c171002.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_teller-GRID_simyr1850-2015_c180423.nc
+            srcmods_loc: ""
+          - simulation: gswp3
+            site: AK-CL
+            site_name: council
+            forcing_flags: --gswp3
+            metdir: /home/e3smuser/inputdata/atm/datm7/gswp3/cnl
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_council-GRID_navy.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_council-GRID_simyr1850_c360x720_c171002.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_council-GRID_simyr1850-2015_c180423.nc
+            srcmods_loc: ""
+          - simulation: gswp3
+            site: AK-TFS
+            site_name: ToolikLake
+            forcing_flags: --gswp3
+            metdir: /home/e3smuser/inputdata/atm/datm7/gswp3/tfs
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_ToolikLake-GRID.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_ToolikLake-GRID_simyr1850_c360x720_c250306.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_ToolikLake-GRID_simyr1850-2015_c250306.nc
+            srcmods_loc: ""
+          - simulation: gswp3
+            site: CA-TVC
+            site_name: TrailValleyCreek
+            forcing_flags: --gswp3
+            metdir: /home/e3smuser/inputdata/atm/datm7/gswp3/tvc
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_TrailValleyCreek-GRID.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_TrailValleyCreek-GRID_simyr1850_c360x720_c250306.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_TrailValleyCreek-GRID_simyr1850-2015_c250306.nc
+            srcmods_loc: ""
+          - simulation: gswp3
+            site: SE-ASRS
+            site_name: Abisko
+            forcing_flags: --gswp3
+            metdir: /home/e3smuser/inputdata/atm/datm7/gswp3/abs
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_Abisko-GRID.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_Abisko-GRID_simyr1850_c360x720_c250306.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_Abisko-GRID_simyr1850-2015_c250306.nc
+            srcmods_loc: ""
+          - simulation: gswp3
+            site: NO-BS
+            site_name: SJ-BlvBayelva
+            forcing_flags: --gswp3
+            metdir: /home/e3smuser/inputdata/atm/datm7/gswp3/bs
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_SJ-BlvBayelva-GRID.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_SJ-BlvBayelva-GRID_simyr1850_c360x720_c250306.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_SJ-BlvBayelva-GRID_simyr1850-2015_c250306.nc
+            srcmods_loc: ""
+          - simulation: gswp3
+            site: RU-SI
+            site_name: SamoylovIsland
+            forcing_flags: --gswp3
+            metdir: /home/e3smuser/inputdata/atm/datm7/gswp3/si
+            domainfile: /home/e3smuser/inputdata/share/domains/domain.clm/domain.lnd.1x1pt_SamoylovIsland-GRID.nc
+            surffile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/surfdata_1x1pt_SamoylovIsland-GRID_simyr1850_c360x720_c250306.nc
+            landusefile: /home/e3smuser/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_1x1pt_SamoylovIsland-GRID_simyr1850-2015_c250306.nc
+            srcmods_loc: ""
+
+    steps:
+      - name: Ensure workflow triggered from branch
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "::error::This workflow must be triggered from a branch, not a tag."
+            exit 1
+          fi
+
+      - name: Verify E3SM branch exists
+        run: |
+          if ! git ls-remote --exit-code --heads https://github.com/NGEE-Arctic/E3SM.git ${{ github.ref_name }} | grep -q ${{ github.ref_name }}; then
+            echo "::error::E3SM branch '${{ github.ref_name }}' does not exist in NGEE-Arctic/E3SM."
+            echo "::error::Create a matching E3SM branch before running this workflow."
+            exit 1
+          fi
+
+      - name: Checkout OLMT repo
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+          path: OLMT
+
+      - name: Checkout NGEE-Arctic/E3SM matching branch
+        uses: actions/checkout@v7
+        with:
+          repository: NGEE-Arctic/E3SM
+          ref: ${{ github.ref_name }}
+          path: E3SM
+          submodules: recursive
+
+      - name: Prepare output dir
+        run: mkdir -p ${{ github.workspace }}/output
+
+      - name: Clone data repo
+        uses: actions/checkout@v7
+        with:
+          repository: NGEE-Arctic/field-to-model-inputdata
+          ref: 5218acbdbcfd2a2c8b6b2d905cb65a1ab05f6012
+          path: field-to-model-inputdata
+          fetch-depth: 0
+
+      - name: Data repo E3SM sparse checkout
+        run: |
+          cd field-to-model-inputdata
+          git sparse-checkout init --cone
+          git sparse-checkout set E3SM
+          find ${{ github.workspace }}/field-to-model-inputdata -name "*.gz" -exec gunzip -v {} +
+
+      - name: Run ${{ matrix.simulation }} test for ${{ matrix.site_name }}
+        run: |
+          set -e
+
+          # Build docker command with conditional srcmods_loc
+          DOCKER_CMD="docker run --rm \
+            -v ${{ github.workspace }}/OLMT:/home/e3smuser/OLMT \
+            -v ${{ github.workspace }}/E3SM:/home/e3smuser/E3SM \
+            -v ${{ github.workspace }}/field-to-model-inputdata/E3SM:/home/e3smuser/inputdata \
+            -v ${{ github.workspace }}/output:/home/e3smuser/output \
+            -w /home/e3smuser/OLMT \
+            rfiorella/model-containers:e3sm-openmpi-dev-latest \
+            ./site_fullrun.py \
+            --machine docker \
+            --compiler gnu --mpilib openmpi \
+            --site ${{ matrix.site }} --sitegroup NGEEArctic \
+            --cpl_bypass ${{ matrix.forcing_flags }} \
+            --metdir ${{ matrix.metdir }} \
+            --domainfile ${{ matrix.domainfile }} \
+            --surffile ${{ matrix.surffile }} \
+            --landusefile ${{ matrix.landusefile }} \
+            --nofire --no_budgets --nopointdata \
+            --model_root /home/e3smuser/E3SM \
+            --runroot /home/e3smuser/output \
+            --ccsm_input /home/e3smuser/inputdata"
+
+          # Add srcmods_loc if specified
+          if [ -n "${{ matrix.srcmods_loc }}" ]; then
+            DOCKER_CMD="$DOCKER_CMD --srcmods_loc ${{ matrix.srcmods_loc }}"
+          fi
+
+          # Add spinup and transient years
+          DOCKER_CMD="$DOCKER_CMD --nyears_ad_spinup 1 --nyears_final_spinup 1 --nyears_transient 1"
+
+          # Check the command
+          echo $DOCKER_CMD
+
+          # Execute the command
+          eval $DOCKER_CMD
+
+      - name: Upload ${{ matrix.simulation }}-${{ matrix.site_name }} logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.simulation }}-${{ matrix.site_name }}-logs
+          retention-days: 1
+          path: |
+            ${{ github.workspace }}/output/**/bld/*.bldlog.*
+            ${{ github.workspace }}/output/**/run/*.log.*
+            ${{ github.workspace }}/output/**/run/*_in
