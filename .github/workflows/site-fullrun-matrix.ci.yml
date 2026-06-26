@@ -269,7 +269,7 @@ jobs:
           fi
 
           # Add spinup and transient years
-          DOCKER_CMD="$DOCKER_CMD --nyears_ad_spinup 1 --nyears_final_spinup 1 --nyears_transient 1"
+          DOCKER_CMD="$DOCKER_CMD --nyears_ad_spinup 50 --nyears_final_spinup 50 --nyears_transient 50"
 
           # Check the command
           echo $DOCKER_CMD
