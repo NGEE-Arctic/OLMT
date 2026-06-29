@@ -8,3 +8,14 @@ final spinup:  Final spinup to equilibrate biomass and nutrient pools
 transient:     1850-present day simulation with transient trace gas concentrations, land use, atmospheric forcing
 
 This utility will automatically create surface and domain files using an existing global file at the specified resolution (default:  hcru_hcru).
+
+## Documentation
+
+Full documentation is available at: https://ngee-arctic.github.io/OLMT-unified/
+
+To build documentation locally:
+```bash
+cd docs
+make html
+# Open docs/_build/html/index.html in browser
+```
