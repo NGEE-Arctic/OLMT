@@ -889,6 +889,181 @@ def runcmd(
     return result.returncode
 
 
+def check_git_status(repo_path=None):
+    """Check if local branch is up to date with origin remote.
+
+    Args:
+        repo_path: Path to git repository. If None, checks current directory.
+    """
+    git_args = ["-C", repo_path] if repo_path else []
+
+    try:
+        # Get current branch
+        result = subprocess.run(
+            ["git"] + git_args + ["rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        branch = result.stdout.strip()
+
+        # Get local and remote HEAD SHAs
+        local_sha = subprocess.run(
+            ["git"] + git_args + ["rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+
+        remote_sha = subprocess.run(
+            ["git"] + git_args + ["rev-parse", f"origin/{branch}"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+
+        if local_sha != remote_sha:
+            # Check if local is behind (remote is ancestor of local would mean ahead)
+            behind_check = subprocess.run(
+                ["git"] + git_args + ["merge-base", "--is-ancestor", local_sha, remote_sha],
+                capture_output=True,
+            )
+            if behind_check.returncode == 0:
+                return ("behind", branch)
+            else:
+                return ("diverged", branch)
+
+        return ("up-to-date", branch)
+
+    except subprocess.CalledProcessError:
+        # Not in a git repo, or remote doesn't exist, or branch not tracking
+        return (None, None)
+
+
+def check_submodule_status(repo_path):
+    """Check if any submodules are behind origin.
+
+    Args:
+        repo_path: Path to parent git repository
+
+    Returns:
+        List of tuples (submodule_path, status, branch) for out-of-sync submodules
+    """
+    try:
+        # Get list of submodules
+        result = subprocess.run(
+            ["git", "-C", repo_path, "config", "--file", ".gitmodules", "--name-only", "--get-regexp", "path"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        if not result.stdout.strip():
+            return []
+
+        # Extract submodule paths
+        submodule_paths = []
+        for line in result.stdout.strip().split("\n"):
+            # Format is "submodule.<name>.path"
+            name = line.split(".")[1]
+            path_result = subprocess.run(
+                ["git", "-C", repo_path, "config", "--file", ".gitmodules", "--get", f"submodule.{name}.path"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            submodule_paths.append(path_result.stdout.strip())
+
+        # Check each submodule
+        outdated = []
+        for submod_path in submodule_paths:
+            full_path = os.path.join(repo_path, submod_path)
+            if not os.path.exists(full_path):
+                continue
+
+            status, branch = check_git_status(full_path)
+            if status in ("behind", "diverged"):
+                outdated.append((submod_path, status, branch))
+
+        return outdated
+
+    except subprocess.CalledProcessError:
+        # No submodules or not a git repo
+        return []
+
+
+def handle_outdated_repo(status, branch, repo_name="Local", repo_path=None):
+    """Interactively handle case where repo is behind origin.
+
+    Args:
+        status: Git status string ("behind" or "diverged")
+        branch: Branch name
+        repo_name: Human-readable repository name for messages
+        repo_path: Path to repository (for git -C commands). If None, uses cwd.
+    """
+    print(f"\n{'='*80}")
+    print(f"WARNING: {repo_name} branch '{branch}' is {status} relative to origin/{branch}")
+    if repo_path:
+        print(f"Repository: {repo_path}")
+    print(f"{'='*80}\n")
+
+    response = input("Is this intentional? (y/n): ").strip().lower()
+
+    if response == "y":
+        print("Continuing with current local state.\n")
+        return
+
+    has_changes = input("Do you need to keep any local changes? (y/n): ").strip().lower()
+
+    print(f"\n{'='*80}")
+    cd_prefix = f"cd {repo_path} && " if repo_path else ""
+    if has_changes == "y":
+        print("To rebase your local changes on top of origin:")
+        print(f"  {cd_prefix}git fetch origin")
+        print(f"  {cd_prefix}git rebase origin/{branch}")
+        print("\nIf you encounter conflicts, resolve them and run:")
+        print(f"  {cd_prefix}git rebase --continue")
+    else:
+        print("To update to match origin (discards local commits):")
+        print(f"  {cd_prefix}git fetch origin")
+        print(f"  {cd_prefix}git reset --hard origin/{branch}")
+    print(f"{'='*80}\n")
+
+    sys.exit(0)
+
+
+def handle_outdated_submodules(outdated_submodules, repo_path):
+    """Interactively handle case where submodules are behind origin.
+
+    Args:
+        outdated_submodules: List of tuples (submodule_path, status, branch)
+        repo_path: Path to parent repository
+    """
+    print(f"\n{'='*80}")
+    print(f"WARNING: {len(outdated_submodules)} E3SM submodule(s) out of sync:")
+    for submod_path, status, branch in outdated_submodules:
+        print(f"  - {submod_path}: {status} on {branch}")
+    print(f"Repository: {repo_path}")
+    print(f"{'='*80}\n")
+
+    response = input("Is this intentional? (y/n): ").strip().lower()
+
+    if response == "y":
+        print("Continuing with current submodule state.\n")
+        return
+
+    print(f"\n{'='*80}")
+    print("To update all submodules to match their remotes:")
+    print(f"  cd {repo_path}")
+    print("  git submodule update --remote")
+    print("\nTo update and reset (discards local submodule changes):")
+    print(f"  cd {repo_path}")
+    print("  git submodule foreach 'git fetch origin && git reset --hard origin/$(git rev-parse --abbrev-ref HEAD)'")
+    print(f"{'='*80}\n")
+
+    sys.exit(0)
+
+
 # ----------------------------------------------------------
 # define function for pbs submission
 def submit(fname, submit_type="qsub", job_depend=""):
@@ -918,6 +1093,13 @@ def submit(fname, submit_type="qsub", job_depend=""):
 
 
 # ----------------------------------------------------------
+# Check if local OLMT repo is behind origin
+git_status, git_branch = check_git_status()
+if git_status in ("behind", "diverged"):
+    handle_outdated_repo(git_status, git_branch, repo_name="OLMT")
+
+
+# ----------------------------------------------------------
 # Set default model root
 if options.csmdir == "":
     if os.path.exists("../E3SM"):
@@ -929,6 +1111,21 @@ if options.csmdir == "":
 elif not os.path.exists(options.csmdir):
     print("Error:  Model root " + options.csmdir + " does not exist.")
     sys.exit(1)
+
+# Check if E3SM/CESM repo is behind origin
+e3sm_git_status, e3sm_git_branch = check_git_status(options.csmdir)
+if e3sm_git_status in ("behind", "diverged"):
+    handle_outdated_repo(
+        e3sm_git_status,
+        e3sm_git_branch,
+        repo_name="E3SM/CESM",
+        repo_path=options.csmdir,
+    )
+
+# Check if E3SM/CESM submodules are behind origin
+outdated_submodules = check_submodule_status(options.csmdir)
+if outdated_submodules:
+    handle_outdated_submodules(outdated_submodules, options.csmdir)
 
 # check whether model named clm or elm
 if os.path.exists(options.csmdir + "/components/elm"):
