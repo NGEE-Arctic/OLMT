@@ -873,13 +873,27 @@ def runcmd(
     if echo:
         print(cmd)
 
-    result = subprocess.run(
-        cmd,
-        shell=True,
-        check=check,
-        text=True,
-        capture_output=True,
-    )
+    try:
+        result = subprocess.run(
+            cmd,
+            shell=True,
+            check=check,
+            text=True,
+            capture_output=True,
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"\n{'='*80}")
+        print(f"ERROR: Command failed with exit code {e.returncode}")
+        print(f"Command: {cmd}")
+        print(f"{'='*80}")
+        if e.stdout:
+            print("STDOUT:")
+            print(e.stdout)
+        if e.stderr:
+            print("STDERR:")
+            print(e.stderr)
+        print(f"{'='*80}\n")
+        sys.exit(e.returncode)
 
     # CIME changes an execution error in case.submit to a warning and continues,
     # so we need to check stderr for the error message and abort if it is present
@@ -1023,10 +1037,11 @@ else:
 if options.caseroot == options.runroot:
     caseroot = os.path.abspath(options.caseroot) + "/cime_case_dirs"
     runcmd("mkdir -p " + caseroot)
-elif options.caseroot == "" or not os.path.exists(options.caseroot):
+elif options.caseroot == "":
     caseroot = os.path.abspath(csmdir + "/cime/scripts")
 else:
     caseroot = os.path.abspath(options.caseroot)
+    runcmd("mkdir -p " + caseroot)
 
 
 sitenum = 0
@@ -1171,12 +1186,19 @@ for row in AFdatareader:
         # ---------------- build base command for all calls to runcase.py -----------------------------
 
         # print year_align, fsplen
+        # For machines without schedulers (docker/ubuntu/mac), let runcase.py submit directly
+        no_submit_flag = ""
+        if not ("docker" in options.machine or "ubuntu" in options.machine or "mac" in options.machine):
+            no_submit_flag = " --no_submit"
+
         basecmd = (
             "python runcase.py --site "
             + site
             + " --ccsm_input "
             + os.path.abspath(ccsm_input)
-            + " --rmold --no_submit --sitegroup "
+            + " --rmold"
+            + no_submit_flag
+            + " --sitegroup "
             + options.sitegroup
             + " --options_log_json "
             + options.options_log_json
@@ -1981,7 +2003,7 @@ for row in AFdatareader:
                 mysubmit_type = ""
             if "ees" in options.machine:
                 mysubmit_type = ""
-            if (sitenum % npernode) == 0:
+            if (sitenum % npernode) == 0 and mysubmit_type != "":
                 mycase_firstsite = ad_case_firstsite
                 if options.noad:
                     mycase_firstsite = fin_case_firstsite
@@ -2480,7 +2502,7 @@ for row in AFdatareader:
 
 
 # Submit PBS scripts for single/multi-site simulations on 1 node
-if not options.no_submit and options.ensemble_file == "":
+if not options.no_submit and options.ensemble_file == "" and mysubmit_type != "":
     for g in range(0, int(groupnum) + 1):
         job_depend_run = ""
         for thiscase in case_list:
