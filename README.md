@@ -11,7 +11,8 @@ Fengming Yuan (yuanf@ornl.gov)
 Rich Fiorella (rfiorella@lanl.gov)
 Matt Hoffman (mhoffman@lanl.gov)
 
-An additional note that this is OLMT "classic" that NGEE Arctic. A new
+An additional note that this is OLMT "classic" that NGEE Arctic is using
+to maintain existing workflows. A new
 version of OLMT exists here: https://github.com/dmricciuto/elm-olmt
 
 
