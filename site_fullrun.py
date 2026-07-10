@@ -1024,7 +1024,7 @@ def handle_outdated_repo(status, branch, repo_name="Local", repo_path=None):
         print("\nIf you encounter conflicts, resolve them and run:")
         print(f"  {cd_prefix}git rebase --continue")
     else:
-        print("To update to match origin (discards local commits):")
+        print("To update to match origin (discards local commits and uncommitted changes):")
         print(f"  {cd_prefix}git fetch origin")
         print(f"  {cd_prefix}git reset --hard origin/{branch}")
     print(f"{'='*80}\n")
