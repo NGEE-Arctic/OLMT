@@ -14,3 +14,8 @@ __pycache__
 
 # user defined files
 .DS_Store
+
+# Sphinx documentation build artifacts
+docs/_build/
+docs/_static/
+docs/_templates/
