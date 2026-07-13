@@ -178,6 +178,14 @@ parser.add_option(
     help="mpi library (openmpi, mpich, ibm, mpi-serial)",
 )
 parser.add_option(
+    "--driver",
+    dest="driver",
+    default="mct",
+    type="choice",
+    choices=("mct", "moab"),
+    help="Coupling driver to use: mct or moab (default: %default)",
+)
+parser.add_option(
     "--diags",
     dest="diags",
     default=False,
@@ -1871,6 +1879,9 @@ timestr = (
 cmd = (
     "./create_newcase --case "
     + casedir
+    + " --driver "
+    + options.driver
+    + " "
     + " --mach "
     + options.machine
     + " --compset "
