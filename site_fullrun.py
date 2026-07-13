@@ -134,6 +134,14 @@ parser.add_option(
     help="mpi library (openmpi, mpich, ibm, mpi-serial)",
 )
 parser.add_option(
+    "--driver",
+    dest="driver",
+    default="mct",
+    type="choice",
+    choices=("mct", "moab"),
+    help="Coupling driver to use: mct or moab (default: %default)",
+)
+parser.add_option(
     "--debugq",
     dest="debug",
     default=False,
@@ -1327,6 +1335,7 @@ for row in AFdatareader:
         if options.compiler != "":
             basecmd = basecmd + " --compiler " + options.compiler
         basecmd = basecmd + " --mpilib " + options.mpilib
+        basecmd = basecmd + " --driver " + options.driver
         basecmd = basecmd + " --pio_version " + options.pio_version
         basecmd = basecmd + " --caseroot " + caseroot
         basecmd = basecmd + " --runroot " + runroot
