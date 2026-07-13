@@ -429,9 +429,16 @@ CIME Integration
 
 Line 1871–1895. Constructs the ``create_newcase`` command with::
 
-    ./create_newcase --case <casedir> --mach <machine> --compset <compset> --res <res> \
+    ./create_newcase --case <casedir> --driver mct --mach <machine> --compset <compset> --res <res> \
                      --mpilib <mpilib> --walltime <timestr> --handle-preexisting-dirs u \
                      [--run-unsupported] [--project <project>] [--compiler <compiler>]
+
+Note that as of July 2026, the use of the MCT driver is hardcoded.  This is to avoid transitioning
+to the MOAB driver that E3SM made default in June 2026.  The E3SM project tested the MOAB driver
+thoroughly to ensure it behaves bit-for-bit with the MCT driver, but the MOAB driver is not
+compiled as part of the E3SM build process and is instead required to pre-exist as a compiled
+library.  This complication is undesirable for OLMT usage.  This decision may be revisited in
+the future if MOAB features are required or MCT support stops.
 
 ``xmlchange`` Variables
 ------------------------

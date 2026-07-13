@@ -1871,6 +1871,7 @@ timestr = (
 cmd = (
     "./create_newcase --case "
     + casedir
+    + " --driver mct "
     + " --mach "
     + options.machine
     + " --compset "
