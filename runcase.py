@@ -864,11 +864,12 @@ parser.add_option(
     action="store_true",
 )
 parser.add_option(
-    "--balland_and_arp",
-    dest="balland_and_arp",
-    default=False,
-    help="Use Balland and Arp (2005) soil thermal conductivity model",
-    action="store_true",
+    "--soil_thermal_conductivity_model",
+    dest="soil_thermal_conductivity_model",
+    default="farouki",
+    type="choice",
+    choices=["farouki", "balland_and_arp"],
+    help="Soil thermal conductivity model: 'farouki' (Farouki 1981, default) or 'balland_and_arp' (Balland and Arp 2005)",
 )
 
 # Changed by Ming for mesabi
@@ -2685,8 +2686,8 @@ for i in range(1, int(options.ninst) + 1):
     if options.no_budgets:
         output.write(" do_budgets = .false.\n")
     # soil thermal conductivity
-    if options.balland_and_arp:
-        output.write(" use_balland_and_arp = .true.\n")
+    if options.soil_thermal_conductivity_model != "farouki":
+        output.write(f" soil_thermal_conductivity_model = '{options.soil_thermal_conductivity_model}'\n")
     # snow options
     if options.dust_snow_mixing:
         output.write(" use_dust_snow_internal_mixing = .true.\n")
