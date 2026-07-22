@@ -629,11 +629,12 @@ parser.add_option(
     action="store_true",
 )
 parser.add_option(
-    "--balland_and_arp",
-    dest="balland_and_arp",
-    default=False,
-    help="Use Balland and Arp (2005) soil thermal conductivity model",
-    action="store_true",
+    "--soil_thermal_conductivity_model",
+    dest="soil_thermal_conductivity_model",
+    default="farouki",
+    type="choice",
+    choices=["farouki", "balland_and_arp"],
+    help="Soil thermal conductivity model: 'farouki' (Farouki 1981, default) or 'balland_and_arp' (Balland and Arp 2005)",
 )
 
 # model output options
@@ -1358,8 +1359,8 @@ for row in AFdatareader:
             basecmd = basecmd + " --use_hydrstress"
         if options.spruce_treatments:
             basecmd = basecmd + " --spruce_treatments"
-        if options.balland_and_arp:
-            basecmd = basecmd + " --balland_and_arp"
+        if options.soil_thermal_conductivity_model != "farouki":
+            basecmd = basecmd + f" --soil_thermal_conductivity_model {options.soil_thermal_conductivity_model}"
         if myproject != "":
             basecmd = basecmd + " --project " + myproject
         if options.domainfile != "":
