@@ -636,6 +636,20 @@ parser.add_option(
     choices=["farouki", "balland_and_arp"],
     help="Soil thermal conductivity model: 'farouki' (Farouki 1981, default) or 'balland_and_arp' (Balland and Arp 2005)",
 )
+#GAM
+parser.add_option(
+    "--shrub_snow_redist_alpha",
+    dest="shrub_snow_redist_alpha",
+    default=None,
+    type="float",
+    help=(
+        "Shrub snow redistribution alpha. "
+        "If unset or negative: off/no separate shrub-grass columns. "
+        "If alpha = 0: separate shrub/grass columns but no snow redistribution. "
+        "If alpha > 0: separate shrub/grass columns with snow redistribution."
+    ),
+)
+#GAM end
 
 # model output options
 parser.add_option(
@@ -867,6 +881,7 @@ def _parse_cmd(cmd_i):
     return result
 
 
+# GAM update runcmd to output log stream
 def runcmd(
     cmd,
     echo=True,
@@ -877,39 +892,40 @@ def runcmd(
     cmd_log = cmd
     if any([x in cmd.split(" ")[0] for x in [".py", "newcase"]]):
         cmd_log = _parse_cmd(cmd)
+
     _write_cmd(cmd_log, tag, lineno)
 
     if echo:
-        print(cmd)
+        print(cmd, flush=True)
 
-    try:
-        result = subprocess.run(
-            cmd,
-            shell=True,
-            check=check,
-            text=True,
-            capture_output=True,
-        )
-    except subprocess.CalledProcessError as e:
-        print(f"\n{'='*80}")
-        print(f"ERROR: Command failed with exit code {e.returncode}")
-        print(f"Command: {cmd}")
-        print(f"{'='*80}")
-        if e.stdout:
-            print("STDOUT:")
-            print(e.stdout)
-        if e.stderr:
-            print("STDERR:")
-            print(e.stderr)
-        print(f"{'='*80}\n")
-        sys.exit(e.returncode)
+    proc = subprocess.Popen(
+        cmd,
+        shell=True,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
+    )
+
+    output_lines = []
+    for line in proc.stdout:
+        print(line, end="", flush=True)
+        output_lines.append(line)
+
+    returncode = proc.wait()
+    output_text = "".join(output_lines)
 
     # CIME changes an execution error in case.submit to a warning and continues,
     # so we need to check stderr for the error message and abort if it is present
     # See: https://github.com/ESMCI/cime/blob/cime6.1.176/CIME/XML/env_batch.py#L1027-L1029
-    if check == True and "Exception from " in result.stderr:
+    if check and "Exception from " in output_text:
         sys.exit(f"Error in run command {cmd}")
-    return result.returncode
+
+    if check and returncode != 0:
+        raise subprocess.CalledProcessError(returncode, cmd, output=output_text)
+    
+    return returncode
+# GAM end
 
 
 # ----------------------------------------------------------
@@ -1361,6 +1377,10 @@ for row in AFdatareader:
             basecmd = basecmd + " --spruce_treatments"
         if options.soil_thermal_conductivity_model != "farouki":
             basecmd = basecmd + f" --soil_thermal_conductivity_model {options.soil_thermal_conductivity_model}"
+        #GAM
+        if options.shrub_snow_redist_alpha is not None:
+            basecmd = basecmd + " --shrub_snow_redist_alpha %.6f" % options.shrub_snow_redist_alpha
+        #GAM end
         if myproject != "":
             basecmd = basecmd + " --project " + myproject
         if options.domainfile != "":

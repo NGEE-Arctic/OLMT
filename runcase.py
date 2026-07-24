@@ -872,6 +872,21 @@ parser.add_option(
     help="Soil thermal conductivity model: 'farouki' (Farouki 1981, default) or 'balland_and_arp' (Balland and Arp 2005)",
 )
 
+#GAM
+parser.add_option(
+    "--shrub_snow_redist_alpha",
+    dest="shrub_snow_redist_alpha",
+    default=None,
+    type="float",
+    help=(
+        "Shrub snow redistribution alpha. "
+        "If unset or negative: off/no separate shrub-grass columns. "
+        "If alpha = 0: separate shrub/grass columns but no snow redistribution. "
+        "If alpha > 0: separate shrub/grass columns with snow redistribution."
+    ),
+)
+#GAM end
+
 # Changed by Ming for mesabi
 parser.add_option(
     "--archiveroot",
@@ -2565,25 +2580,28 @@ for i in range(1, int(options.ninst) + 1):
             else:
                 output.write(" hist_nhtfrq = " + str(options.hist_nhtfrq) + "\n")
 
+#GAM
     if options.hist_vars != "":
         output.write(" hist_empty_htapes = .true.\n")
-        myhistvars = options.hist_vars.split(",")
-        output.write(" hist_fincl1 = '" + options.hist_vars + "'\n")
-        # read hist_vars file
-        # hvars_file = open(hist_vars)
-        myline = " hist_fincl1 = "
-        # line2 = 0
-        # for s2 in hvars_file:
-        #    if line2 ==0:
-        #        myline = myline+"'"+s2.strip()+"'"
-        #    else:
-        #        myline = myline+",'"+s2.strip()+"'"
-        #    line2=line2+1
-        # hvars_file.close()
-        for v in myhistvars:
-            myline = myline + "'" + v.strip() + "'"
-        myline = myline + "\n"
-        output.write(myline + "\n")
+        myhistvars = [v.strip() for v in options.hist_vars.split(",") if v.strip()]
+        output.write(" hist_fincl1 = " + ",".join(["'" + v + "'" for v in myhistvars]) + "\n")
+    else:
+        extra_h0_vars = ["SNO_TK", "SNO_T", "SNO_BW", "SNO_Z",'XMF','TINC','SUPERCOOL','SMP_I','TK','TK_H2OSFC','HK', 'ALTMAX',
+                         'TG','TSA','SNOW', 'RAIN','QSNOMELT','SOILWATER_10CM','SOILICE','SOILLIQ','H2OSOI','QRUNOFF','QOVER',
+                         'TWS','ZWT','WA','QSOIL','QDRAI', 'EFLX_LH_TOT','FSH','FGR','FSA','SNOWDP','FSNO','H2OSFC','H2OSFC_P',
+                         'INT_SNOW','GC_HEAT1','LIQUID_WATER_TEMP1','GC_LIQ1','GC_ICE1','FROST_TABLE',
+                         'FSAT','ZWT_PERCH','SMP','SOILPSI','FGR12','FGR_SOIL_R','FGR0_SOIL','FGR0_SNOW','FGR0_H2OSFC']
+        output.write(" hist_fincl1 = " + ",".join(["'" + v + "'" for v in extra_h0_vars]) + "\n")
+
+    #GAM add column-level h1 output for when using shrub_snow_redist_alpha
+    if ("20TR" in compset or options.istrans) and (options.shrub_snow_redist_alpha is not None):
+        output.write(" hist_fincl2 = 'H2OSNO','SNOW_DEPTH','SNO_TK','SNO_T','SNO_BW','SNOW','FSNO','RAIN','QSNOMELT','TSOI','TK','TG','H2OSOI','QRUNOFF','QOVER','FROST_TABLE','ALT','FSDS','FSR','HTOP','GPP','TOTECOSYSC','TOTVEGC','TOTLITC','TOTSOMC','TLAI','ELAI','TSAI','ESAI','SNOW_REDIS_FACTOR','SNOW_ATM_COL'\n")
+        output.write(" hist_nhtfrq = -24,-24\n")          # h0 daily, h1 daily
+        output.write(" hist_mfilt = 365,365\n")           # one yearly file, daily samples
+        output.write(" hist_type1d_pertape = 'GRID','COLS'\n")
+        output.write(" hist_dov2xy = .true.,.false.\n")   # h0 gridded, h1 native column vector
+
+#GAM end
 
     if options.spinup_vars and ("20TR" not in compset) and (not options.istrans):
         output.write(" hist_empty_htapes = .true.\n")
@@ -2688,6 +2706,9 @@ for i in range(1, int(options.ninst) + 1):
     # soil thermal conductivity
     if options.soil_thermal_conductivity_model != "farouki":
         output.write(f" soil_thermal_conductivity_model = '{options.soil_thermal_conductivity_model}'\n")
+    #GAM shrub snow redistribution
+    if options.shrub_snow_redist_alpha is not None:
+        output.write(" shrub_snow_redist_alpha = %.6f\n" % options.shrub_snow_redist_alpha)
     # snow options
     if options.dust_snow_mixing:
         output.write(" use_dust_snow_internal_mixing = .true.\n")
