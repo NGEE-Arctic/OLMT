@@ -833,6 +833,14 @@ parser.add_option(
     action="store_true",
     help="Do not execute commands",
 )
+parser.add_option(
+    "--skip_version_check",
+    dest="skip_version_check",
+    default=False,
+    action="store_true",
+    help="Skip checking whether OLMT/E3SM repos are behind their remotes "
+    "(useful for local development where being ahead of origin is intentional)",
+)
 (options, args) = parser.parse_args()
 
 
@@ -928,6 +936,290 @@ def runcmd(
 # GAM end
 
 
+# Statuses from check_git_status that warrant interactive resolution because the
+# local tree is behind or has diverged from origin.
+ACTIONABLE_GIT_STATUSES = ("behind", "diverged")
+
+# Statuses where a comparison against origin could not be made (or where being
+# out of sync is expected, e.g. "ahead" during local development). These are
+# surfaced as non-fatal warnings rather than silently ignored.
+GIT_SKIP_REASONS = {
+    "ahead": "local branch is ahead of origin (unpushed commits)",
+    "detached": "HEAD is detached; no branch to compare against origin",
+    "no-commits": "repository has no commits yet",
+    "no-remote": "no 'origin' remote is configured",
+    "no-upstream-branch": "origin has no branch with this name",
+    "not-a-git-repo": "path is not a git repository",
+}
+
+
+def check_git_status(repo_path=None):
+    """Check if local branch is up to date with origin remote.
+
+    Args:
+        repo_path: Path to git repository. If None, checks current directory.
+
+    Returns:
+        Tuple (status, branch). ``status`` is one of:
+          - "up-to-date": local matches origin/<branch>
+          - "behind":     local is an ancestor of origin/<branch>
+          - "ahead":      origin/<branch> is an ancestor of local (unpushed commits)
+          - "diverged":   neither is an ancestor of the other
+          - "not-a-git-repo":     repo_path is not inside a git work tree
+          - "detached":           HEAD is detached (no branch to compare)
+          - "no-commits":         repo has no commits yet (unborn HEAD)
+          - "no-remote":          no "origin" remote is configured
+          - "no-upstream-branch": origin exists but has no branch of this name
+        ``branch`` is the branch name where known, otherwise None.
+    """
+    git_args = ["-C", repo_path] if repo_path else []
+
+    # Confirm this is a git work tree first; a non-zero exit means it isn't.
+    inside_tree = subprocess.run(
+        ["git"] + git_args + ["rev-parse", "--is-inside-work-tree"],
+        capture_output=True,
+        text=True,
+    )
+    if inside_tree.returncode != 0:
+        return ("not-a-git-repo", None)
+
+    # Get the current branch via symbolic-ref: it names the branch even on an
+    # unborn HEAD (no commits yet) and returns non-zero only for detached HEAD.
+    branch_result = subprocess.run(
+        ["git"] + git_args + ["symbolic-ref", "-q", "--short", "HEAD"],
+        capture_output=True,
+        text=True,
+    )
+    if branch_result.returncode != 0:
+        return ("detached", None)
+    branch = branch_result.stdout.strip()
+
+    # Get local HEAD SHA. Failure (unborn branch) means no commits yet.
+    local_result = subprocess.run(
+        ["git"] + git_args + ["rev-parse", "--verify", "-q", "HEAD"],
+        capture_output=True,
+        text=True,
+    )
+    if local_result.returncode != 0:
+        return ("no-commits", branch)
+    local_sha = local_result.stdout.strip()
+
+    # Get remote-tracking SHA. Failure means we can't compare; figure out why.
+    remote_result = subprocess.run(
+        ["git"] + git_args + ["rev-parse", f"origin/{branch}"],
+        capture_output=True,
+        text=True,
+    )
+    if remote_result.returncode != 0:
+        remotes = subprocess.run(
+            ["git"] + git_args + ["remote"],
+            capture_output=True,
+            text=True,
+        ).stdout.split()
+        if "origin" not in remotes:
+            return ("no-remote", branch)
+        return ("no-upstream-branch", branch)
+    remote_sha = remote_result.stdout.strip()
+
+    if local_sha == remote_sha:
+        return ("up-to-date", branch)
+
+    # local is an ancestor of remote -> behind; remote ancestor of local -> ahead.
+    local_ancestor_of_remote = (
+        subprocess.run(
+            ["git"] + git_args + ["merge-base", "--is-ancestor", local_sha, remote_sha],
+            capture_output=True,
+        ).returncode
+        == 0
+    )
+    if local_ancestor_of_remote:
+        return ("behind", branch)
+
+    remote_ancestor_of_local = (
+        subprocess.run(
+            ["git"] + git_args + ["merge-base", "--is-ancestor", remote_sha, local_sha],
+            capture_output=True,
+        ).returncode
+        == 0
+    )
+    if remote_ancestor_of_local:
+        return ("ahead", branch)
+
+    return ("diverged", branch)
+
+
+def check_submodule_status(repo_path):
+    """Check if any submodules are behind origin.
+
+    Args:
+        repo_path: Path to parent git repository
+
+    Returns:
+        List of tuples (submodule_path, status, branch) for every submodule
+        whose status is not "up-to-date". Callers use evaluate_submodule_status
+        to split these into actionable divergence vs. non-fatal skip warnings.
+    """
+    try:
+        # Get list of submodules
+        result = subprocess.run(
+            ["git", "-C", repo_path, "config", "--file", ".gitmodules", "--name-only", "--get-regexp", "path"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        if not result.stdout.strip():
+            return []
+
+        # Extract submodule paths
+        submodule_paths = []
+        for line in result.stdout.strip().split("\n"):
+            # Format is "submodule.<name>.path"
+            name = line.split(".")[1]
+            path_result = subprocess.run(
+                ["git", "-C", repo_path, "config", "--file", ".gitmodules", "--get", f"submodule.{name}.path"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            submodule_paths.append(path_result.stdout.strip())
+
+        # Check each submodule
+        outdated = []
+        for submod_path in submodule_paths:
+            full_path = os.path.join(repo_path, submod_path)
+            if not os.path.exists(full_path):
+                continue
+
+            status, branch = check_git_status(full_path)
+            if status != "up-to-date":
+                outdated.append((submod_path, status, branch))
+
+        return outdated
+
+    except subprocess.CalledProcessError:
+        # No submodules or not a git repo
+        return []
+
+
+def handle_outdated_repo(status, branch, repo_name="Local", repo_path=None):
+    """Interactively handle case where repo is behind origin.
+
+    Args:
+        status: Git status string ("behind" or "diverged")
+        branch: Branch name
+        repo_name: Human-readable repository name for messages
+        repo_path: Path to repository (for git -C commands). If None, uses cwd.
+    """
+    print(f"\n{'='*80}")
+    print(f"WARNING: {repo_name} branch '{branch}' is {status} relative to origin/{branch}")
+    if repo_path:
+        print(f"Repository: {repo_path}")
+    print(f"{'='*80}\n")
+
+    response = input("Is this intentional? (y/n): ").strip().lower()
+
+    if response == "y":
+        print("Continuing with current local state.\n")
+        return
+
+    has_changes = input("Do you need to keep any local changes? (y/n): ").strip().lower()
+
+    print(f"\n{'='*80}")
+    cd_prefix = f"cd {repo_path} && " if repo_path else ""
+    if has_changes == "y":
+        print("To rebase your local changes on top of origin:")
+        print(f"  {cd_prefix}git fetch origin")
+        print(f"  {cd_prefix}git rebase origin/{branch}")
+        print("\nIf you encounter conflicts, resolve them and run:")
+        print(f"  {cd_prefix}git rebase --continue")
+    else:
+        print("To update to match origin (discards local commits and uncommitted changes):")
+        print(f"  {cd_prefix}git fetch origin")
+        print(f"  {cd_prefix}git reset --hard origin/{branch}")
+    print(f"{'='*80}\n")
+
+    sys.exit(0)
+
+
+def handle_outdated_submodules(outdated_submodules, repo_path):
+    """Interactively handle case where submodules are behind origin.
+
+    Args:
+        outdated_submodules: List of tuples (submodule_path, status, branch)
+        repo_path: Path to parent repository
+    """
+    print(f"\n{'='*80}")
+    print(f"WARNING: {len(outdated_submodules)} E3SM submodule(s) out of sync:")
+    for submod_path, status, branch in outdated_submodules:
+        print(f"  - {submod_path}: {status} on {branch}")
+    print(f"Repository: {repo_path}")
+    print(f"{'='*80}\n")
+
+    response = input("Is this intentional? (y/n): ").strip().lower()
+
+    if response == "y":
+        print("Continuing with current submodule state.\n")
+        return
+
+    print(f"\n{'='*80}")
+    print("To update all submodules to match their remotes:")
+    print(f"  cd {repo_path}")
+    print("  git submodule update --remote")
+    print("\nTo update and reset (discards local submodule changes):")
+    print(f"  cd {repo_path}")
+    print("  git submodule foreach 'git fetch origin && git reset --hard origin/$(git rev-parse --abbrev-ref HEAD)'")
+    print(f"{'='*80}\n")
+
+    sys.exit(0)
+
+
+def evaluate_repo_status(status, branch, repo_name="Local", repo_path=None):
+    """Route a check_git_status result to the appropriate handling.
+
+    - behind/diverged: interactive resolution via handle_outdated_repo (may exit).
+    - up-to-date: no output.
+    - anything else: a non-fatal WARNING so the reason a version check could not
+      be performed is visible instead of being silently swallowed.
+
+    Args:
+        status: Status string returned by check_git_status.
+        branch: Branch name (may be None).
+        repo_name: Human-readable repository name for messages.
+        repo_path: Path to repository (for messages). If None, uses cwd.
+    """
+    if status in ACTIONABLE_GIT_STATUSES:
+        handle_outdated_repo(status, branch, repo_name=repo_name, repo_path=repo_path)
+        return
+
+    if status == "up-to-date":
+        return
+
+    reason = GIT_SKIP_REASONS.get(status, f"unrecognized git status '{status}'")
+    location = f" ({repo_path})" if repo_path else ""
+    print(f"WARNING: version check skipped for {repo_name}{location}: {reason}.")
+
+
+def evaluate_submodule_status(outdated_submodules, repo_path):
+    """Route check_submodule_status results: warn about submodules that could not
+    be checked, then interactively handle any that are behind/diverged.
+
+    Args:
+        outdated_submodules: List of (submodule_path, status, branch) for every
+            submodule whose status is not "up-to-date".
+        repo_path: Path to the parent repository.
+    """
+    actionable = [s for s in outdated_submodules if s[1] in ACTIONABLE_GIT_STATUSES]
+    skipped = [s for s in outdated_submodules if s[1] not in ACTIONABLE_GIT_STATUSES]
+
+    for submod_path, status, _branch in skipped:
+        reason = GIT_SKIP_REASONS.get(status, f"unrecognized git status '{status}'")
+        print(f"WARNING: version check skipped for submodule '{submod_path}': {reason}.")
+
+    if actionable:
+        handle_outdated_submodules(actionable, repo_path)
+
+
 # ----------------------------------------------------------
 # define function for pbs submission
 def submit(fname, submit_type="qsub", job_depend=""):
@@ -957,6 +1249,13 @@ def submit(fname, submit_type="qsub", job_depend=""):
 
 
 # ----------------------------------------------------------
+# Check if local OLMT repo is behind origin
+if not options.skip_version_check:
+    git_status, git_branch = check_git_status()
+    evaluate_repo_status(git_status, git_branch, repo_name="OLMT")
+
+
+# ----------------------------------------------------------
 # Set default model root
 if options.csmdir == "":
     if os.path.exists("../E3SM"):
@@ -968,6 +1267,19 @@ if options.csmdir == "":
 elif not os.path.exists(options.csmdir):
     print("Error:  Model root " + options.csmdir + " does not exist.")
     sys.exit(1)
+
+# Check if E3SM/CESM repo (and its submodules) are behind origin
+if not options.skip_version_check:
+    e3sm_git_status, e3sm_git_branch = check_git_status(options.csmdir)
+    evaluate_repo_status(
+        e3sm_git_status,
+        e3sm_git_branch,
+        repo_name="E3SM/CESM",
+        repo_path=options.csmdir,
+    )
+
+    outdated_submodules = check_submodule_status(options.csmdir)
+    evaluate_submodule_status(outdated_submodules, options.csmdir)
 
 # check whether model named clm or elm
 if os.path.exists(options.csmdir + "/components/elm"):
