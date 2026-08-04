@@ -61,20 +61,35 @@ def runcmd(
     if echo:
         print(cmd)
 
-    result = subprocess.run(
+    process = subprocess.Popen(
         cmd,
         shell=True,
-        check=check,
         text=True,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
     )
 
-    # CIME changes an execution error in case.submit to a warning and continues,
-    # so we need to check stderr for the error message and abort if it is present
-    # See: https://github.com/ESMCI/cime/blob/cime6.1.176/CIME/XML/env_batch.py#L1027-L1029
-    if check == True and "Exception from " in result.stderr:
+    cime_exception = False
+
+    for line in process.stdout:
+        print(line, end="", flush=True)
+
+        # CIME can report a case.submit execution failure as a warning
+        # rather than returning a nonzero exit code.
+        if "Exception from " in line:
+            cime_exception = True
+
+    process.stdout.close()
+    returncode = process.wait()
+
+    if check and returncode != 0:
+        raise subprocess.CalledProcessError(returncode, cmd)
+
+    if check and cime_exception:
         sys.exit(f"Error in run command {cmd}")
-    return result.returncode
+
+    return returncode
 
 
 def chdir(path, echo=True, tag=os.path.basename(__file__)):

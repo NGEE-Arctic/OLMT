@@ -906,7 +906,7 @@ def runcmd(
     if echo:
         print(cmd, flush=True)
 
-    proc = subprocess.Popen(
+    process = subprocess.Popen(
         cmd,
         shell=True,
         text=True,
@@ -915,25 +915,26 @@ def runcmd(
         bufsize=1,
     )
 
-    output_lines = []
-    for line in proc.stdout:
+    cime_exception = False
+
+    for line in process.stdout:
         print(line, end="", flush=True)
-        output_lines.append(line)
 
-    returncode = proc.wait()
-    output_text = "".join(output_lines)
+        # CIME can report a case.submit execution failure as a warning
+        # rather than returning a nonzero exit code.
+        if "Exception from " in line:
+            cime_exception = True
 
-    # CIME changes an execution error in case.submit to a warning and continues,
-    # so we need to check stderr for the error message and abort if it is present
-    # See: https://github.com/ESMCI/cime/blob/cime6.1.176/CIME/XML/env_batch.py#L1027-L1029
-    if check and "Exception from " in output_text:
-        sys.exit(f"Error in run command {cmd}")
+    process.stdout.close()
+    returncode = process.wait()
 
     if check and returncode != 0:
-        raise subprocess.CalledProcessError(returncode, cmd, output=output_text)
-    
+        raise subprocess.CalledProcessError(returncode, cmd)
+
+    if check and cime_exception:
+        sys.exit(f"Error in run command {cmd}")
+
     return returncode
-# GAM end
 
 
 # Statuses from check_git_status that warrant interactive resolution because the
