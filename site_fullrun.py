@@ -696,6 +696,14 @@ parser.add_option(
 # --------------------
 # NGEE Arctic Options
 # --------------------
+# soil options
+parser.add_option(
+    "--squareomfracFalse",
+    dest="squareomfracFalse",
+    default=False,
+    help="Set squareomfrac to false",
+    action="store_true",
+)
 # snow options
 parser.add_option(
     "--dust_snow_mixing",
@@ -1677,6 +1685,9 @@ for row in AFdatareader:
             basecmd = basecmd + " --project " + myproject
         if options.domainfile != "":
             basecmd = basecmd + " --domainfile " + options.domainfile
+        # soil
+        if options.squareomfracFalse:
+            basecmd = basecmd + " --squareomfracFalse"
         # snow opts
         if options.dust_snow_mixing:
             basecmd = basecmd + " --dust_snow_mixing"

@@ -947,6 +947,14 @@ parser.add_option(
     help="Downscale radiation input to topounits",
     action="store_true",
 )
+# soil:
+parser.add_option(
+    "--squareomfracFalse",
+    dest="squareomfracFalse",
+    default=False,
+    help="Set squareomfrac to false",
+    action="store_true",
+)
 # snow options:
 parser.add_option(
     "--dust_snow_mixing",
@@ -2688,6 +2696,8 @@ for i in range(1, int(options.ninst) + 1):
     # soil thermal conductivity
     if options.soil_thermal_conductivity_model != "farouki":
         output.write(f" soil_thermal_conductivity_model = '{options.soil_thermal_conductivity_model}'\n")
+    if options.squareomfracFalse:
+        output.write(" squareomfrac = .false.\n")
     # snow options
     if options.dust_snow_mixing:
         output.write(" use_dust_snow_internal_mixing = .true.\n")
