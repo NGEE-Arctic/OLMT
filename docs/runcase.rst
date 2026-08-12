@@ -349,6 +349,8 @@ NGEE Arctic Options
 
    * - Option
      - Description
+   * - ``--no_squareomfrac``
+     - Disable square scaling of organic matter fraction in soil thermal conductivity
    * - ``--topounits_atmdownscale``
      - Use atmospheric downscaling in topounits
    * - ``--topounits_raddownscale``
