@@ -494,10 +494,10 @@ parser.add_option(
 )
 # soil options:
 parser.add_option(
-    "--squareomfracFalse",
-    dest="squareomfracFalse",
+    "--no_squareomfrac",
+    dest="no_squareomfrac",
     default=False,
-    help="Set squareomfrac to false",
+    help="Disable square scaling of organic matter fraction in soil thermal conductivity",
     action="store_true",
 )
 # snow options:
@@ -1025,8 +1025,8 @@ if options.topounits:
     basecmd = basecmd + " --topounits"
 if options.topounits_atmdownscale:
     basecmd = basecmd + " --topounits_atmdownscale"
-if options.squareomfracFalse:
-    basecmd = basecmd + " --squareomfracFalse"
+if options.no_squareomfrac:
+    basecmd = basecmd + " --no_squareomfrac"
 if options.dust_snow_mixing:
     basecmd = basecmd + " --dust_snow_mixing"
 if options.no_snicar_ad:

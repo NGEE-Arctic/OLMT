@@ -698,10 +698,10 @@ parser.add_option(
 # --------------------
 # soil options
 parser.add_option(
-    "--squareomfracFalse",
-    dest="squareomfracFalse",
+    "--no_squareomfrac",
+    dest="no_squareomfrac",
     default=False,
-    help="Set squareomfrac to false",
+    help="Disable square scaling of organic matter fraction in soil thermal conductivity",
     action="store_true",
 )
 # snow options
@@ -1686,8 +1686,8 @@ for row in AFdatareader:
         if options.domainfile != "":
             basecmd = basecmd + " --domainfile " + options.domainfile
         # soil
-        if options.squareomfracFalse:
-            basecmd = basecmd + " --squareomfracFalse"
+        if options.no_squareomfrac:
+            basecmd = basecmd + " --no_squareomfrac"
         # snow opts
         if options.dust_snow_mixing:
             basecmd = basecmd + " --dust_snow_mixing"
