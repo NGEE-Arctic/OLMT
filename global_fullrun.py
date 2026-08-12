@@ -492,6 +492,14 @@ parser.add_option(
     help="Use atmospheric downscaling in topounits",
     action="store_true",
 )
+# soil options:
+parser.add_option(
+    "--no_squareomfrac",
+    dest="no_squareomfrac",
+    default=False,
+    help="Disable square scaling of organic matter fraction in soil thermal conductivity",
+    action="store_true",
+)
 # snow options:
 parser.add_option(
     "--dust_snow_mixing",
@@ -1017,6 +1025,8 @@ if options.topounits:
     basecmd = basecmd + " --topounits"
 if options.topounits_atmdownscale:
     basecmd = basecmd + " --topounits_atmdownscale"
+if options.no_squareomfrac:
+    basecmd = basecmd + " --no_squareomfrac"
 if options.dust_snow_mixing:
     basecmd = basecmd + " --dust_snow_mixing"
 if options.no_snicar_ad:

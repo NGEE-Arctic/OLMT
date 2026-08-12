@@ -184,6 +184,11 @@ Topography
 - ``--topounits`` — enable topographic units (> 1)
 - ``--topounits_atmdownscale`` — use atmospheric downscaling with topounits
 
+Soil Physics
+^^^^^^^^^^^^
+
+- ``--no_squareomfrac`` — disable square scaling of organic matter fraction in soil thermal conductivity
+
 Snow/Albedo
 ^^^^^^^^^^^
 
