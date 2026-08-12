@@ -6,3 +6,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/ruff-action@v3
+        with:
+          # Pin ruff version to match development environment
+          # Update this when upgrading local ruff version in requirements.txt
+          # or when new ruff rules are addressed in the codebase
+          version: "0.15.17"
