@@ -1101,6 +1101,11 @@ elif "chrysalis" in options.machine:
     ppn = 64
 elif "pm-cpu" in options.machine:
     ppn = 128
+elif "docker-chicoma-cpu" in options.machine:
+    # Hybrid docker/chicoma-cpu: container-based testing with chicoma's 128-core
+    # node config. Uses docker's local paths and no-scheduler behavior but
+    # chicoma-cpu's parallelism to test chicoma-scale runs in containers.
+    ppn = 128
 elif "chicoma" in options.machine:
     # AMD Rome EPYC 7H12: 128 physical cores/node.  The CIME machine file
     # advertises MAX_TASKS_PER_NODE=256 (2 hardware threads/core), but ELM

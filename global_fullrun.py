@@ -734,7 +734,8 @@ if options.compiler == "":
         options.compiler = "intel"
     if "chicoma" in options.machine:
         options.compiler = "gnu"
-    if options.machine == "docker":
+    if "docker" in options.machine:
+        # Applies to "docker" and hybrid variants like "docker-chicoma-cpu"
         options.compiler = "gnu"
 
 # default MPIlibs
