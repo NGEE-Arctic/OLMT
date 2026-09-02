@@ -1101,6 +1101,13 @@ elif "chrysalis" in options.machine:
     ppn = 64
 elif "pm-cpu" in options.machine:
     ppn = 128
+elif "chicoma" in options.machine:
+    # AMD Rome EPYC 7H12: 128 physical cores/node.  The CIME machine file
+    # advertises MAX_TASKS_PER_NODE=256 (2 hardware threads/core), but ELM
+    # performs poorly with multithreading, so cap at one MPI task per physical
+    # core.  Setting ppn=128 makes runcase set both MAX_TASKS_PER_NODE and
+    # MAX_MPITASKS_PER_NODE to 128 below, disabling the extra thread slots.
+    ppn = 128
 elif "docker" in options.machine:
     ppn = 4
 if options.ensemble_file == "":

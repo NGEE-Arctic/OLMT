@@ -711,6 +711,9 @@ elif "anvil" in options.machine:
     ccsm_input = "/home/ccsm-data/inputdata"
 elif "compy" in options.machine:
     ccsm_input = "/compyfs/inputdata"
+elif "chicoma" in options.machine:
+    # Mirrors DIN_LOC_ROOT in the CIME chicoma-cpu machine file.
+    ccsm_input = "/lustre/scratch5/" + getpass.getuser() + "/inputdata"
 
 if options.makepointdata_only:  # don't configure/build/run model
     options.noad = False
@@ -729,6 +732,8 @@ if options.compiler == "":
         options.compiler = "gnu"
     if options.machine == "compy":
         options.compiler = "intel"
+    if "chicoma" in options.machine:
+        options.compiler = "gnu"
     if options.machine == "docker":
         options.compiler = "gnu"
 
@@ -742,6 +747,8 @@ if options.mpilib == "":
         options.mpilib = "mvapich"
     elif "compy" in options.machine:
         options.mpilib = "impi"
+    elif "chicoma" in options.machine:
+        options.mpilib = "mpich"
     elif "docker" in options.machine:
         options.mpilib = "openmpi"
 
@@ -820,6 +827,9 @@ if options.runroot == "":
         runroot = "/lcrc/group/acme/" + myuser
     elif "compy" in options.machine:
         runroot = "/compyfs/" + myuser + "/e3sm_scratch"
+    elif "chicoma" in options.machine:
+        # Mirrors CIME_OUTPUT_ROOT in the CIME chicoma-cpu machine file.
+        runroot = "/lustre/scratch5/" + myuser + "/E3SM/scratch/" + options.machine
     else:
         runroot = csmdir + "/run"
 else:
