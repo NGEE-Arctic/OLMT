@@ -1,13 +1,15 @@
 #!/usr/bin/env python
-import os
-import sys
 import csv
 import math
+import os
+import sys
 import time
 from optparse import OptionParser
+
 import numpy
-import netcdf4_functions as nffun
 from netCDF4 import Dataset
+
+import netcdf4_functions as nffun
 
 parser = OptionParser()
 
@@ -162,7 +164,7 @@ os.makedirs(tempdir, exist_ok=True)
 # ------------------- get site information ----------------------------------
 
 # Remove existing temp files in this invocation's tempdir
-os.system("find " + tempdir + ' -name "*.nc*" -exec rm {} \; ')
+os.system("find " + tempdir + r' -name "*.nc*" -exec rm {} \; ')
 
 lat_bounds = options.lat_bounds.split(",")
 lon_bounds = options.lon_bounds.split(",")
@@ -394,7 +396,7 @@ xgrid_min = []
 xgrid_max = []
 ygrid_min = []
 ygrid_max = []
-for n in range(0, n_grids):
+for n in range(n_grids):
     if issite:
         lon_bounds = [lon[n], lon[n]]
         lat_bounds = [lat[n], lat[n]]
@@ -411,7 +413,7 @@ for n in range(0, n_grids):
         ygrid_min[n] = 0
         ygrid_max[n] = 0
         mindist = 99999
-        for i in range(0, longxy.shape[0] - 1):
+        for i in range(longxy.shape[0] - 1):
             thisdist = (lon_bounds[0] - longxy[i]) ** 2 + (
                 lat_bounds[0] - latixy[i]
             ) ** 2
@@ -420,7 +422,7 @@ for n in range(0, n_grids):
                 xgrid_max[n] = i
                 mindist = thisdist
     else:
-        for i in range(0, longxy.shape[0] - 1):
+        for i in range(longxy.shape[0] - 1):
             if lon_bounds[0] >= longxy[i]:
                 xgrid_min[n] = i
                 xgrid_max[n] = i
@@ -429,7 +431,7 @@ for n in range(0, n_grids):
         if lon_bounds[0] == 180 and lon_bounds[1] == 180:  # global
             xgrid_min[n] = 0
             xgrid_max[n] = longxy.shape[0] - 2
-        for i in range(0, latixy.shape[0] - 1):
+        for i in range(latixy.shape[0] - 1):
             if lat_bounds[0] >= latixy[i]:
                 ygrid_min[n] = i
                 ygrid_max[n] = i
@@ -531,7 +533,7 @@ os.environ["PATH"] += ":/usr/local/nco/bin"
 os.environ["PATH"] += ":/Users/f9y/ATS_ROOT/amanzi_tpls-install-master-Debug/bin"
 
 domainfile_tmp = "domain??????.nc"  # filename pattern of 'domainfile_new'
-for n in range(0, n_grids):
+for n in range(n_grids):
     nst = str(1000000 + n)[1:]
     domainfile_new = tempdir + "/domain" + nst + ".nc"
     if not os.path.exists(domainfile_orig):
@@ -693,12 +695,11 @@ if n_grids > 1:
     )
     if ierr != 0:
         raise RuntimeError("Error: ncrename", ierr)  # os.sys.exit()
-    os.system("find " + tempdir + " -name " + domainfile_tmp + " -exec rm {} \;")
+    os.system("find " + tempdir + " -name " + domainfile_tmp + r" -exec rm {} \;")
     os.system("rm " + domainfile_new + ".tmp*")
 else:
     ierr = os.system("mv " + domainfile_old + " " + domainfile_new)
 
-#
 if ierr == 0:
     # NC-4 classic better for either NC-4 or NC-3 tools,
     # but 'ncrename' not good with NC-4
@@ -731,7 +732,7 @@ else:
 print("Creating surface data")
 
 surffile_tmp = "surfdata??????.nc"  # filename pattern of 'surffile_new'
-for n in range(0, n_grids):
+for n in range(n_grids):
     nst = str(1000000 + n)[1:]
     surffile_new = tempdir + "/surfdata" + nst + ".nc"
     if not os.path.exists(surffile_orig):
@@ -849,7 +850,7 @@ for n in range(0, n_grids):
             )
             for row in AFdatareader:
                 if row[0] == options.site:
-                    for thispft in range(0, 5):
+                    for thispft in range(5):
                         mypft_frac[int(row[2 + 2 * thispft])] = float(
                             row[1 + 2 * thispft]
                         )
@@ -883,10 +884,10 @@ for n in range(0, n_grids):
                 # multiple PFTs' pct are read-in from a nc file
                 if "PCT_PFT" in mysurfvar or "PCT_NAT_PFT" in mysurfvar:
                     sum_nat = numpy.sum(pct_pft)
-                    if "PCT_PFT" in point_mysurf.keys():
+                    if "PCT_PFT" in point_mysurf:
                         if numpy.sum(point_mysurf["PCT_PFT"][n]) > 0.0:
                             pct_pft[:, 0, 0] = point_mysurf["PCT_PFT"][n]
-                    elif "PCT_NAT_PFT" in point_mysurf.keys():
+                    elif "PCT_NAT_PFT" in point_mysurf:
                         if numpy.sum(point_mysurf["PCT_NAT_PFT"][n]) > 0.0:
                             pct_pft[:, 0, 0] = point_mysurf["PCT_NAT_PFT"][n]
                     else:
@@ -968,9 +969,9 @@ for n in range(0, n_grids):
                 secondp[0][0] = 1.0
                 occlp[0][0] = 1.0
 
-            for k in range(0, 3):
+            for k in range(3):
                 pct_urban[k][0][0] = 0.0
-            for k in range(0, 10):
+            for k in range(10):
                 if float(mypct_sand) > 0.0 or float(mypct_clay) > 0.0:
                     if k == 0:
                         print("Setting %sand to " + str(mypct_sand))
@@ -1018,7 +1019,7 @@ for n in range(0, n_grids):
                 pct_pft[:, 0, 0] = 0.0
                 pct_pft[int(options.mypft), 0, 0] = 100.0
             else:
-                for p in range(0, npft + npft_crop):
+                for p in range(npft + npft_crop):
                     # if (sum(mypft_frac[0:npft]) > 0.0):
                     # if (mypft_frac[p] > 0.0):
                     if p < npft:
@@ -1031,7 +1032,7 @@ for n in range(0, n_grids):
                         pct_cft[p - npft][0][0] = mypft_frac[p]
                         pct_pft[0][0][0] = 100.0
                     # maxlai = (monthly_lai).max(axis=0)
-                    for t in range(0, 12):
+                    for t in range(12):
                         if float(options.lai) > 0:
                             monthly_lai[t][p][0][0] = float(options.lai)
                         # monthly_lai[t][p][j][i] = monthly_lai[t][p][0][0]
@@ -1092,7 +1093,7 @@ if n_grids > 1:
     if ierr != 0:
         raise RuntimeError("Error: ncecat ")  # os.sys.exit()
     # os.system('rm <tempdir>/surfdata?????.nc*') # not works with too many files
-    os.system("find " + tempdir + ' -name "' + surffile_tmp + '" -exec rm {} \;')
+    os.system("find " + tempdir + ' -name "' + surffile_tmp + r'" -exec rm {} \;')
 
     # remove ni dimension
     ierr = os.system(
@@ -1159,7 +1160,7 @@ print(
 if not options.nopftdyn:
     print("Creating dynpft data")
     pftdyn_tmp = "surfdata.pftdyn??????.nc"  # filename pattern of 'pftdyn_new'
-    for n in range(0, n_grids):
+    for n in range(n_grids):
         nst = str(1000000 + n)[1:]
         pftdyn_new = tempdir + "/surfdata.pftdyn" + nst + ".nc"
 
@@ -1232,7 +1233,7 @@ if not options.nopftdyn:
                 for row in AFdatareader:
                     # print(row[0], row[1], options.site)
                     if row[0] == options.site:
-                        for thispft in range(0, 5):
+                        for thispft in range(5):
                             mypft_frac[int(row[2 + 2 * thispft])] = float(
                                 row[1 + 2 * thispft]
                             )
@@ -1255,11 +1256,11 @@ if not options.nopftdyn:
                     for row in DYdatareader:
                         if row[0] == "1850":
                             nrows = 1
-                            for i in range(0, 19):
+                            for i in range(19):
                                 pftdata[i][0] = float(row[i])
                         elif row[0] != "trans_year":
                             nrows += 1
-                            for i in range(0, 19):
+                            for i in range(19):
                                 pftdata[i][nrows - 1] = float(row[i])
                 else:
                     print(
@@ -1302,10 +1303,10 @@ if not options.nopftdyn:
                 )
 
             thisrow = 0
-            for t in range(0, nyears_landuse):
+            for t in range(nyears_landuse):
                 if not options.surfdata_grid:
                     if dynexist:
-                        for p in range(0, npft):
+                        for p in range(npft):
                             pct_pft[t][p][0][0] = 0.0
                         harvest_thisyear = False
                         if pftdata[0][thisrow + 1] == 1850 + t:
@@ -1313,7 +1314,7 @@ if not options.nopftdyn:
                             harvest_thisyear = True
                         if t == 0 or pftdata[16][thisrow] == 1:
                             harvest_thisyear = True
-                        for k in range(0, 5):
+                        for k in range(5):
                             pct_pft[t][int(pftdata[k * 2 + 2][thisrow])][0][0] = (
                                 pftdata[k * 2 + 1][thisrow]
                             )
@@ -1331,7 +1332,7 @@ if not options.nopftdyn:
                                 harvest_vh1[t][0][0] = 0.0
                                 harvest_vh2[t][0][0] = 0.0
                     else:
-                        for p in range(0, npft):
+                        for p in range(npft):
                             if sum(mypft_frac[0:16]) == 0.0:
                                 # No dyn file - use 1850 values from gridded file
                                 pct_pft[t][p][0][0] = pct_pft_1850[p][n]
@@ -1356,10 +1357,10 @@ if not options.nopftdyn:
                         sum_nat = numpy.sum(
                             pct_pft[t, :, 0, 0]
                         )  # this is the original, saved for use later
-                        if "PCT_PFT" in point_mysurf.keys():
+                        if "PCT_PFT" in point_mysurf:
                             if numpy.sum(point_mysurf["PCT_PFT"][n]) > 0.0:
                                 pct_pft[t, :, 0, 0] = point_mysurf["PCT_PFT"][n]
-                        elif "PCT_NAT_PFT" in point_mysurf.keys():
+                        elif "PCT_NAT_PFT" in point_mysurf:
                             if numpy.sum(point_mysurf["PCT_NAT_PFT"][n]) > 0.0:
                                 pct_pft[t, :, 0, 0] = point_mysurf["PCT_NAT_PFT"][n]
                         else:
@@ -1397,9 +1398,9 @@ if not options.nopftdyn:
                         nonpft = nonpft + float(pct_crop_1850[n])
                     sumpft = 0.0
                     pct_pft_temp = pct_pft
-                    for p in range(0, npft):
+                    for p in range(npft):
                         sumpft = sumpft + pct_pft_temp[t][p][0][0]
-                    for p in range(0, npft):
+                    for p in range(npft):
                         if t == 0:
                             # Force 1850 values to surface data file
                             pct_pft[t][p][0][0] = pct_pft_1850[p][n]
@@ -1444,7 +1445,7 @@ if not options.nopftdyn:
             raise RuntimeError("Error: ncecat ")  # os.sys.exit()
 
         # os.system('rm <tempdir>/surfdata.pftdyn?????.nc*') # 'rm' not works for too long file list
-        os.system("find " + tempdir + ' -name "' + pftdyn_tmp + '" -exec rm {} \;')
+        os.system("find " + tempdir + ' -name "' + pftdyn_tmp + r'" -exec rm {} \;')
 
         # remove ni dimension
         ierr = os.system(

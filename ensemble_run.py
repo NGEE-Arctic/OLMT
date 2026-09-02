@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import os
 import getpass
+import os
 from optparse import OptionParser
 
 # Create, run and process a CLM/ALM model ensemble member
@@ -408,7 +408,7 @@ for filename in os.listdir(UQdir + "/" + options.constraints):
                             229.6,
                             343.3,
                         ]
-                        for val in range(0, 10):
+                        for val in range(10):
                             if depth >= layers[val] and depth < layers[val + 1]:
                                 thislayer = val
                                 model_val = myvals[doy, thislayer, 0]

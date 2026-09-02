@@ -1,9 +1,11 @@
 import os
-import numpy as np
 from optparse import OptionParser
-import model_surrogate as models
+
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
+
+import model_surrogate as models
 
 matplotlib.use("Agg")
 
@@ -38,7 +40,7 @@ sens_main_unc = np.zeros([model.nparms, model.nobs])
 sens_tot = np.zeros([model.nparms, model.nobs])
 sens_tot_unc = np.zeros([model.nparms, model.nobs])
 
-for n in range(0, model.nobs):
+for n in range(model.nobs):
     print(n)
     os.system(
         "python -m SALib.analyze.sobol --parallel -p "

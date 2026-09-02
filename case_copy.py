@@ -154,9 +154,7 @@ for f in os.listdir(new_dir):
                 s_out = "do_transient_pfts = .false.\n"
             elif "lnd_in" in f and "do_harvest" in s and options.nolanduse == True:
                 s_out = "do_harvest = .false.\n"
-            elif "lnd_in" in f and "co2_file =" in s and options.noco2 == True:
-                s_out = s.replace(".nc", "_CON.nc")
-            elif (
+            elif "lnd_in" in f and "co2_file =" in s and options.noco2 == True or (
                 "lnd_in" in f
                 and "stream_fldfilename_ndep" in s
                 and options.nondep == True

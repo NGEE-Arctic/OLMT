@@ -5,5 +5,27 @@ extend-exclude = [
 
 
 [lint]
-ignore = ["E712"]
-
+# ruff 0.16 greatly expanded the default rule set (~58 -> ~413 enabled rules).
+# The safe, auto-fixable violations that expansion surfaced have been fixed.
+# The rules below still fire and require manual, often behavior-affecting
+# changes, so they are deferred to follow-up work. Each is tracked, with a
+# suggested remediation, in docs/specs/ruff-016-upgrade.md. The goal is to
+# retire entries from this list over time; do not add new violations.
+ignore = [
+    "E712",     # comparison to True/False (pre-existing, intentional)
+    # --- Deferred: surfaced by the ruff 0.16 default-rule expansion ---
+    "SIM115",   # open() without a context manager (98) - large manual refactor
+    "UP031",    # printf-style % string formatting (22) - convert to f-strings
+    "EXE002",   # file is executable but has no shebang (9)
+    "PLW1510",  # subprocess.run without check= (7) - behavioral, needs review
+    "RUF046",   # unnecessary int() cast around a value already int (6)
+    "SIM102",   # collapsible nested if statements (4)
+    "BLE001",   # blind "except Exception" (3)
+    "B008",     # function call in argument default (3)
+    "EXE001",   # shebang present but file is not executable (3)
+    "C419",     # unnecessary list comprehension inside any()/all() (2)
+    "PLC0206",  # dict iterated by key without .items() (1)
+    "PERF402",  # manual list copy that could use list()/copy (1)
+    "B006",     # mutable default argument (1)
+    "B018",     # useless expression (1)
+]

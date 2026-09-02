@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
 import getpass
-import os
-import sys
 import math
+import os
+import re
+import sys
 import time
 from optparse import OptionParser
+
 import numpy
-import re
 
 parser = OptionParser()
 
@@ -769,8 +770,8 @@ if int(options.mc_ensemble) != -1:
         n_parameters = len(param_names)
     nsamples = int(options.mc_ensemble)
     samples = numpy.zeros((n_parameters, nsamples), dtype=float)
-    for i in range(0, nsamples):
-        for j in range(0, n_parameters):
+    for i in range(nsamples):
+        for j in range(n_parameters):
             samples[j][i] = param_min[j] + (
                 param_max[j] - param_min[j]
             ) * numpy.random.rand(1)
@@ -1366,7 +1367,7 @@ if options.mc_ensemble <= 0:
         #    mysubmit_type = 'sbatch'
         # Create a .PBS site fullrun script to launch the full job
 
-        for n in range(0, n_submits):
+        for n in range(n_submits):
             output = open(tempdir + "/global_" + c + "_" + str(n) + ".pbs", "w")
             if os.path.isfile(caseroot + "/" + c + "/case.run"):
                 input = open(caseroot + "/" + c + "/case.run")
