@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import csv
+import gc
 import math
 import os
 import sys
@@ -1493,6 +1494,8 @@ if not options.nopftdyn:
 
     # NC-4 classic better for either NC-4 or NC-3 tools,
     # but 'ncrename' used above may not works with NC-4
+    # Force Python/HDF5 to flush any lingering file handles
+    gc.collect()
     ierr = os.system("nccopy -7 -u " + pftdyn_new + " " + pftdyn_new + ".tmp")
     if ierr != 0:
         raise RuntimeError("Error: nccopy -7 -u ")  # os.sys.exit()
