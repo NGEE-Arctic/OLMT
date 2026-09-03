@@ -845,7 +845,7 @@ if options.tempdir:
     tempdir = os.path.abspath(options.tempdir)
 else:
     tempdir = os.path.abspath(
-        "./temp/run_%d_%d" % (os.getpid(), int(time.time() * 1000))
+        f"./temp/run_{os.getpid()}_{int(time.time() * 1000)}"
     )
 os.makedirs(tempdir, exist_ok=True)
 
@@ -1321,6 +1321,9 @@ elif "anvil" in options.machine or "chrysalis" in options.machine:
     ccsm_input = "/home/ccsm-data/inputdata"
 elif "compy" in options.machine:
     ccsm_input = "/compyfs/inputdata/"
+elif "chicoma" in options.machine:
+    # Mirrors DIN_LOC_ROOT in the CIME chicoma-cpu machine file.
+    ccsm_input = "/lustre/scratch5/" + getpass.getuser() + "/inputdata"
 elif "docker" in options.machine:
     ccsm_input = "/home/e3smuser/inputdata"
 
@@ -1357,6 +1360,10 @@ if options.runroot == "" or not os.path.exists(options.runroot):
         myproject = "e3sm"
     elif "compy" in options.machine:
         runroot = "/compyfs/" + myuser + "/e3sm_scratch"
+        myproject = "e3sm"
+    elif "chicoma" in options.machine:
+        # Mirrors CIME_OUTPUT_ROOT in the CIME chicoma-cpu machine file.
+        runroot = "/lustre/scratch5/" + myuser + "/E3SM/scratch/" + options.machine
         myproject = "e3sm"
     else:
         runroot = csmdir + "/run"
@@ -1580,7 +1587,7 @@ for row in AFdatareader:
             basecmd = basecmd + " --marsh"
         if options.tide_components_file != "":
             basecmd = (
-                basecmd + " --tide_components_file %s" % options.tide_components_file
+                basecmd + f" --tide_components_file {options.tide_components_file}"
             )
         if float(options.lai) >= 0:
             basecmd = basecmd + " --lai " + str(options.lai)
