@@ -1,8 +1,9 @@
 #!/usr/bin/env/python
+import glob
 import os
 from optparse import OptionParser
+
 import netcdf4_functions as nffun
-import glob
 
 parser = OptionParser()
 
@@ -162,11 +163,11 @@ if options.harvest:
     ]
 
 if options.harvest:
-    for v in range(0, len(var_names_harvest)):
+    for v in range(len(var_names_harvest)):
         rest_vals = nffun.getvar(fname_restart, var_names_harvest[v].lower())
         # Loop through all valid values in the restart file.
         n_rest = len(rest_vals)
-        for i in range(0, n_rest):
+        for i in range(n_rest):
             rest_vals[i] = rest_vals[i] * 0.05
             if var_names_harvest[v] == "LEAFC":
                 rest_vals[i] = 0.33 / 0.03
@@ -179,12 +180,12 @@ if options.harvest:
                 rest_vals[i] = 0.33 / 0.03 / 42.0
         ierr = nffun.putvar(fname_restart, var_names_harvest[v].lower(), rest_vals)
 else:
-    for v in range(0, len(var_names)):
+    for v in range(len(var_names)):
         hist_vals = nffun.getvar(fname_hist, var_names[v])
         rest_vals = nffun.getvar(fname_restart, var_names[v].lower())
         # Loop through all valid values in the restart file.
         n_rest = len(rest_vals)
-        for i in range(0, n_rest):
+        for i in range(n_rest):
             if (
                 float(rest_vals[i]) > 0.0
                 and float(hist_vals[0][i]) < 1.0e10
@@ -196,12 +197,12 @@ else:
     # get a single, non-depth dependent variable to count # of columns
     rest_vals = nffun.getvar(fname_restart, "fpg")
     n_rest = len(rest_vals)
-    for v in range(0, len(var_names2d)):
+    for v in range(len(var_names2d)):
         hist_vals = nffun.getvar(fname_hist, var_names2d[v])
         rest_vals = nffun.getvar(fname_restart, var_names2d[v].lower())
         # Loop through all valid values in the restart file.
-        for i in range(0, n_rest):
-            for j in range(0, 10):
+        for i in range(n_rest):
+            for j in range(10):
                 if (
                     float(rest_vals[i][j]) > 0.0
                     and float(hist_vals[0][j][i]) < 1.0e10

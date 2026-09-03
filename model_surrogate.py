@@ -1,8 +1,9 @@
-import numpy as np
 import pickle
 
+import numpy as np
 
-class MyModel(object):
+
+class MyModel:
     def __init__(self, case=""):
 
         UQdir = "./UQ_output/" + case
@@ -12,13 +13,13 @@ class MyModel(object):
         self.nobs = self.ytrain.shape[1]
         self.ntrain = self.ptrain.shape[0]
         self.yrange = np.zeros([2, self.nobs], float)
-        for i in range(0, self.nobs):
+        for i in range(self.nobs):
             self.yrange[0, i] = min(self.ytrain[:, i])
             self.yrange[1, i] = max(self.ytrain[:, i])
 
         self.pmin = np.zeros([self.nparms], float)
         self.pmax = np.zeros([self.nparms], float)
-        for i in range(0, self.nparms):
+        for i in range(self.nparms):
             self.pmin[i] = min(self.ptrain[:, i])
             self.pmax[i] = max(self.ptrain[:, i])
 
@@ -29,7 +30,7 @@ class MyModel(object):
         pnamefile.close()
         print(self.parm_names, self.nobs, self.nparms)
         self.pdef = np.zeros([self.nparms], float)
-        for i in range(0, self.nparms):
+        for i in range(self.nparms):
             self.pdef[i] = (self.pmin[i] + self.pmax[i]) / 2
         self.obs = np.zeros([self.nobs], float)
         self.obs_err = np.zeros([self.nobs], float)
@@ -57,10 +58,10 @@ class MyModel(object):
         else:
             nsamples = parms.shape[0]
         parms_nn = np.zeros([nsamples, self.nparms], float)
-        for n in range(0, nsamples):
+        for n in range(nsamples):
             if nsamples > 1:
                 theseparms = parms[n, :]
-            for p in range(0, self.nparms):
+            for p in range(self.nparms):
                 parms_nn[n, p] = (theseparms[p] - self.pmin[p]) / (
                     self.pmax[p] - self.pmin[p]
                 )
@@ -68,7 +69,7 @@ class MyModel(object):
         output_temp = self.nnmodel.predict(parms_nn)
 
         qgood = 0
-        for q in range(0, self.nobs):
+        for q in range(self.nobs):
             if q in self.qoi_good:
                 self.output[:, q] = (
                     output_temp[:, qgood] * (self.yrange[1, q] - self.yrange[0, q])

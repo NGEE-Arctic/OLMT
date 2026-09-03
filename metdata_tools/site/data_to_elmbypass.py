@@ -1,6 +1,7 @@
-import numpy as np
 import os
+
 import gapfill
+import numpy as np
 import write_elm_met
 
 # ------- user input -------------
@@ -63,8 +64,8 @@ for y in range(start_year, end_year + 1):
                 not isleapyear or (isleapyear and (lnum - 1) / npd != 59)
             ):
                 data = s.split(",")
-                for v in range(0, len(invars)):
-                    for h in range(0, len(header)):
+                for v in range(len(invars)):
+                    for h in range(len(header)):
                         if header[h] == invars[v]:
                             try:
                                 val = float(data[h]) * conv_mult[v] + conv_add[v]

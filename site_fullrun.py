@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 
-import socket
-import getpass
-import os
-import sys
 import csv
+import getpass
+import inspect
+import json
+import os
+import re
+import socket
+import subprocess
+import sys
 import time
 from optparse import OptionParser
-import numpy
-import re
-import json
-import inspect
-import subprocess
 
+import numpy
 
 ### Run options
 parser = OptionParser()
@@ -1283,7 +1283,7 @@ else:
 npernode = 32
 if options.machine == "":
     hostname = socket.gethostname()
-    print("")
+    print()
     print(
         "Machine not specified.  Using hostname " + hostname + " to determine machine"
     )
@@ -1405,8 +1405,8 @@ if int(options.mc_ensemble) != -1:
         n_parameters = len(param_names)
     nsamples = int(options.mc_ensemble)
     samples = numpy.zeros((n_parameters, nsamples), dtype=float)
-    for i in range(0, nsamples):
-        for j in range(0, n_parameters):
+    for i in range(nsamples):
+        for j in range(n_parameters):
             samples[j][i] = param_min[j] + (
                 param_max[j] - param_min[j]
             ) * numpy.random.rand(1)
@@ -2321,7 +2321,7 @@ for row in AFdatareader:
                 case_list.append("trans_diags")
         print("\n\nAliases of cases to be submitted:\n")
         print(case_list)
-        print("")
+        print()
         # sys.exit('temp stop pre submit script copy & edit')
 
         for c in case_list:
@@ -2843,7 +2843,7 @@ for row in AFdatareader:
 
 # Submit PBS scripts for single/multi-site simulations on 1 node
 if not options.no_submit and options.ensemble_file == "" and mysubmit_type != "":
-    for g in range(0, int(groupnum) + 1):
+    for g in range(int(groupnum) + 1):
         job_depend_run = ""
         for thiscase in case_list:
             output = open(

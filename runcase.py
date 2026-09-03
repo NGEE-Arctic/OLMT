@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 
-import netcdf4_functions as nffun
-import os
-import sys
 import csv
-import math
-import json
-import numpy
 import inspect
+import json
+import math
+import os
 import subprocess
+import sys
 import time
 from optparse import OptionParser
+
+import numpy
+
+import netcdf4_functions as nffun
 
 
 def _write_cmd(cmd, tag, lineno):
@@ -1835,7 +1837,7 @@ if options.parm_vals != "":
     pftfile = tmpdir + "/clm_params.nc"
     parms = options.parm_vals.split("/")
     nparms = len(parms)
-    for n in range(0, nparms):
+    for n in range(nparms):
         parm_data = parms[n].split(",")
         thisvar = nffun.getvar(pftfile, parm_data[0])
         if len(parm_data) == 2:
@@ -2006,8 +2008,8 @@ if int(options.run_startyear) > -1:
     runcmd("./xmlchange RUN_STARTDATE=" + str(options.run_startyear) + "-01-01")
     print("Setting run start date to " + str(options.run_startyear) + "-01-01")
 if options.domainfile == "":
-    runcmd('./xmlchange ATM_DOMAIN_PATH="\${RUNDIR}"')
-    runcmd('./xmlchange LND_DOMAIN_PATH="\${RUNDIR}"')
+    runcmd(r'./xmlchange ATM_DOMAIN_PATH="\${RUNDIR}"')
+    runcmd(r'./xmlchange LND_DOMAIN_PATH="\${RUNDIR}"')
     runcmd("./xmlchange ATM_DOMAIN_FILE=domain.nc")
     runcmd("./xmlchange LND_DOMAIN_FILE=domain.nc")
 else:
@@ -2816,10 +2818,7 @@ for i in range(1, int(options.ninst) + 1):
         #            output.write(" use_lch4 = .true.\n")
         #        elif (options.fates_nutrient != ''):
         #            output.write(" use_lch4 = .false.\n")
-        if options.CH4:
-            output.write(" use_lch4 = .true.\n")
-        # APW: given RK suggests nitrif/denitrif is not correct w/o ch4 shuld this be for all nutrient enabled runs?
-        elif options.fates_nutrient != "":
+        if options.CH4 or options.fates_nutrient != "":
             output.write(" use_lch4 = .true.\n")
         if options.no_methane:
             output.write(" use_lch4 = .false.\n")
@@ -3416,23 +3415,23 @@ if (options.ensemble_file != "" or int(options.mc_ensemble) != -1) and (
         myinput = open(options.ensemble_file)
         nsamples = 0
         for s in myinput:
-            for j in range(0, n_parameters):
+            for j in range(n_parameters):
                 samples[j][nsamples] = float(s.split()[j])
             nsamples = nsamples + 1
         myinput.close()
     elif int(options.mc_ensemble) > 0:
         nsamples = int(options.mc_ensemble)
         samples = numpy.zeros((n_parameters, nsamples), dtype=float)
-        for i in range(0, nsamples):
-            for j in range(0, n_parameters):
+        for i in range(nsamples):
+            for j in range(n_parameters):
                 samples[j][i] = param_min[j] + (
                     param_max[j] - param_min[j]
                 ) * numpy.random.rand(1)
         numpy.savetxt("mcsamples_" + casename + ".txt", numpy.transpose(samples))
         options.ensemble_file = "mcsamples_" + casename + ".txt"
 
-    print("")
-    print("")
+    print()
+    print()
     print("Parameter ensembles selected:")
     print(str(n_parameters) + " parameters are being modified")
     print(str(nsamples) + " parameter samples provided")

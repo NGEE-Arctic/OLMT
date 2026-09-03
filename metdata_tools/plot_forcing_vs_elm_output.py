@@ -16,10 +16,11 @@ from __future__ import annotations
 import argparse
 import glob
 import os
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
