@@ -3362,7 +3362,7 @@ runcmd("cp " + tmpdir + "/*param*.nc " + runroot + "/" + casename + "/run/")
 if options.domainfile == "":
     runcmd("cp " + tmpdir + "/domain.nc " + runroot + "/" + casename + "/run/")
 if options.surffile == "":
-    runcmd("cp " + PTCLMdir + "/temp/surfdata.nc " + runroot + "/" + casename + "/run/")
+    runcmd("cp " + tmpdir + "/surfdata.nc " + runroot + "/" + casename + "/run/")
 if "20TR" in compset and not options.nopftdyn and options.pftdynfile == "":
     runcmd("cp " + tmpdir + "/surfdata.pftdyn.nc " + runroot + "/" + casename + "/run/")
 
