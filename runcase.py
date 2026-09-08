@@ -3296,6 +3296,47 @@ if not cpl_bypass:
     myinput.close()
     myoutput.close()
 
+# Fix GSWP3 stream file paths to use correct "3Hrly" directory names
+if not cpl_bypass and options.gswp3:
+    # Fix Solar stream
+    try:
+        myinput = open("./Buildconf/datmconf/datm.streams.txt.CLMGSWP3v1.Solar")
+        myoutput = open("./user_datm.streams.txt.CLMGSWP3v1.Solar", "w")
+        for s in myinput:
+            if "</filePath>" in s and "GSWP3" in s:
+                s = s.replace("/Solar</filePath>", "/Solar3Hrly</filePath>")
+            myoutput.write(s)
+        myinput.close()
+        myoutput.close()
+    except FileNotFoundError:
+        pass  # Stream file doesn't exist yet, skip silently
+
+    # Fix Precip stream
+    try:
+        myinput = open("./Buildconf/datmconf/datm.streams.txt.CLMGSWP3v1.Precip")
+        myoutput = open("./user_datm.streams.txt.CLMGSWP3v1.Precip", "w")
+        for s in myinput:
+            if "</filePath>" in s and "GSWP3" in s:
+                s = s.replace("/Precip</filePath>", "/Precip3Hrly</filePath>")
+            myoutput.write(s)
+        myinput.close()
+        myoutput.close()
+    except FileNotFoundError:
+        pass  # Stream file doesn't exist yet, skip silently
+
+    # Fix TPQW stream
+    try:
+        myinput = open("./Buildconf/datmconf/datm.streams.txt.CLMGSWP3v1.TPQW")
+        myoutput = open("./user_datm.streams.txt.CLMGSWP3v1.TPQW", "w")
+        for s in myinput:
+            if "</filePath>" in s and "GSWP3" in s:
+                s = s.replace("/TPHWL</filePath>", "/TPHWL3Hrly</filePath>")
+            myoutput.write(s)
+        myinput.close()
+        myoutput.close()
+    except FileNotFoundError:
+        pass  # Stream file doesn't exist yet, skip silently
+
 if not cpl_bypass and not isglobal:
     if "1850" in compset:
         myinput = open("./Buildconf/datmconf/datm.streams.txt.presaero.clim_1850")
