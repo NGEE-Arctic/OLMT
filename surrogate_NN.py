@@ -1,15 +1,15 @@
-from sklearn.neural_network import MLPRegressor
 import matplotlib
+from sklearn.neural_network import MLPRegressor
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import os
-import numpy as np
 
 # from mpi4py import MPI
 import pickle
 from optparse import OptionParser
 
+import matplotlib.pyplot as plt
+import numpy as np
 
 parser = OptionParser()
 parser.add_option("--case", dest="casename", default="", help="Name of case")
@@ -55,14 +55,14 @@ pval_norm = pval.copy()
 
 # Normalize parameters
 
-for i in range(0, nparms):
+for i in range(nparms):
     ptrain_norm[:, i] = (ptrain[:, i] - min(ptrain[:, i])) / (
         max(ptrain[:, i]) - min(ptrain[:, i])
     )
     pval_norm[:, i] = (pval[:, i] - min(ptrain[:, i])) / (
         max(ptrain[:, i]) - min(ptrain[:, i])
     )
-    for j in range(0, nval):
+    for j in range(nval):
         pval_norm[j, i] = max(pval_norm[j, i], 0.0)
         pval_norm[j, i] = min(pval_norm[j, i], 1.0)
 
@@ -73,7 +73,7 @@ yrange = np.zeros([2, nqoi], float)
 
 qoi_good = []
 
-for i in range(0, nqoi):
+for i in range(nqoi):
     yrange[0, i] = min(ytrain[:, i])
     yrange[1, i] = max(ytrain[:, i])
     if yrange[0, i] != yrange[1, i]:
@@ -81,7 +81,7 @@ for i in range(0, nqoi):
             yrange[1, i] - yrange[0, i]
         )
         yval_norm[:, i] = (yval[:, i] - yrange[0, i]) / (yrange[1, i] - yrange[0, i])
-        for j in range(0, nval):
+        for j in range(nval):
             yval_norm[j, i] = max(yval_norm[j, i], 0.0)
             yval_norm[j, i] = min(yval_norm[j, i], 1.0)
         qoi_good.append(i)
@@ -91,7 +91,7 @@ corr_best = 0
 
 np.savetxt(UQ_output + "/NN_surrogate/qoi_good.txt", np.array(qoi_good))
 
-for n in range(0, 100):
+for n in range(100):
     nmin = 10 * np.sqrt(n + 1)  # max(10, ntrain/20)
     nmax = 20 * np.sqrt(n + 1)  # min(ntrain/4, 100)
     nl = int(np.random.uniform(nmin, nmax))
@@ -175,16 +175,13 @@ for n in range(0, 100):
         myfile.write("Size of NN layer 2: " + str(nl2) + "\n")
         if do3 == 1:
             myfile.write("Size of NN layer 3: " + str(nl3) + "\n")
-        for q in range(0, len(qoi_good)):
-            myfile.write(
-                "QOI validation "
+        myfile.writelines("QOI validation "
                 + str(qoi_good[q])
                 + " (R2,rmse): "
                 + str(corr_val[q])
                 + "  "
                 + str(rmse_val[q] ** 2)
-                + "\n"
-            )
+                + "\n" for q in range(len(qoi_good)))
         corr_best = sum(corr_val)
         pkl_filename = UQ_output + "/NN_surrogate/NNmodel.pkl"
         ypredict_val_best = ypredict_val

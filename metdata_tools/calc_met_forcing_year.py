@@ -9,7 +9,7 @@ into an existing ELM output NetCDF file (in place).
 import argparse
 import re
 import sys
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 try:
     import netCDF4 as nc
@@ -22,8 +22,8 @@ def fortran_mod(a: int, p: int) -> int:
     return a - int(a / p) * p
 
 
-def parse_lnd_in(lnd_in_path: str) -> Dict[str, str]:
-    result: Dict[str, str] = {}
+def parse_lnd_in(lnd_in_path: str) -> dict[str, str]:
+    result: dict[str, str] = {}
     with open(lnd_in_path, "r", encoding="utf-8") as f:
         text = f.read()
 
@@ -38,7 +38,7 @@ def parse_lnd_in(lnd_in_path: str) -> Dict[str, str]:
     return result
 
 
-def read_year_attrs(nc_path: str) -> Tuple[int, int]:
+def read_year_attrs(nc_path: str) -> tuple[int, int]:
     if nc is None:
         raise RuntimeError("netCDF4 is not installed, cannot read start_year/end_year.")
 
@@ -73,9 +73,9 @@ def metsource_from_metdata_type(metdata_type: str) -> int:
 
 def infer_met_year_ranges(
     metdata_type: str,
-    site_metadata_file: Optional[str] = None,
-    era5_metadata_file: Optional[str] = None,
-) -> Tuple[int, int, int, int]:
+    site_metadata_file: str | None = None,
+    era5_metadata_file: str | None = None,
+) -> tuple[int, int, int, int]:
     """
     Infer met year control values following lnd_import_export.F90 logic.
 
@@ -232,10 +232,10 @@ def _extract_simulation_years(ds: Any, time_var_name: str) -> list[int]:
 def annotate_output_file(
     output_file: str,
     metdata_type: str,
-    site_metadata_file: Optional[str] = None,
-    era5_metadata_file: Optional[str] = None,
+    site_metadata_file: str | None = None,
+    era5_metadata_file: str | None = None,
     variable_name: str = "met_forcing_year",
-) -> Tuple[int, int, int]:
+) -> tuple[int, int, int]:
     if nc is None:
         raise RuntimeError("netCDF4 is required to annotate output files.")
 

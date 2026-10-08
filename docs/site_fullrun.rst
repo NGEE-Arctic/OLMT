@@ -407,6 +407,11 @@ Model Output Options
 NGEE Arctic Options
 -------------------
 
+**Soil Options**
+
+``--no_squareomfrac``
+  Disable square scaling of organic matter fraction in soil thermal conductivity. Default: False.
+
 **Snow Options**
 
 ``--dust_snow_mixing``

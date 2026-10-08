@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 
-import netcdf4_functions as nffun
-import os
-import sys
 import csv
-import math
-import json
-import numpy
 import inspect
+import json
+import math
+import os
 import subprocess
+import sys
 import time
 from optparse import OptionParser
+
+import numpy
+
+import netcdf4_functions as nffun
 
 
 def _write_cmd(cmd, tag, lineno):
@@ -977,6 +979,14 @@ parser.add_option(
     help="Downscale radiation input to topounits",
     action="store_true",
 )
+# soil options:
+parser.add_option(
+    "--no_squareomfrac",
+    dest="no_squareomfrac",
+    default=False,
+    help="Disable square scaling of organic matter fraction in soil thermal conductivity",
+    action="store_true",
+)
 # snow options:
 parser.add_option(
     "--dust_snow_mixing",
@@ -1122,6 +1132,18 @@ elif "compy" in options.machine:
 elif "chrysalis" in options.machine:
     ppn = 64
 elif "pm-cpu" in options.machine:
+    ppn = 128
+elif "docker-chicoma-cpu" in options.machine:
+    # Hybrid docker/chicoma-cpu: container-based testing with chicoma's 128-core
+    # node config. Uses docker's local paths and no-scheduler behavior but
+    # chicoma-cpu's parallelism to test chicoma-scale runs in containers.
+    ppn = 128
+elif "chicoma" in options.machine:
+    # AMD Rome EPYC 7H12: 128 physical cores/node.  The CIME machine file
+    # advertises MAX_TASKS_PER_NODE=256 (2 hardware threads/core), but ELM
+    # performs poorly with multithreading, so cap at one MPI task per physical
+    # core.  Setting ppn=128 makes runcase set both MAX_TASKS_PER_NODE and
+    # MAX_MPITASKS_PER_NODE to 128 below, disabling the extra thread slots.
     ppn = 128
 elif "docker" in options.machine:
     ppn = 4
@@ -1845,7 +1867,7 @@ if options.parm_vals != "":
     pftfile = tmpdir + "/clm_params.nc"
     parms = options.parm_vals.split("/")
     nparms = len(parms)
-    for n in range(0, nparms):
+    for n in range(nparms):
         parm_data = parms[n].split(",")
         thisvar = nffun.getvar(pftfile, parm_data[0])
         if len(parm_data) == 2:
@@ -2016,8 +2038,8 @@ if int(options.run_startyear) > -1:
     runcmd("./xmlchange RUN_STARTDATE=" + str(options.run_startyear) + "-01-01")
     print("Setting run start date to " + str(options.run_startyear) + "-01-01")
 if options.domainfile == "":
-    runcmd('./xmlchange ATM_DOMAIN_PATH="\${RUNDIR}"')
-    runcmd('./xmlchange LND_DOMAIN_PATH="\${RUNDIR}"')
+    runcmd(r'./xmlchange ATM_DOMAIN_PATH="\${RUNDIR}"')
+    runcmd(r'./xmlchange LND_DOMAIN_PATH="\${RUNDIR}"')
     runcmd("./xmlchange ATM_DOMAIN_FILE=domain.nc")
     runcmd("./xmlchange LND_DOMAIN_FILE=domain.nc")
 else:
@@ -2724,6 +2746,8 @@ for i in range(1, int(options.ninst) + 1):
     #GAM shrub snow redistribution
     if options.shrub_snow_redist_alpha is not None:
         output.write(" shrub_snow_redist_alpha = %.6f\n" % options.shrub_snow_redist_alpha)
+    if options.no_squareomfrac:
+        output.write(" squareomfrac = .false.\n")
     # snow options
     if options.dust_snow_mixing:
         output.write(" use_dust_snow_internal_mixing = .true.\n")
@@ -2830,10 +2854,7 @@ for i in range(1, int(options.ninst) + 1):
         #            output.write(" use_lch4 = .true.\n")
         #        elif (options.fates_nutrient != ''):
         #            output.write(" use_lch4 = .false.\n")
-        if options.CH4:
-            output.write(" use_lch4 = .true.\n")
-        # APW: given RK suggests nitrif/denitrif is not correct w/o ch4 shuld this be for all nutrient enabled runs?
-        elif options.fates_nutrient != "":
+        if options.CH4 or options.fates_nutrient != "":
             output.write(" use_lch4 = .true.\n")
         if options.no_methane:
             output.write(" use_lch4 = .false.\n")
@@ -3377,7 +3398,7 @@ runcmd("cp " + tmpdir + "/*param*.nc " + runroot + "/" + casename + "/run/")
 if options.domainfile == "":
     runcmd("cp " + tmpdir + "/domain.nc " + runroot + "/" + casename + "/run/")
 if options.surffile == "":
-    runcmd("cp " + PTCLMdir + "/temp/surfdata.nc " + runroot + "/" + casename + "/run/")
+    runcmd("cp " + tmpdir + "/surfdata.nc " + runroot + "/" + casename + "/run/")
 if "20TR" in compset and not options.nopftdyn and options.pftdynfile == "":
     runcmd("cp " + tmpdir + "/surfdata.pftdyn.nc " + runroot + "/" + casename + "/run/")
 
@@ -3430,23 +3451,23 @@ if (options.ensemble_file != "" or int(options.mc_ensemble) != -1) and (
         myinput = open(options.ensemble_file)
         nsamples = 0
         for s in myinput:
-            for j in range(0, n_parameters):
+            for j in range(n_parameters):
                 samples[j][nsamples] = float(s.split()[j])
             nsamples = nsamples + 1
         myinput.close()
     elif int(options.mc_ensemble) > 0:
         nsamples = int(options.mc_ensemble)
         samples = numpy.zeros((n_parameters, nsamples), dtype=float)
-        for i in range(0, nsamples):
-            for j in range(0, n_parameters):
+        for i in range(nsamples):
+            for j in range(n_parameters):
                 samples[j][i] = param_min[j] + (
                     param_max[j] - param_min[j]
                 ) * numpy.random.rand(1)
         numpy.savetxt("mcsamples_" + casename + ".txt", numpy.transpose(samples))
         options.ensemble_file = "mcsamples_" + casename + ".txt"
 
-    print("")
-    print("")
+    print()
+    print()
     print("Parameter ensembles selected:")
     print(str(n_parameters) + " parameters are being modified")
     print(str(nsamples) + " parameter samples provided")

@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 
-import socket
-import getpass
-import os
-import sys
 import csv
+import getpass
+import inspect
+import json
+import os
+import re
+import socket
+import subprocess
+import sys
 import time
 from optparse import OptionParser
-import numpy
-import re
-import json
-import inspect
-import subprocess
 
+import numpy
 
 ### Run options
 parser = OptionParser()
@@ -710,6 +710,14 @@ parser.add_option(
 # --------------------
 # NGEE Arctic Options
 # --------------------
+# soil options
+parser.add_option(
+    "--no_squareomfrac",
+    dest="no_squareomfrac",
+    default=False,
+    help="Disable square scaling of organic matter fraction in soil thermal conductivity",
+    action="store_true",
+)
 # snow options
 parser.add_option(
     "--dust_snow_mixing",
@@ -843,6 +851,9 @@ parser.add_option(
 )
 (options, args) = parser.parse_args()
 
+if options.sp and not options.noad:
+    print("SP mode selected: disabling AD spinup.")
+    options.noad = True
 
 # Resolve per-invocation tempdir up front so submit()/runcmd helpers and every child
 # shell-out share the same staging dir. Defaults to ./temp/run_<pid>_<ms> so two
@@ -851,7 +862,7 @@ if options.tempdir:
     tempdir = os.path.abspath(options.tempdir)
 else:
     tempdir = os.path.abspath(
-        "./temp/run_%d_%d" % (os.getpid(), int(time.time() * 1000))
+        f"./temp/run_{os.getpid()}_{int(time.time() * 1000)}"
     )
 os.makedirs(tempdir, exist_ok=True)
 
@@ -1292,7 +1303,7 @@ else:
 npernode = 32
 if options.machine == "":
     hostname = socket.gethostname()
-    print("")
+    print()
     print(
         "Machine not specified.  Using hostname " + hostname + " to determine machine"
     )
@@ -1330,6 +1341,9 @@ elif "anvil" in options.machine or "chrysalis" in options.machine:
     ccsm_input = "/home/ccsm-data/inputdata"
 elif "compy" in options.machine:
     ccsm_input = "/compyfs/inputdata/"
+elif "chicoma" in options.machine:
+    # Mirrors DIN_LOC_ROOT in the CIME chicoma-cpu machine file.
+    ccsm_input = "/lustre/scratch5/" + getpass.getuser() + "/inputdata"
 elif "docker" in options.machine:
     ccsm_input = "/home/e3smuser/inputdata"
 
@@ -1366,6 +1380,10 @@ if options.runroot == "" or not os.path.exists(options.runroot):
         myproject = "e3sm"
     elif "compy" in options.machine:
         runroot = "/compyfs/" + myuser + "/e3sm_scratch"
+        myproject = "e3sm"
+    elif "chicoma" in options.machine:
+        # Mirrors CIME_OUTPUT_ROOT in the CIME chicoma-cpu machine file.
+        runroot = "/lustre/scratch5/" + myuser + "/E3SM/scratch/" + options.machine
         myproject = "e3sm"
     else:
         runroot = csmdir + "/run"
@@ -1407,8 +1425,8 @@ if int(options.mc_ensemble) != -1:
         n_parameters = len(param_names)
     nsamples = int(options.mc_ensemble)
     samples = numpy.zeros((n_parameters, nsamples), dtype=float)
-    for i in range(0, nsamples):
-        for j in range(0, n_parameters):
+    for i in range(nsamples):
+        for j in range(n_parameters):
             samples[j][i] = param_min[j] + (
                 param_max[j] - param_min[j]
             ) * numpy.random.rand(1)
@@ -1589,7 +1607,7 @@ for row in AFdatareader:
             basecmd = basecmd + " --marsh"
         if options.tide_components_file != "":
             basecmd = (
-                basecmd + " --tide_components_file %s" % options.tide_components_file
+                basecmd + f" --tide_components_file {options.tide_components_file}"
             )
         if float(options.lai) >= 0:
             basecmd = basecmd + " --lai " + str(options.lai)
@@ -1698,6 +1716,9 @@ for row in AFdatareader:
             basecmd = basecmd + " --project " + myproject
         if options.domainfile != "":
             basecmd = basecmd + " --domainfile " + options.domainfile
+        # soil
+        if options.no_squareomfrac:
+            basecmd = basecmd + " --no_squareomfrac"
         # snow opts
         if options.dust_snow_mixing:
             basecmd = basecmd + " --dust_snow_mixing"
@@ -1833,11 +1854,6 @@ for row in AFdatareader:
             else:
                 cmd_adsp = cmd_adsp + " --compset ICB1850" + mycompset_adsp
                 ad_case = site + "_ICB1850" + mycompset_adsp
-            if options.sp:
-                if model_name == "elm":
-                    ad_case = site + "_ICBELMBC"
-                else:
-                    ad_case = site + "_ICBCLM45BC"
         else:
             cmd_adsp = cmd_adsp + " --compset I1850" + mycompset_adsp
             ad_case = site + "_I1850" + mycompset_adsp
@@ -1856,28 +1872,25 @@ for row in AFdatareader:
             cmd_adsp = cmd_adsp.replace(options.alquimia, options.alquimia_ad)
 
         # final spinup
+        case_prefix = ""
         if mycaseid != "":
-            basecase = mycaseid + "_" + site
-            if options.cpl_bypass:
-                if options.crop:
-                    basecase = basecase + "_ICB" + mycompset
-                else:
-                    basecase = basecase + "_ICB1850" + mycompset
-            else:
-                basecase = basecase + "_I1850" + mycompset
-        else:
-            if options.cpl_bypass:
-                if options.crop:
-                    basecase = site + "_ICB" + mycompset
-                else:
-                    basecase = site + "_ICB1850" + mycompset
-            else:
-                basecase = site + "_I1850" + mycompset
+            case_prefix = mycaseid + "_"
+
+        if options.cpl_bypass:
             if options.sp:
                 if model_name == "elm":
-                    basecase = site + "_ICBELMBC"
+                    basecase = case_prefix + site + "_ICBELMBC"
                 else:
-                    basecase = site + "_ICBCLM45BC"
+                    basecase = case_prefix + site + "_ICBCLM45BC"
+
+            elif options.crop:
+                basecase = case_prefix + site + "_ICB" + mycompset
+
+            else:
+                basecase = case_prefix + site + "_ICB1850" + mycompset
+
+        else:
+            basecase = case_prefix + site + "_I1850" + mycompset
 
         if options.noad:
             cmd_fnsp = (
@@ -1965,6 +1978,16 @@ for row in AFdatareader:
             and options.constraints == ""
         ):
             cmd_fnsp = cmd_fnsp + " --postproc_file " + options.postproc_file
+        if options.sp and options.noad and options.exeroot == "":
+            ad_exeroot = os.path.abspath(
+                runroot + "/" + basecase + "/bld"
+            )
+
+        # restart year to use for transient
+        if options.sp:
+            transient_finidat_year = int(options.run_startyear) + fsplen
+        else:
+            transient_finidat_year = fsplen + 1
 
         # transient
         if options.noad and options.nofnsp and options.finidat != "":
@@ -1991,7 +2014,7 @@ for row in AFdatareader:
                 + " --finidat_case "
                 + basecase
                 + " --finidat_year "
-                + str(fsplen + 1)
+                + str(transient_finidat_year)
                 + " --run_units nyears"
                 + " --run_n "
                 + str(translen)
@@ -2008,7 +2031,12 @@ for row in AFdatareader:
             )
 
         if options.cpl_bypass:
-            if options.crop or options.fates:
+            if options.sp:
+                if model_name == "elm":
+                    cmd_trns = cmd_trns + " --istrans --compset ICBELMBC"
+                else:
+                    cmd_trns = cmd_trns + " --istrans --compset ICBCLM45BC"
+            elif options.crop or options.fates:
                 cmd_trns = cmd_trns + " --istrans --compset ICB" + mycompset
             else:
                 cmd_trns = cmd_trns + " --compset ICB20TR" + mycompset
@@ -2238,7 +2266,7 @@ for row in AFdatareader:
         if not options.notrans:
             print("\n\nSetting up transient case\n")
             if sitenum == 0:
-                if options.crop:
+                if options.crop or options.sp:
                     tr_case_firstsite = fin_case_firstsite + "_trans"
                 else:
                     tr_case_firstsite = fin_case_firstsite.replace("1850", "20TR")
@@ -2324,7 +2352,7 @@ for row in AFdatareader:
                 case_list.append("trans_diags")
         print("\n\nAliases of cases to be submitted:\n")
         print(case_list)
-        print("")
+        print()
         # sys.exit('temp stop pre submit script copy & edit')
 
         for c in case_list:
@@ -2624,7 +2652,7 @@ for row in AFdatareader:
                 output.write(ad_exeroot + "/" + myexe + " &\n")
 
             if sitenum == 0 and "transient" in c:
-                if options.crop:
+                if options.crop or options.sp:
                     output.write(
                         "cd " + caseroot + "/" + basecase + "_" + modelst + "_trans\n"
                     )
@@ -2642,7 +2670,7 @@ for row in AFdatareader:
                     )
                 output.write("./case.submit --no-batch &\n")
             elif "transient" in c:
-                if options.crop:
+                if options.crop or options.sp:
                     output.write(
                         "cd "
                         + runroot
@@ -2846,7 +2874,7 @@ for row in AFdatareader:
 
 # Submit PBS scripts for single/multi-site simulations on 1 node
 if not options.no_submit and options.ensemble_file == "" and mysubmit_type != "":
-    for g in range(0, int(groupnum) + 1):
+    for g in range(int(groupnum) + 1):
         job_depend_run = ""
         for thiscase in case_list:
             output = open(

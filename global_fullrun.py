@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
 import getpass
-import os
-import sys
 import math
+import os
+import re
+import sys
 import time
 from optparse import OptionParser
+
 import numpy
-import re
 
 parser = OptionParser()
 
@@ -492,6 +493,14 @@ parser.add_option(
     help="Use atmospheric downscaling in topounits",
     action="store_true",
 )
+# soil options:
+parser.add_option(
+    "--no_squareomfrac",
+    dest="no_squareomfrac",
+    default=False,
+    help="Disable square scaling of organic matter fraction in soil thermal conductivity",
+    action="store_true",
+)
 # snow options:
 parser.add_option(
     "--dust_snow_mixing",
@@ -703,6 +712,9 @@ elif "anvil" in options.machine:
     ccsm_input = "/home/ccsm-data/inputdata"
 elif "compy" in options.machine:
     ccsm_input = "/compyfs/inputdata"
+elif "chicoma" in options.machine:
+    # Mirrors DIN_LOC_ROOT in the CIME chicoma-cpu machine file.
+    ccsm_input = "/lustre/scratch5/" + getpass.getuser() + "/inputdata"
 
 if options.makepointdata_only:  # don't configure/build/run model
     options.noad = False
@@ -721,7 +733,10 @@ if options.compiler == "":
         options.compiler = "gnu"
     if options.machine == "compy":
         options.compiler = "intel"
-    if options.machine == "docker":
+    if "chicoma" in options.machine:
+        options.compiler = "gnu"
+    if "docker" in options.machine:
+        # Applies to "docker" and hybrid variants like "docker-chicoma-cpu"
         options.compiler = "gnu"
 
 # default MPIlibs
@@ -734,6 +749,8 @@ if options.mpilib == "":
         options.mpilib = "mvapich"
     elif "compy" in options.machine:
         options.mpilib = "impi"
+    elif "chicoma" in options.machine:
+        options.mpilib = "mpich"
     elif "docker" in options.machine:
         options.mpilib = "openmpi"
 
@@ -761,8 +778,8 @@ if int(options.mc_ensemble) != -1:
         n_parameters = len(param_names)
     nsamples = int(options.mc_ensemble)
     samples = numpy.zeros((n_parameters, nsamples), dtype=float)
-    for i in range(0, nsamples):
-        for j in range(0, n_parameters):
+    for i in range(nsamples):
+        for j in range(n_parameters):
             samples[j][i] = param_min[j] + (
                 param_max[j] - param_min[j]
             ) * numpy.random.rand(1)
@@ -812,6 +829,9 @@ if options.runroot == "":
         runroot = "/lcrc/group/acme/" + myuser
     elif "compy" in options.machine:
         runroot = "/compyfs/" + myuser + "/e3sm_scratch"
+    elif "chicoma" in options.machine:
+        # Mirrors CIME_OUTPUT_ROOT in the CIME chicoma-cpu machine file.
+        runroot = "/lustre/scratch5/" + myuser + "/E3SM/scratch/" + options.machine
     else:
         runroot = csmdir + "/run"
 else:
@@ -1017,6 +1037,8 @@ if options.topounits:
     basecmd = basecmd + " --topounits"
 if options.topounits_atmdownscale:
     basecmd = basecmd + " --topounits_atmdownscale"
+if options.no_squareomfrac:
+    basecmd = basecmd + " --no_squareomfrac"
 if options.dust_snow_mixing:
     basecmd = basecmd + " --dust_snow_mixing"
 if options.no_snicar_ad:
@@ -1356,7 +1378,7 @@ if options.mc_ensemble <= 0:
         #    mysubmit_type = 'sbatch'
         # Create a .PBS site fullrun script to launch the full job
 
-        for n in range(0, n_submits):
+        for n in range(n_submits):
             output = open(tempdir + "/global_" + c + "_" + str(n) + ".pbs", "w")
             if os.path.isfile(caseroot + "/" + c + "/case.run"):
                 input = open(caseroot + "/" + c + "/case.run")

@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
-import netcdf4_functions as nffun
 import os
 from optparse import OptionParser
+
+import netcdf4_functions as nffun
 
 # Create, run and process a CLM/ALM model ensemble member
 #  given specified case and parameters (see parm_list and parm_data files)

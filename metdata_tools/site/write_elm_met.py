@@ -1,6 +1,7 @@
-from netCDF4 import Dataset
-import numpy as np
 import os
+
+import numpy as np
+from netCDF4 import Dataset
 
 # coefficients for calculating saturation vapor pressure
 a = [

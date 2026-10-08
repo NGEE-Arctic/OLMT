@@ -1,7 +1,8 @@
+import glob
+from optparse import OptionParser
+
 import numpy as np
 from netCDF4 import Dataset
-from optparse import OptionParser
-import glob
 
 parser = OptionParser()
 parser.add_option(
@@ -154,7 +155,7 @@ for c in range(1, len(cases)):
         print("  FAIL: Number of h0 files differ between cases")
     else:
         ngood = 0
-        for h in range(0, len(h0list[cases[0]])):
+        for h in range(len(h0list[cases[0]])):
             hasdiff = comparencfiles(
                 h0list[cases[0]][h], h0list[cases[c]][h], vars_compare=h0vars
             )

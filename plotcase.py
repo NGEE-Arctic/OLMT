@@ -1,13 +1,14 @@
 #!/usr/bin/python
 
+import math
 import os
 import sys
-import numpy
-import math
-from netCDF4 import Dataset
 from optparse import OptionParser
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy
+from netCDF4 import Dataset
 
 
 def getvar(fname, varname, npf, index, scale_factor):
@@ -245,7 +246,7 @@ else:
     mysites1 = mysites3
     mycompsets1 = mycompsets2
     mycases1 = mycases.copy()
-    for c in range(0, len(mycases1)):
+    for c in range(len(mycases1)):
         if mycases1[c] != "":
             mycases1[c] = mycases1[c] + "_"
     mycases1 = numpy.repeat(mycases1, len(runnames))
@@ -258,11 +259,11 @@ if options.titles != "":
 else:
     mytitles = runnames
 
-print("")
-print("")
+print()
+print()
 print("Simulations that will be plotted:")
 print(runnames)
-print("")
+print()
 
 obs = options.myobs
 myobsdir = "/home/ac.ricciuto/fluxnet"
@@ -311,13 +312,13 @@ obs_toplot = numpy.zeros([ncases, nvar, 2000000], float) + numpy.NaN
 err_toplot = numpy.zeros([ncases, nvar, 2000000], float) + numpy.NaN
 snum = numpy.zeros([ncases], int)
 
-for c in range(0, ncases):
+for c in range(ncases):
     mydir = cesmdir + "/" + runnames[c] + "/run/"
     #    if (mycases[c] == ''):
     #        mydir = cesmdir+'/'+mysites[c]+'_'+mycompsets[c]+'/run/'
     #    else:
     #        mydir = cesmdir+'/'+mycases[c]+'_'+mysites[c]+'_'+mycompsets[c]+'/run/'
-    print("")
+    print()
     print("Processing " + mydir)
     # if (os.path.exists(mydir)):
     # else:
@@ -424,7 +425,7 @@ for c in range(0, ncases):
                         yend = min(int(s[0:4]), int(options.myyend))
                 thisrow = thisrow + 1
             myobs_input.close
-        for v in range(0, nvar):
+        for v in range(nvar):
             if os.path.exists(myobsfile):
                 myobs_in = open(myobsfile)
                 thisrow = 0
@@ -517,17 +518,7 @@ for c in range(0, ncases):
                                         myobs[v, thisob / avpd_obs]
                                         + float(myvals[thiscol]) / avpd_obs
                                     )
-                                elif h.strip() == "SWIN_F_MDS" and "FSDS" in myvars[v]:
-                                    myobs[v, thisob / avpd_obs] = (
-                                        myobs[v, thisob / avpd_obs]
-                                        + float(myvals[thiscol]) / avpd_obs
-                                    )
-                                elif h.strip() == "WS_F" and "WIND" in myvars[v]:
-                                    myobs[v, thisob / avpd_obs] = (
-                                        myobs[v, thisob / avpd_obs]
-                                        + float(myvals[thiscol]) / avpd_obs
-                                    )
-                                elif h.strip() == "P_F" and "RAIN" in myvars[v]:
+                                elif h.strip() == "SWIN_F_MDS" and "FSDS" in myvars[v] or h.strip() == "WS_F" and "WIND" in myvars[v] or h.strip() == "P_F" and "RAIN" in myvars[v]:
                                     myobs[v, thisob / avpd_obs] = (
                                         myobs[v, thisob / avpd_obs]
                                         + float(myvals[thiscol]) / avpd_obs
@@ -543,11 +534,11 @@ for c in range(0, ncases):
 
     # read monthly .nc files (default output)
     if ftype == "default":
-        for v in range(0, nvar):
+        for v in range(nvar):
             nsteps = 0
             for y in range(ystart, yend + 1):
                 yst = str(10000 + y)[1:5]
-                for m in range(0, 12):
+                for m in range(12):
                     mst = str(101 + m)[1:3]
                     # myfile = os.path.abspath(mydir+'/'+mycases[c]+'_'+mysites[c]+'_'+mycompsets[c]+ \
                     #                         ".clm2."+hst+"."+yst+"-"+mst+".nc")
@@ -615,13 +606,12 @@ for c in range(0, ncases):
                             print("Warning: " + myfile + " does not exist")
                         x[nsteps] = y + m / 12.0
                         mydata[v, nsteps] = numpy.NaN
-                        if y - 1 < yend_all:
-                            yend_all = y - 1
+                        yend_all = min(yend_all, y - 1)
                     nsteps = nsteps + 1
 
     # read annual .nc files
     if ftype == "custom":
-        for v in range(0, nvar):
+        for v in range(nvar):
             nsteps = 0
             nfiles = int((yend - ystart) / nypf)
             nc = 1
@@ -631,7 +621,7 @@ for c in range(0, ncases):
                 nc = 2
             if npf == 1:
                 starti = 1
-            for n in range(0, nc):
+            for n in range(nc):
                 if (options.spinup) and n == 0:
                     #                    if (mycases[c] == ''):
                     #                        if (options.ad_Pinit):
@@ -749,7 +739,7 @@ for c in range(0, ncases):
                             )
 
                         if len(myvar_temp) == npf:
-                            for i in range(0, npf):
+                            for i in range(npf):
                                 myind = ylast * n * npf + y * npf + i
                                 x[nsteps] = (
                                     ystart
@@ -763,7 +753,7 @@ for c in range(0, ncases):
                                     )
                                 nsteps = nsteps + 1
                         else:
-                            for i in range(0, npf):
+                            for i in range(npf):
                                 myind = ylast * n * npf + (y - 1) * npf + i
                                 x[myind] = (
                                     ystart
@@ -775,9 +765,8 @@ for c in range(0, ncases):
                     else:
                         if v == 0:
                             print("Warning: " + myfile + " does not exist")
-                        if y - 1 < yend_all:
-                            yend_all = y - 1
-                        for i in range(0, npf):
+                        yend_all = min(yend_all, y - 1)
+                        for i in range(npf):
                             if n == nc - 1:
                                 myind = ylast * n * npf + y * npf + i
                                 x[myind] = (
@@ -790,9 +779,9 @@ for c in range(0, ncases):
 
     # perform averaging and write output files
     if avtype == "default":
-        for v in range(0, nvar):
+        for v in range(nvar):
             snum[c] = 0
-            for s in range(0, int(nsteps / avpd)):
+            for s in range(int(nsteps / avpd)):
                 x_toplot[c, snum[c]] = sum(x[s * avpd : (s + 1) * avpd]) / avpd
                 data_toplot[c, v, snum[c]] = (
                     sum(mydata[v, s * avpd : (s + 1) * avpd]) / avpd
@@ -811,14 +800,14 @@ for c in range(0, ncases):
     # diurnal average (must have hourly output)
     if avtype == "diurnal":
         snum[c] = 24
-        for v in range(0, nvar):
+        for v in range(nvar):
             mysum = numpy.zeros(snum[c], float)
             mysum_obs = numpy.zeros(snum[c], float)
             myct = numpy.zeros(snum[c], float)
             myct_obs = numpy.zeros(snum[c], float)
-            for y in range(0, (yend_all - ystart + 1)):
+            for y in range(yend_all - ystart + 1):
                 for d in range(int(options.dstart), int(options.dend)):
-                    for s in range(0, snum[c]):
+                    for s in range(snum[c]):
                         h = s
                         if h >= 24:
                             h = h - 24
@@ -835,7 +824,7 @@ for c in range(0, ncases):
                                 mysum_obs[s] + myobs[v, y * 8760 + (d - 1) * 24 + h]
                             )
                             myct_obs[s] = myct_obs[s] + 1
-            for s in range(0, snum[c]):
+            for s in range(snum[c]):
                 if myct_obs[s] > 0:
                     mysum_obs[s] = mysum_obs[s] / myct_obs[s]
                 else:
@@ -846,20 +835,20 @@ for c in range(0, ncases):
 
     # seasonal average (assumes default monthly output)
     if avtype == "seasonal":
-        for v in range(0, nvar):
+        for v in range(nvar):
             snum[c] = 12
             mysum = numpy.zeros(snum[c], float)
             mysum_obs = numpy.zeros(snum[c], float)
             mycount_obs = numpy.zeros(snum[c], numpy.int)
-            for y in range(0, (yend_all - ystart + 1)):
-                for s in range(0, snum[c]):
+            for y in range(yend_all - ystart + 1):
+                for s in range(snum[c]):
                     mysum[s] = mysum[s] + mydata[v, (y * 12 + s)] / float(
                         yend_all - ystart + 1
                     )
                     if myobs[v, (y * 12 + s)] > -900:
                         mysum_obs[s] = mysum_obs[s] + myobs[v, (y * 12 + s)]
                         mycount_obs[s] = mycount_obs[s] + 1
-            for s in range(0, snum[c]):
+            for s in range(snum[c]):
                 if mycount_obs[s] > 0:
                     mysum_obs[s] = mysum_obs[s] / mycount_obs[s]
                 else:
@@ -894,7 +883,7 @@ else:
     ncol = 1
     nrow = 1
 
-for v in range(0, len(myvars)):
+for v in range(len(myvars)):
     if not options.noplot:
         if v % options.nperpage == 0:
             fig = plt.figure(figsize=(11, 8.5))
@@ -949,7 +938,7 @@ for v in range(0, len(myvars)):
         "-.",
         "-.",
     ]
-    for c in range(0, ncases):
+    for c in range(ncases):
         # Output data in netcdf format
         if c == 0:
             if v == 0:
@@ -962,7 +951,7 @@ for v in range(0, len(myvars)):
                     )
                 os.system("mkdir -p " + outputdir)
                 print("Creating plots and output in " + outputdir)
-                for ftype in range(0, 2):
+                for ftype in range(2):
                     outdata = Dataset(
                         outputdir
                         + "/"
@@ -999,7 +988,7 @@ for v in range(0, len(myvars)):
                     )
                     myname[:, :] = " "  # changed for gridcell
                     outdata.close()
-        for ftype in range(0, 2):
+        for ftype in range(2):
             outdata = Dataset(
                 outputdir
                 + "/"
@@ -1047,7 +1036,7 @@ for v in range(0, len(myvars)):
         # ----------------------- plotting ---------------------------------
         if options.noplot == False:
             gind = []
-            for i in range(0, snum[c]):
+            for i in range(snum[c]):
                 if obs_toplot[c, v, i] < -900:
                     obs_toplot[c, v, i] = numpy.nan
                 else:

@@ -1,11 +1,13 @@
 #!/usr/bin/env python
-import sys
 import os
+import sys
 import time
-import numpy as np
-import netcdf4_functions as nffun
-from mpi4py import MPI
 from optparse import OptionParser
+
+import numpy as np
+from mpi4py import MPI
+
+import netcdf4_functions as nffun
 
 # MPI python code used to manage the ensemble simulations
 #  and perform post-processing of model output.
@@ -241,7 +243,7 @@ def postproc(
                             )
                         except (IndexError, ValueError, TypeError):
                             output.append(np.NaN)
-        for i in range(0, int(ndays_total / myavg[index])):
+        for i in range(int(ndays_total / myavg[index])):
             data[thiscol] = (
                 sum(output[(i * myavg[index]) : ((i + 1) * myavg[index])])
                 / myavg[index]
@@ -419,7 +421,7 @@ niter = 1
 
 if rank == 0:
     # --------------------------Perform the model simulations---------------------
-    for thisiter in range(0, niter):
+    for thisiter in range(niter):
         n_done = 0
 
         # send first np-1 jobs where np is number of processes
@@ -458,7 +460,7 @@ if rank == 0:
         data_out = data.transpose()
         parm_out = parms.transpose()
         good = []
-        for i in range(0, options.n):
+        for i in range(options.n):
             # only save valid runs (no NaNs)
             if not np.isnan(sum(data_out[i, :])):
                 good.append(i)
@@ -478,7 +480,7 @@ if rank == 0:
         np.savetxt(UQ_output + "/data/pval.dat", parm_out[int(len(good) * 0.8) :, :])
         if len(myobs) > 0:
             obs_out = open(UQ_output + "/data/obs.dat", "w")
-            for i in range(0, len(myobs)):
+            for i in range(len(myobs)):
                 obs_out.write(str(myobs[i]) + " " + str(myobs_err[i]) + "\n")
             obs_out.close()
         myoutput = open(UQ_output + "/data/pnames.txt", "w")
@@ -509,7 +511,7 @@ if rank == 0:
         os.system("mkdir -p " + UQ_output + "/GSA")
         myoutput = open(UQ_output + "/data/param_range.txt", "w")
         myoutput2 = open(UQ_output + "/GSA/param_range.txt", "w")
-        for p in range(0, len(pmin)):
+        for p in range(len(pmin)):
             myoutput.write(pmin[p] + " " + pmax[p] + "\n")
             myoutput2.write(pnames[p] + " " + pmin[p] + " " + pmax[p] + "\n")
         myoutput.close()
@@ -549,7 +551,7 @@ if rank == 0:
 
 # --------------------- Slave process (individual ensemble members) --------------
 else:
-    for thisiter in range(0, niter):
+    for thisiter in range(niter):
         status = 0
         while status == 0:
             myjob = comm.recv(source=0, tag=1)
@@ -613,7 +615,7 @@ else:
                             plots = [7, 6, 20, 13, 8, 17, 19, 11, 4, 16, 10]
                             os.system("cp lnd_in lnd_in_orig")
                             os.system("cp drv_in drv_in_orig")
-                            for t in range(0, len(treatments)):
+                            for t in range(len(treatments)):
                                 lnd_in_old = open("lnd_in_orig", "r")
                                 lnd_in_new = open("lnd_in", "w")
                                 pst = str(100 + plots[t])[1:]
