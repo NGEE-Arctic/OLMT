@@ -416,6 +416,14 @@ parser.add_option(
 parser.add_option(
     "--lai", dest="lai", default=-999, help="Set constant LAI (SP mode only)"
 )
+
+parser.add_option(
+    "--spinup_startyear",
+    dest="spinup_startyear",
+    default="1",
+    help="Artificial starting year for SP final spinup",
+)
+
 parser.add_option(
     "--run_startyear",
     dest="run_startyear",
@@ -1883,7 +1891,7 @@ for row in AFdatareader:
             if sitenum > 0:
                 cmd_fnsp = cmd_fnsp + " --exeroot " + ad_exeroot + " --no_build"
             if options.sp:
-                cmd_fnsp = cmd_fnsp + " --run_startyear " + str(options.run_startyear)
+                cmd_fnsp = cmd_fnsp + " --run_startyear " + str(options.spinup_startyear)
             if options.exeroot != "":
                 if not os.path.isfile(options.exeroot + "/" + myexe):
                     print(
@@ -1962,11 +1970,17 @@ for row in AFdatareader:
                 runroot + "/" + basecase + "/bld"
             )
 
-        # restart year to use for transient
+        # Restart year produced by the final spinup.
+        # SP uses an artificial spinup calendar; the transient begins on
+        # the separate historical calendar given by run_startyear.
         if options.sp:
-            transient_finidat_year = int(options.run_startyear) + fsplen
+            transient_finidat_year = int(options.spinup_startyear) + fsplen
         else:
             transient_finidat_year = fsplen + 1
+
+        transient_align_year = year_align + 1850
+        if options.sp:
+            transient_align_year = year_align + int(options.run_startyear)
 
         # transient
         if options.noad and options.nofnsp and options.finidat != "":
@@ -1977,7 +1991,7 @@ for row in AFdatareader:
                 + " --run_units nyears --run_n "
                 + str(translen)
                 + " --align_year "
-                + str(year_align + 1850)
+                + str(transient_align_year)
                 + " --hist_nhtfrq "
                 + options.hist_nhtfrq
                 + " --hist_mfilt "
@@ -1998,7 +2012,7 @@ for row in AFdatareader:
                 + " --run_n "
                 + str(translen)
                 + " --align_year "
-                + str(year_align + 1850)
+                + str(transient_align_year)
                 + " --hist_nhtfrq "
                 + options.hist_nhtfrq
                 + " --hist_mfilt "
@@ -2008,6 +2022,14 @@ for row in AFdatareader:
                 + ad_exeroot
                 + " --nopointdata"
             )
+
+        # The explicit-finidat branch already includes run_startyear above.
+        # Add it here only for the standard SP finidat_case workflow.
+        if (
+            options.sp
+            and not (options.noad and options.nofnsp and options.finidat != "")
+        ):
+            cmd_trns = cmd_trns + " --run_startyear " + str(options.run_startyear)
 
         if options.cpl_bypass:
             if options.sp:
@@ -2251,6 +2273,9 @@ for row in AFdatareader:
                     tr_case_firstsite = fin_case_firstsite.replace("1850", "20TR")
                 result = runcmd(cmd_trns)
             else:
+                copy_finidat_year = int(ny_fin) + 1
+                if options.sp:
+                    copy_finidat_year = transient_finidat_year
                 ptcmd = (
                     "python case_copy.py --runroot "
                     + runroot
@@ -2261,7 +2286,7 @@ for row in AFdatareader:
                     + " --site_new "
                     + site
                     + " --finidat_year "
-                    + str(int(ny_fin) + 1)
+                    + str(copy_finidat_year)
                     + " --nyears "
                     + str(translen)
                     + " --tempdir "
