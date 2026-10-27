@@ -712,6 +712,10 @@ elif "anvil" in options.machine:
     ccsm_input = "/home/ccsm-data/inputdata"
 elif "compy" in options.machine:
     ccsm_input = "/compyfs/inputdata"
+elif "chicoma-cpu-charliecloud" in options.machine:
+    # Mirrors DIN_LOC_ROOT in the CIME chicoma-cpu-charliecloud machine file:
+    # the container's bind-mount convention, not chicoma's real lustre path.
+    ccsm_input = "/scratch/inputdata"
 elif "chicoma" in options.machine:
     # Mirrors DIN_LOC_ROOT in the CIME chicoma-cpu machine file.
     ccsm_input = "/lustre/scratch5/" + getpass.getuser() + "/inputdata"
@@ -749,6 +753,9 @@ if options.mpilib == "":
         options.mpilib = "mvapich"
     elif "compy" in options.machine:
         options.mpilib = "impi"
+    elif "chicoma-cpu-charliecloud" in options.machine:
+        # The container's Open MPI build, not chicoma-cpu's native Cray MPICH.
+        options.mpilib = "openmpi"
     elif "chicoma" in options.machine:
         options.mpilib = "mpich"
     elif "docker" in options.machine:
@@ -804,6 +811,15 @@ else:
 # csmdir = os.getcwd()+'/'+options.csmdir
 csmdir = options.csmdir
 
+# check whether model named clm or elm (mirrors the same test in runcase.py).
+# Used below to name the land namelist and restart files for --runblock chaining.
+if os.path.exists(csmdir + "/components/elm"):
+    mylsm = "elm"
+    model_name = "elm"
+else:
+    mylsm = "clm"
+    model_name = "clm2"
+
 # get project information
 myuser = getpass.getuser()
 myproject = ""
@@ -829,6 +845,11 @@ if options.runroot == "":
         runroot = "/lcrc/group/acme/" + myuser
     elif "compy" in options.machine:
         runroot = "/compyfs/" + myuser + "/e3sm_scratch"
+    elif "chicoma-cpu-charliecloud" in options.machine:
+        # Mirrors CIME_OUTPUT_ROOT in the CIME chicoma-cpu-charliecloud
+        # machine file: the container's bind-mount convention, not chicoma's
+        # real lustre path.
+        runroot = "/scratch"
     elif "chicoma" in options.machine:
         # Mirrors CIME_OUTPUT_ROOT in the CIME chicoma-cpu machine file.
         runroot = "/lustre/scratch5/" + myuser + "/E3SM/scratch/" + options.machine
@@ -1343,7 +1364,7 @@ if not options.noad:
     cases.append(basecase + "_" + mymodel_adsp + "_ad_spinup")
 if not options.nofn:
     cases.append(basecase + "_" + mymodel_fnsp)
-if options.notrans:
+if not options.notrans:
     cases.append(basecase + "_" + mymodel_trns)
 
 if options.mc_ensemble <= 0:
@@ -1438,6 +1459,13 @@ if options.mc_ensemble <= 0:
                             output.write("#SBATCH -p batch\n")
                             output.write("#SBATCH --mem=64G\n")
                             output.write("#SBATCH --ntasks-per-node 32\n")
+                        if "chicoma" in options.machine and "docker" not in options.machine:
+                            nnodes = math.ceil(int(options.np) / 128.0)
+                            output.write("#SBATCH --nodes=" + str(nnodes) + "\n")
+                            output.write("#SBATCH --ntasks-per-node=128\n")
+                            output.write("#SBATCH --partition=standard\n")
+                            output.write("#SBATCH --qos=standard\n")
+                            output.write("#SBATCH --exclusive\n")
                 elif "#!" in s or "#PBS" in s or "#SBATCH" in s:
                     output.write(s)
             input.close()
@@ -1491,8 +1519,10 @@ if options.mc_ensemble <= 0:
             )
             if n > 0:
                 # change finidat
-                mylnd_in = open(caseroot + "/" + c + "/user_nl_clm", "r")
-                mylnd_out = open(caseroot + "/" + c + "/user_nl_clm_" + str(n), "w")
+                mylnd_in = open(caseroot + "/" + c + "/user_nl_" + mylsm, "r")
+                mylnd_out = open(
+                    caseroot + "/" + c + "/user_nl_" + mylsm + "_" + str(n), "w"
+                )
                 for s in mylnd_in:
                     if "finidat" in s:
                         mylnd_out.write(
@@ -1502,7 +1532,9 @@ if options.mc_ensemble <= 0:
                             + c
                             + "/run/"
                             + c
-                            + ".clm2.r."
+                            + "."
+                            + model_name
+                            + ".r."
                             + str(10000 + model_startdate)[1:]
                             + "-01-01-00000.nc'\n"
                         )
@@ -1510,7 +1542,9 @@ if options.mc_ensemble <= 0:
                         mylnd_out.write(s)
                 mylnd_in.close()
                 mylnd_out.close()
-                output.write(" cp user_nl_clm_" + str(n) + " user_nl_clm\n")
+                output.write(
+                    " cp user_nl_" + mylsm + "_" + str(n) + " user_nl_" + mylsm + "\n"
+                )
             model_startdate = model_startdate + runblock
             output.write("./case.submit --no-batch\n")
             output.write("cd " + os.path.abspath(".") + "\n")
